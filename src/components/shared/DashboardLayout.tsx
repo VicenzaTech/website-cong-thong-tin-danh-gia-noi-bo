@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Box } from "@mantine/core";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { Footer } from "./Footer";
 import { useAuth } from "@/features/auth/AuthContext";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
@@ -40,9 +41,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           marginTop: 60,
           minHeight: "calc(100vh - 60px)",
           backgroundColor: "var(--mantine-color-gray-0)",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <Box p="md">{children}</Box>
+        <Box p="md" style={{ flex: 1 }}>
+          {children}
+        </Box>
+        <Footer />
       </Box>
     </Box>
   );

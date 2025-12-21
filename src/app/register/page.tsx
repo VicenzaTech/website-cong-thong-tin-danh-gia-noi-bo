@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Container,
   Paper,
@@ -13,6 +14,7 @@ import {
   Text,
   Alert,
   Group,
+  Center,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -121,6 +123,16 @@ export default function RegisterPage() {
 
   return (
     <Container size={500} my={40}>
+      <Center mb="xl">
+        <Image
+          src="/logo-vicenza.png"
+          alt="Vicenza Logo"
+          width={120}
+          height={120}
+          priority
+        />
+      </Center>
+      
       <Title ta="center" mb="md">
         Hoàn tất thông tin đăng ký
       </Title>

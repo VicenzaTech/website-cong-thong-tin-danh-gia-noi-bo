@@ -2,7 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Stack, NavLink, Text, Box } from "@mantine/core";
+import Image from "next/image";
+import { Stack, NavLink, Text, Box, Center } from "@mantine/core";
 import {
   IconHome,
   IconUsers,
@@ -103,10 +104,19 @@ export function Sidebar() {
       }}
     >
       <Box p="md" style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }}>
-        <Text size="xl" fw={700} c="blue">
+        <Center mb="sm">
+          <Image
+            src="/logo-vicenza.png"
+            alt="Vicenza Logo"
+            width={60}
+            height={60}
+            priority
+          />
+        </Center>
+        <Text size="xl" fw={700} c="blue" ta="center">
           Đánh giá Nội bộ
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="dimmed" ta="center">
           Hệ thống quản lý đánh giá
         </Text>
       </Box>

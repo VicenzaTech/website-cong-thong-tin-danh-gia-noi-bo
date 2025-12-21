@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Container,
   Paper,
@@ -13,6 +14,7 @@ import {
   Stack,
   Text,
   Alert,
+  Center,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -105,6 +107,16 @@ export default function LoginPage() {
 
   return (
     <Container size={420} my={40}>
+      <Center mb="xl">
+        <Image
+          src="/logo-vicenza.png"
+          alt="Vicenza Logo"
+          width={120}
+          height={120}
+          priority
+        />
+      </Center>
+      
       <Title ta="center" mb="md">
         Đăng nhập
       </Title>

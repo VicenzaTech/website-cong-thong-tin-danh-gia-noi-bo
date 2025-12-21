@@ -14,8 +14,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Hệ thống Đánh giá Nội bộ",
+  title: "Hệ thống Đánh giá Nội bộ - Vicenza",
   description: "Hệ thống quản lý và đánh giá năng lực nhân sự nội bộ",
+  icons: {
+    icon: "/logo-vicenza.ico",
+    shortcut: "/logo-vicenza.ico",
+    apple: "/logo-vicenza.png",
+  },
 };
 
 export default function RootLayout({
