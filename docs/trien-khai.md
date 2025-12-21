@@ -191,10 +191,10 @@
 
 ### Bước 5.3: Phân quyền View Báo cáo
 
-- [ ] **View Trưởng phòng**
+- [x] **View Trưởng phòng**
   - Filter dữ liệu theo phòng ban của mình (Mock logic: filter mảng theo `phongBanId`)
 
-- [ ] **View Admin**
+- [x] **View Admin**
   - Dropdown chọn xem bất kỳ phòng ban nào hoặc toàn công ty
 
 ---

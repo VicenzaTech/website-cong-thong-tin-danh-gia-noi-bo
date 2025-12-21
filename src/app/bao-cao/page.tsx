@@ -15,13 +15,14 @@ import {
   Avatar,
   Group,
   Select,
+  Flex,
 } from "@mantine/core";
 import { BarChart, RadarChart } from "@mantine/charts";
 import { IconTrophy, IconMedal, IconAward } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users } from "@/_mock/db";
-import type { DanhGia, User, CauTraLoi, CauHoi, KyDanhGia } from "@/types/schema";
+import type { DanhGia, User, CauTraLoi, CauHoi, KyDanhGia, PhongBan } from "@/types/schema";
 
 interface ScoreDistribution {
   score: string;
@@ -49,6 +50,8 @@ export default function BaoCaoPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [selectedKyId, setSelectedKyId] = useState<string | null>(null);
+  const [phongBans, setPhongBans] = useState<PhongBan[]>([]);
+  const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -59,6 +62,7 @@ export default function BaoCaoPage() {
   useEffect(() => {
     if (currentUser) {
       loadKyDanhGias();
+      loadPhongBans();
     }
   }, [currentUser]);
 
@@ -66,7 +70,7 @@ export default function BaoCaoPage() {
     if (selectedKyId) {
       loadReportData();
     }
-  }, [selectedKyId]);
+  }, [selectedKyId, selectedPhongBanId]);
 
   const loadKyDanhGias = async () => {
     try {
@@ -82,6 +86,29 @@ export default function BaoCaoPage() {
     }
   };
 
+  const loadPhongBans = async () => {
+    if (!currentUser) return;
+
+    try {
+      const allPhongBans = await mockService.phongBans.getAll();
+      setPhongBans(allPhongBans);
+
+      // Set default department based on role
+      if (currentUser.role === "truong_phong") {
+        // Manager can only see their own department
+        setSelectedPhongBanId(currentUser.phongBanId);
+      } else if (currentUser.role === "admin") {
+        // Admin defaults to "all departments" (null means all)
+        setSelectedPhongBanId(null);
+      } else {
+        // Regular employee sees their department
+        setSelectedPhongBanId(currentUser.phongBanId);
+      }
+    } catch (error) {
+      console.error("Failed to load departments:", error);
+    }
+  };
+
   const loadReportData = async () => {
     if (!currentUser || !selectedKyId) return;
 
@@ -89,12 +116,25 @@ export default function BaoCaoPage() {
     try {
       let allDanhGias: DanhGia[] = [];
 
-      // Load evaluations based on role
+      // Load evaluations based on role and department filter
       if (currentUser.role === "admin") {
-        // Admin sees all evaluations
-        allDanhGias = await mockService.danhGias.getAll();
+        // Admin sees all evaluations or filtered by department
+        const allEvals = await mockService.danhGias.getAll();
+        
+        if (selectedPhongBanId) {
+          // Filter by selected department
+          const departmentUserIds = users
+            .filter((u) => u.phongBanId === selectedPhongBanId && !u.deletedAt)
+            .map((u) => u.id);
+          allDanhGias = allEvals.filter((dg) =>
+            departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
+          );
+        } else {
+          // Show all departments
+          allDanhGias = allEvals;
+        }
       } else if (currentUser.role === "truong_phong") {
-        // Manager sees department evaluations
+        // Manager sees only their department evaluations
         const allEvals = await mockService.danhGias.getAll();
         const departmentUserIds = users
           .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt)
@@ -277,23 +317,47 @@ export default function BaoCaoPage() {
   return (
     <Stack gap="lg">
       <Paper withBorder shadow="sm" p="lg" radius="md">
-        <Group justify="space-between">
+        <Group justify="space-between" align="flex-start">
           <div>
             <Title order={2}>Báo cáo & Phân tích</Title>
             <Text size="sm" c="dimmed" mt="xs">
               Thống kê và phân tích dữ liệu đánh giá
             </Text>
+            {currentUser.role === "truong_phong" && (
+              <Badge variant="light" color="blue" mt="xs">
+                Phòng ban: {phongBans.find((pb) => pb.id === currentUser.phongBanId)?.tenPhongBan || "N/A"}
+              </Badge>
+            )}
           </div>
-          <Select
-            placeholder="Chọn kỳ đánh giá"
-            data={kyDanhGias.map((ky) => ({
-              value: ky.id,
-              label: ky.tenKy,
-            }))}
-            value={selectedKyId}
-            onChange={(value) => setSelectedKyId(value)}
-            style={{ width: 250 }}
-          />
+          <Flex gap="md" direction={{ base: "column", sm: "row" }}>
+            {currentUser.role === "admin" && (
+              <Select
+                placeholder="Tất cả phòng ban"
+                data={[
+                  { value: "all", label: "Tất cả phòng ban" },
+                  ...phongBans.map((pb) => ({
+                    value: pb.id,
+                    label: pb.tenPhongBan,
+                  })),
+                ]}
+                value={selectedPhongBanId || "all"}
+                onChange={(value) => setSelectedPhongBanId(value === "all" ? null : value)}
+                style={{ width: 200 }}
+                clearable={false}
+              />
+            )}
+            <Select
+              placeholder="Chọn kỳ đánh giá"
+              data={kyDanhGias.map((ky) => ({
+                value: ky.id,
+                label: ky.tenKy,
+              }))}
+              value={selectedKyId}
+              onChange={(value) => setSelectedKyId(value)}
+              style={{ width: 250 }}
+              clearable={false}
+            />
+          </Flex>
         </Group>
       </Paper>
 
