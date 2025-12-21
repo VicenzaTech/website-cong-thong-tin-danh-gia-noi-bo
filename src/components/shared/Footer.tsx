@@ -37,9 +37,6 @@ export function Footer() {
               </div>
             </Group>
             <Text size="xs" c="dimmed">
-              Văn phòng Chủ tịch Hội đồng quản trị
-            </Text>
-            <Text size="xs" c="dimmed">
               © {currentYear} Vicenza. All rights reserved.
             </Text>
           </Stack>

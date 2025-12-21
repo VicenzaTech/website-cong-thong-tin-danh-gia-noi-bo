@@ -119,9 +119,6 @@ export function Sidebar() {
         <Text size="sm" fw={600} c="blue" ta="center" lh={1.3}>
           Đánh giá nhân sự nội bộ
         </Text>
-        <Text size="xs" c="dimmed" ta="center" mt="xs">
-          Văn phòng Chủ tịch HĐQT
-        </Text>
       </Box>
 
       <Stack gap={4} p="sm">
