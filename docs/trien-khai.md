@@ -23,17 +23,17 @@
 
 ### Bước 1.2: Định nghĩa Data Schema & Mock Service
 
-- [ ] **Định nghĩa TypeScript Interfaces**
+- [x] **Định nghĩa TypeScript Interfaces**
   - Tạo file `types/schema.ts`
   - Copy các model từ `schema.md` chuyển sang Interface (User, PhongBan, KyDanhGia, BieuMau, DanhGia...)
   - Lưu ý: Merge model User theo thiết kế mới nhất
 
-- [ ] **Tạo Mock Data (Seed Data)**
+- [x] **Tạo Mock Data (Seed Data)**
   - Tạo `_mock/db.ts`: Chứa các mảng dữ liệu cố định (5 phòng ban, 1 Admin, 5 Trưởng phòng, 20 Nhân viên)
   - Tạo dữ liệu Kỳ đánh giá (1 kỳ Active, 1 kỳ Closed)
   - Tạo dữ liệu Biểu mẫu mẫu (Lãnh đạo, Nhân viên)
 
-- [ ] **Viết Mock Service (Giả lập Server Actions)**
+- [x] **Viết Mock Service (Giả lập Server Actions)**
   - Tạo `services/mockService.ts`
   - Viết hàm `fakeDelay(ms)` để mô phỏng độ trễ mạng (Loading state)
   - Viết các hàm CRUD cơ bản thao tác trên mảng dữ liệu (ví dụ: `getUserByCode`, `getAllUsers`, `submitEvaluation`)
