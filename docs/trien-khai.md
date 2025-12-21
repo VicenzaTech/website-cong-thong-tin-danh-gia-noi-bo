@@ -60,17 +60,17 @@
 
 ### Bước 2.2: App Layout (Dashboard Shell)
 
-- [ ] **Component Sidebar**
+- [x] **Component Sidebar**
   - Menu động dựa theo role của user đang login
     - Admin: Full menu
     - Trưởng phòng: Menu báo cáo phòng
     - Nhân viên: Chỉ menu đánh giá cá nhân
 
-- [ ] **Component Header**
+- [x] **Component Header**
   - Hiển thị Logo, User Avatar, Dropdown Profile (Logout)
   - Toggle Dark/Light mode (Mantine feature)
 
-- [ ] **Layout Wrapper**
+- [x] **Layout Wrapper**
   - Kết hợp Sidebar + Header + Main Content
   - Xử lý Loading bar khi chuyển trang (sử dụng `nprogress` hoặc Mantine NavigationProgress)
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ColorSchemeScript } from "@mantine/core";
 import { Providers } from "./providers";
+import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import "./globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
@@ -28,7 +29,9 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body className={inter.variable}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <DashboardLayout>{children}</DashboardLayout>
+        </Providers>
       </body>
     </html>
   );

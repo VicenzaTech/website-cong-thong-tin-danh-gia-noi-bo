@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Container, Title, Text, Button, Stack, Paper } from "@mantine/core";
+import { Title, Text, Stack, Paper, Grid, Card, Group, Badge } from "@mantine/core";
+import { IconUsers, IconClipboardCheck, IconChartBar, IconFileText } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 
 export default function Home() {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -16,48 +17,111 @@ export default function Home() {
   }, [user, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <Container size="md" mt="xl">
-        <Text ta="center">Đang tải...</Text>
-      </Container>
-    );
+    return <Text ta="center">Đang tải...</Text>;
   }
 
   if (!user) {
     return null;
   }
 
-  return (
-    <Container size="md" mt="xl">
-      <Paper withBorder shadow="md" p="xl" radius="md">
-        <Stack gap="lg">
-          <Title order={1}>Chào mừng đến với Hệ thống Đánh giá Nội bộ</Title>
+  const stats = [
+    {
+      title: "Tổng số đánh giá",
+      value: "0",
+      icon: IconClipboardCheck,
+      color: "blue",
+    },
+    {
+      title: "Đã hoàn thành",
+      value: "0",
+      icon: IconChartBar,
+      color: "green",
+    },
+    {
+      title: "Chưa hoàn thành",
+      value: "0",
+      icon: IconFileText,
+      color: "orange",
+    },
+    {
+      title: "Người dùng",
+      value: "26",
+      icon: IconUsers,
+      color: "grape",
+    },
+  ];
 
-          <Stack gap="sm">
-            <Text size="lg">
-              <strong>Họ tên:</strong> {user.hoTen}
+  return (
+    <Stack gap="lg">
+      <Paper withBorder shadow="sm" p="lg" radius="md">
+        <Group justify="space-between">
+          <div>
+            <Title order={2}>Chào mừng trở lại, {user.hoTen}!</Title>
+            <Text size="sm" c="dimmed" mt="xs">
+              Đây là tổng quan về hoạt động đánh giá của bạn
             </Text>
-            <Text size="lg">
-              <strong>Mã nhân viên:</strong> {user.maNhanVien}
+          </div>
+          <Badge size="lg" variant="light" color="blue">
+            {user.role === "admin"
+              ? "Quản trị viên"
+              : user.role === "truong_phong"
+                ? "Trưởng phòng"
+                : "Nhân viên"}
+          </Badge>
+        </Group>
+      </Paper>
+
+      <Grid>
+        {stats.map((stat) => (
+          <Grid.Col key={stat.title} span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder shadow="sm" padding="lg" radius="md">
+              <Group justify="space-between">
+                <div>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                    {stat.title}
+                  </Text>
+                  <Text size="xl" fw={700} mt="xs">
+                    {stat.value}
+                  </Text>
+                </div>
+                <stat.icon size={32} color={`var(--mantine-color-${stat.color}-6)`} />
+              </Group>
+            </Card>
+          </Grid.Col>
+        ))}
+      </Grid>
+
+      <Paper withBorder shadow="sm" p="lg" radius="md">
+        <Title order={3} mb="md">
+          Thông tin cá nhân
+        </Title>
+        <Stack gap="sm">
+          <Group>
+            <Text fw={500} w={150}>
+              Mã nhân viên:
             </Text>
-            <Text size="lg">
-              <strong>Email:</strong> {user.email}
+            <Text>{user.maNhanVien}</Text>
+          </Group>
+          <Group>
+            <Text fw={500} w={150}>
+              Email:
             </Text>
-            <Text size="lg">
-              <strong>Vai trò:</strong>{" "}
+            <Text>{user.email}</Text>
+          </Group>
+          <Group>
+            <Text fw={500} w={150}>
+              Vai trò:
+            </Text>
+            <Text>
               {user.role === "admin"
                 ? "Quản trị viên"
                 : user.role === "truong_phong"
                   ? "Trưởng phòng"
                   : "Nhân viên"}
             </Text>
-          </Stack>
-
-          <Button onClick={logout} color="red" variant="outline">
-            Đăng xuất
-          </Button>
+          </Group>
         </Stack>
       </Paper>
-    </Container>
+    </Stack>
   );
 }
