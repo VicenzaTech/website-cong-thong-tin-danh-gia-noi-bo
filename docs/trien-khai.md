@@ -130,16 +130,16 @@
 
 ### Bước 4.1: Luồng Đánh giá Lãnh đạo (Cho Nhân viên)
 
-- [ ] **Trang Dashboard Đánh giá**
+- [x] **Trang Dashboard Đánh giá**
   - Card hiển thị Kỳ đánh giá đang mở
   - Card "Đánh giá Trưởng phòng": Hiển thị thông tin Trưởng phòng cần đánh giá
 
-- [ ] **Form Thực hiện Đánh giá**
+- [x] **Form Thực hiện Đánh giá**
   - Header: Thông tin người được đánh giá
   - Body: Render câu hỏi từ Biểu mẫu (Radio Group 1-5 hoặc Rating Component)
   - Footer: Textarea "Nhận xét chung" (Validate bắt buộc)
 
-- [ ] **Logic Submit**
+- [x] **Logic Submit**
   - Validate đã trả lời hết câu hỏi bắt buộc chưa
   - Gọi Mock API `submitEvaluation`
   - Hiển thị thông báo thành công (Mantine Notifications)
