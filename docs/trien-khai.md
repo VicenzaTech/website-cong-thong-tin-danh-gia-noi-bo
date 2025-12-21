@@ -82,15 +82,15 @@
 
 ### Bước 3.1: Quản lý Người dùng
 
-- [ ] **Trang Danh sách User**
+- [x] **Trang Danh sách User**
   - Sử dụng Mantine Table
   - Tính năng: Search, Filter theo Phòng ban, Pagination (giả lập cắt mảng)
 
-- [ ] **Modal Thêm/Sửa User**
+- [x] **Modal Thêm/Sửa User**
   - Form validate: Mã NV (bắt buộc), Role, Phòng ban
   - Xử lý submit gọi Mock Service
 
-- [ ] **Chức năng Xóa/Vô hiệu hóa**
+- [x] **Chức năng Xóa/Vô hiệu hóa**
   - Modal confirm xóa (Soft delete - cập nhật `deletedAt`)
 
 ### Bước 3.2: Quản lý Kỳ & Phòng ban
