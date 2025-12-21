@@ -172,10 +172,10 @@
 
 ### Bước 5.1: Các Widget Thống kê
 
-- [ ] **Stat Cards**
+- [x] **Stat Cards**
   - Tổng số đánh giá, Điểm trung bình, Tỉ lệ hoàn thành
 
-- [ ] **Progress Ring**
+- [x] **Progress Ring**
   - Hiển thị % tiến độ cá nhân/phòng ban
 
 ### Bước 5.2: Biểu đồ (Sử dụng Recharts hoặc Mantine Charts)
