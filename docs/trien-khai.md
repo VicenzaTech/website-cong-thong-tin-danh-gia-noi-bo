@@ -6,19 +6,19 @@
 
 ### Bước 1.1: Thiết lập môi trường & UI Library
 
-- [ ] **Khởi tạo Project Next.js 14+ (App Router)**
+- [x] **Khởi tạo Project Next.js 14+ (App Router)**
   - Sử dụng TypeScript
   - Cấu hình path alias (`@/*`)
 
-- [ ] **Cài đặt Mantine UI v7**
+- [x] **Cài đặt Mantine UI v7**
   - Packages: `@mantine/core`, `@mantine/hooks`, `@mantine/dates`, `@mantine/notifications`, `@mantine/form`
   - Cài đặt `dayjs` xử lý ngày tháng
 
-- [ ] **Cấu hình Code Quality (theo rule.md)**
+- [x] **Cấu hình Code Quality (theo rule.md)**
   - Setup ESLint, Prettier (tắt rule unused vars nếu gây phiền khi dev)
   - Cấu hình `theme.ts` cho Mantine (Màu sắc thương hiệu, font, spacing)
 
-- [ ] **Tạo cấu trúc thư mục Feature-based**
+- [x] **Tạo cấu trúc thư mục Feature-based**
   - `app/(dashboard)/...`, `components/shared`, `features/auth`, `features/evaluation`, `libs/mock-service`
 
 ### Bước 1.2: Định nghĩa Data Schema & Mock Service
