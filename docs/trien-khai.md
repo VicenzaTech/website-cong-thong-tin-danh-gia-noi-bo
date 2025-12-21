@@ -95,10 +95,10 @@
 
 ### Bước 3.2: Quản lý Kỳ & Phòng ban
 
-- [ ] **Trang Quản lý Phòng ban**
+- [x] **Trang Quản lý Phòng ban**
   - List danh sách, gán Trưởng phòng
 
-- [ ] **Trang Quản lý Kỳ đánh giá**
+- [x] **Trang Quản lý Kỳ đánh giá**
   - CRUD Kỳ đánh giá
   - Logic: Chỉ cho phép 1 hoặc nhiều kỳ Active
   - Switch Toggle: Mở/Đóng kỳ
