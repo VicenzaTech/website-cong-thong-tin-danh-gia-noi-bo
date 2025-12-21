@@ -146,12 +146,12 @@
 
 ### Bước 4.2: Luồng Đánh giá Đồng nghiệp (Peer Review)
 
-- [ ] **Trang Danh sách Đồng nghiệp**
+- [x] **Trang Danh sách Đồng nghiệp**
   - Lấy list user cùng `phongBanId`
   - Loại bỏ bản thân (User đang login)
   - Hiển thị trạng thái: "Chưa đánh giá" / "Đã đánh giá"
 
-- [ ] **Form Đánh giá Đồng nghiệp**
+- [x] **Form Đánh giá Đồng nghiệp**
   - Tương tự form Lãnh đạo nhưng load Biểu mẫu loại `NHAN_VIEN`
   - Logic check duplicate: Không cho đánh giá 2 lần 1 người trong cùng 1 kỳ
 
