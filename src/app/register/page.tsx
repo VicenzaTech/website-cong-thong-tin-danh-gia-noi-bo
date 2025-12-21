@@ -1,0 +1,204 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Container,
+  Paper,
+  Title,
+  TextInput,
+  PasswordInput,
+  Button,
+  Stack,
+  Text,
+  Alert,
+  Group,
+} from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { notifications } from "@mantine/notifications";
+import { useAuth } from "@/features/auth/AuthContext";
+import { mockService } from "@/services/mockService";
+import type { User } from "@/types/schema";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("pending_user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const user = JSON.parse(storedUser);
+      setPendingUser(user);
+    } catch (err) {
+      console.error("Failed to parse pending user:", err);
+      router.push("/login");
+    }
+  }, [router]);
+
+  const form = useForm({
+    initialValues: {
+      hoTen: "",
+      email: "",
+      matKhau: "",
+      xacNhanMatKhau: "",
+    },
+    validate: {
+      hoTen: (value) => {
+        if (!value) return "Vui lòng nhập họ tên";
+        if (value.length < 3) return "Họ tên phải có ít nhất 3 ký tự";
+        return null;
+      },
+      email: (value) => {
+        if (!value) return "Vui lòng nhập email";
+        if (!/^\S+@\S+$/.test(value)) return "Email không hợp lệ";
+        return null;
+      },
+      matKhau: (value) => {
+        if (!value) return "Vui lòng nhập mật khẩu";
+        if (value.length < 6) return "Mật khẩu phải có ít nhất 6 ký tự";
+        return null;
+      },
+      xacNhanMatKhau: (value, values) => {
+        if (!value) return "Vui lòng xác nhận mật khẩu";
+        if (value !== values.matKhau) return "Mật khẩu xác nhận không khớp";
+        return null;
+      },
+    },
+  });
+
+  const handleSubmit = async (values: typeof form.values) => {
+    if (!pendingUser) {
+      setError("Không tìm thấy thông tin người dùng");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const updatedUser = await mockService.users.update(pendingUser.id, {
+        hoTen: values.hoTen,
+        email: values.email,
+        matKhau: values.matKhau,
+        daDangKy: true,
+      });
+
+      if (!updatedUser) {
+        setError("Không thể cập nhật thông tin. Vui lòng thử lại");
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.removeItem("pending_user");
+
+      login(updatedUser);
+
+      notifications.show({
+        title: "Đăng ký thành công",
+        message: "Chào mừng bạn đến với hệ thống!",
+        color: "green",
+      });
+
+      router.push("/");
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError("Đã xảy ra lỗi. Vui lòng thử lại");
+      setIsLoading(false);
+    }
+  };
+
+  if (!pendingUser) {
+    return null;
+  }
+
+  return (
+    <Container size={500} my={40}>
+      <Title ta="center" mb="md">
+        Hoàn tất thông tin đăng ký
+      </Title>
+      <Text c="dimmed" size="sm" ta="center" mb="xl">
+        Vui lòng cập nhật thông tin cá nhân để hoàn tất đăng ký
+      </Text>
+
+      <Paper withBorder shadow="md" p={30} radius="md">
+        <Alert color="blue" title="Thông tin tài khoản" mb="lg">
+          <Text size="sm">
+            <strong>Mã nhân viên:</strong> {pendingUser.maNhanVien}
+          </Text>
+          <Text size="sm">
+            <strong>Vai trò:</strong>{" "}
+            {pendingUser.role === "admin"
+              ? "Quản trị viên"
+              : pendingUser.role === "truong_phong"
+                ? "Trưởng phòng"
+                : "Nhân viên"}
+          </Text>
+        </Alert>
+
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack gap="md">
+            {error && (
+              <Alert color="red" title="Lỗi">
+                {error}
+              </Alert>
+            )}
+
+            <TextInput
+              label="Họ và tên"
+              placeholder="Nhập họ và tên đầy đủ"
+              required
+              {...form.getInputProps("hoTen")}
+            />
+
+            <TextInput
+              label="Email"
+              placeholder="example@company.com"
+              type="email"
+              required
+              {...form.getInputProps("email")}
+            />
+
+            <PasswordInput
+              label="Mật khẩu"
+              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+              required
+              {...form.getInputProps("matKhau")}
+            />
+
+            <PasswordInput
+              label="Xác nhận mật khẩu"
+              placeholder="Nhập lại mật khẩu"
+              required
+              {...form.getInputProps("xacNhanMatKhau")}
+            />
+
+            <Group justify="space-between" mt="md">
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  localStorage.removeItem("pending_user");
+                  router.push("/login");
+                }}
+                disabled={isLoading}
+              >
+                Quay lại
+              </Button>
+              <Button type="submit" loading={isLoading}>
+                Hoàn tất đăng ký
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Paper>
+    </Container>
+  );
+}
+

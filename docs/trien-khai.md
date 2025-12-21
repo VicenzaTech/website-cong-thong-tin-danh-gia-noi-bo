@@ -46,15 +46,15 @@
 
 ### Bước 2.1: Authentication UI (Mock)
 
-- [ ] **Trang Đăng nhập (`/login`)**
+- [x] **Trang Đăng nhập (`/login`)**
   - UI: Form nhập Mã NV + Chọn Phòng ban (Select) + Mật khẩu
   - Logic: Check `maNhanVien` trong Mock DB. Nếu đúng → lưu user vào localStorage hoặc Context
 
-- [ ] **Trang Đăng ký/Update Info (`/register`)**
+- [x] **Trang Đăng ký/Update Info (`/register`)**
   - UI: Form cho user lần đầu (cập nhật Họ tên, Email, Password)
   - Logic: Update trường `daDangKy = true` trong Mock User
 
-- [ ] **Mock Auth Context**
+- [x] **Mock Auth Context**
   - Tạo `AuthProvider` quản lý state user đang đăng nhập
   - Xử lý hàm `login`, `logout`, `checkPermission` (phân quyền Admin/Trưởng phòng/Nhân viên)
 
