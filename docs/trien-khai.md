@@ -180,13 +180,13 @@
 
 ### Bước 5.2: Biểu đồ (Sử dụng Recharts hoặc Mantine Charts)
 
-- [ ] **Biểu đồ Cột (Bar)**
+- [x] **Biểu đồ Cột (Bar)**
   - Phân bố điểm số (1-5)
 
-- [ ] **Biểu đồ Radar**
+- [x] **Biểu đồ Radar**
   - So sánh các tiêu chí năng lực (nếu biểu mẫu có nhóm tiêu chí)
 
-- [ ] **Bảng Xếp hạng (Cho Admin/Trưởng phòng)**
+- [x] **Bảng Xếp hạng (Cho Admin/Trưởng phòng)**
   - Top nhân viên điểm cao
 
 ### Bước 5.3: Phân quyền View Báo cáo

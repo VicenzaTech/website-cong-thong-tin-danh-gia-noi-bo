@@ -12,6 +12,7 @@ import {
   IconChartBar,
   IconUserCheck,
   IconUserStar,
+  IconHistory,
 } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Role } from "@/types/schema";
@@ -43,10 +44,16 @@ const menuItems: MenuItem[] = [
     allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
   },
   {
+    label: "Lịch sử đánh giá",
+    href: "/lich-su-danh-gia",
+    icon: <IconHistory size={20} />,
+    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  },
+  {
     label: "Báo cáo & Thống kê",
     href: "/bao-cao",
     icon: <IconChartBar size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong],
+    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
   },
   {
     label: "Quản lý người dùng",
