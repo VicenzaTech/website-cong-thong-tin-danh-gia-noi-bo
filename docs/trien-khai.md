@@ -157,10 +157,10 @@
 
 ### Bước 4.3: Lịch sử & Chỉnh sửa
 
-- [ ] **Trang Lịch sử Đánh giá**
+- [x] **Trang Lịch sử Đánh giá**
   - Table liệt kê các phiếu đã gửi
 
-- [ ] **Chức năng Sửa (Trong thời hạn)**
+- [x] **Chức năng Sửa (Trong thời hạn)**
   - Load lại data cũ vào form
   - Cho phép update và lưu lại
 

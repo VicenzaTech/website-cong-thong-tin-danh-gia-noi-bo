@@ -314,6 +314,21 @@ export const mockService = {
       );
     },
 
+    canEdit: async (danhGiaId: string): Promise<boolean> => {
+      await fakeDelay();
+      const danhGia = danhGias.find((dg) => dg.id === danhGiaId);
+      if (!danhGia) return false;
+
+      // Get the evaluation period
+      const kyDanhGia = kyDanhGias.find((ky) => ky.id === danhGia.kyDanhGiaId);
+      if (!kyDanhGia) return false;
+
+      // Can edit if the period is still active (before end date)
+      const now = new Date();
+      const endDate = new Date(kyDanhGia.ngayKetThuc);
+      return now <= endDate;
+    },
+
     create: async (data: Omit<DanhGia, "id" | "createdAt" | "updatedAt">): Promise<DanhGia> => {
       await fakeDelay();
       const newDanhGia: DanhGia = {
