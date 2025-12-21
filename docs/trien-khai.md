@@ -105,10 +105,10 @@
 
 ### Bước 3.3: Quản lý Biểu mẫu (Form Builder) - Quan trọng
 
-- [ ] **Danh sách Biểu mẫu**
+- [x] **Danh sách Biểu mẫu**
   - Filter theo Loại (Lãnh đạo/Nhân viên), Trạng thái
 
-- [ ] **Giao diện Tạo/Sửa Biểu mẫu**
+- [x] **Giao diện Tạo/Sửa Biểu mẫu**
   - Thông tin chung: Tên, Loại, Phạm vi áp dụng
   - Danh sách câu hỏi:
     - Button "Thêm câu hỏi"
@@ -116,10 +116,10 @@
     - Checkbox "Bắt buộc"
     - Nút Xóa/Kéo thả thứ tự (nếu kịp, dùng `@hello-pangea/dnd`)
 
-- [ ] **Preview Mode**
+- [x] **Preview Mode**
   - Button xem trước form sẽ hiển thị thế nào
 
-- [ ] **Logic Save**
+- [x] **Logic Save**
   - Lưu cấu trúc JSON vào Mock DB
 
 ---
