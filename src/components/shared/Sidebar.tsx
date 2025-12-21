@@ -113,11 +113,14 @@ export function Sidebar() {
             priority
           />
         </Center>
-        <Text size="xl" fw={700} c="blue" ta="center">
-          Đánh giá Nội bộ
+        <Text size="lg" fw={700} c="blue" ta="center" lh={1.3}>
+          Cổng thông tin
         </Text>
-        <Text size="xs" c="dimmed" ta="center">
-          Hệ thống quản lý đánh giá
+        <Text size="sm" fw={600} c="blue" ta="center" lh={1.3}>
+          Đánh giá nhân sự nội bộ
+        </Text>
+        <Text size="xs" c="dimmed" ta="center" mt="xs">
+          Văn phòng Chủ tịch HĐQT
         </Text>
       </Box>
 
