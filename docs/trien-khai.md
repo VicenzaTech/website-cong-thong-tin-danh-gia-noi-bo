@@ -74,6 +74,11 @@
   - Kết hợp Sidebar + Header + Main Content
   - Xử lý Loading bar khi chuyển trang (sử dụng `nprogress` hoặc Mantine NavigationProgress)
 
+- [x] **Trang Cài đặt (`/cai-dat`)**
+  - Form đổi mật khẩu: Nhập mật khẩu hiện tại, mật khẩu mới, xác nhận mật khẩu mới
+  - Validate: Kiểm tra mật khẩu hiện tại, mật khẩu mới tối thiểu 6 ký tự, xác nhận phải khớp
+  - Logic: Cập nhật mật khẩu qua Mock Service và cập nhật Auth Context
+
 ---
 
 ## 🛠️ Giai đoạn 3: Tính năng Quản trị (Admin Features)
