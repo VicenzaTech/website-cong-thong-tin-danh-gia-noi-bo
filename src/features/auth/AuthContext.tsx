@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useSession } from "next-auth/react";
 import { Role, type User } from "@/types/schema";
 
 interface AuthContextType {
@@ -17,42 +18,38 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = "auth_user";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
+    if (status === "loading") {
+      setIsLoading(true);
+      return;
     }
+
+    if (session?.user) {
+      setUser(session.user as any);
+    } else {
+      setUser(null);
+    }
+    
     setIsLoading(false);
-  }, []);
+  }, [session, status]);
 
   const login = (userData: User) => {
     setUser(userData);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
   };
 
   const updateUser = (userData: Partial<User>) => {
     if (!user) return;
-
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
   };
 
   const checkPermission = (allowedRoles: Role[]): boolean => {
