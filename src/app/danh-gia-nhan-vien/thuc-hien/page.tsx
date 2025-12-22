@@ -19,7 +19,9 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
+import { getUserById } from "@/actions/users";
+import { getBieuMauById, getCauHoisByBieuMau } from "@/actions/bieu-mau";
+import { checkExistingDanhGia, createDanhGia } from "@/actions/danh-gia";
 import type { User, BieuMau, CauHoi, DanhGia, CauTraLoi } from "@/types/schema";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -88,11 +90,15 @@ function EvaluationFormContent() {
     const loadEvaluationData = async () => {
       setIsLoading(true);
       try {
-        const [nguoiDuocDanhGiaData, bieuMauData, cauHoiData] = await Promise.all([
-          mockService.users.getById(nguoiDuocDanhGiaId),
-          mockService.bieuMaus.getById(bieuMauId),
-          mockService.cauHois.getByBieuMau(bieuMauId),
+        const [nguoiDuocDanhGiaResult, bieuMauResult, cauHoiResult] = await Promise.all([
+          getUserById(nguoiDuocDanhGiaId),
+          getBieuMauById(bieuMauId),
+          getCauHoisByBieuMau(bieuMauId),
         ]);
+
+        const nguoiDuocDanhGiaData = nguoiDuocDanhGiaResult.success ? nguoiDuocDanhGiaResult.data : null;
+        const bieuMauData = bieuMauResult.success ? bieuMauResult.data : null;
+        const cauHoiData = cauHoiResult.success ? cauHoiResult.data : null;
 
         if (!nguoiDuocDanhGiaData || !bieuMauData || !cauHoiData) {
           notifications.show({
@@ -129,19 +135,19 @@ function EvaluationFormContent() {
           return;
         }
 
-        setNguoiDuocDanhGia(nguoiDuocDanhGiaData);
-        setBieuMau(bieuMauData);
-        setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu));
+        setNguoiDuocDanhGia(nguoiDuocDanhGiaData as any);
+        setBieuMau(bieuMauData as any);
+        setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu) as any);
 
         // Check if already evaluated
         if (currentUser) {
-          const hasEvaluated = await mockService.danhGias.checkExisting(
+          const hasEvaluatedResult = await checkExistingDanhGia(
             currentUser.id,
             nguoiDuocDanhGiaId,
             bieuMauId,
             kyDanhGiaId
           );
-          if (hasEvaluated && hasEvaluated.daHoanThanh) {
+          if (hasEvaluatedResult.success && hasEvaluatedResult.data?.daHoanThanh) {
             notifications.show({
               title: "Thông báo",
               message: "Bạn đã hoàn thành đánh giá người này rồi.",
@@ -180,20 +186,29 @@ function EvaluationFormContent() {
 
     setIsSubmitting(true);
     try {
-      const answers = cauHois.map((cauHoi) => ({
+      const cauTraLois = cauHois.map((cauHoi) => ({
         cauHoiId: cauHoi.id,
         diem: values.answers[cauHoi.id],
         nhanXet: "",
       }));
 
-      await mockService.danhGias.submitEvaluation(
-        currentUser.id,
-        nguoiDuocDanhGia.id,
-        bieuMau.id,
-        kyDanhGiaId,
-        values.nhanXetChung,
-        answers
-      );
+      const result = await createDanhGia({
+        nguoiDanhGiaId: currentUser.id,
+        nguoiDuocDanhGiaId: nguoiDuocDanhGia.id,
+        bieuMauId: bieuMau.id,
+        kyDanhGiaId: kyDanhGiaId,
+        nhanXetChung: values.nhanXetChung,
+        cauTraLois,
+      });
+
+      if (!result.success) {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể gửi đánh giá",
+          color: "red",
+        });
+        return;
+      }
 
       notifications.show({
         title: "Thành công",

@@ -18,17 +18,16 @@ import {
 } from "@mantine/core";
 import { IconUserStar, IconCalendar, IconCheck } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users, phongBans } from "@/_mock/db";
-import { LoaiDanhGia, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
+import { getActiveKyDanhGias, getBieuMausByLoai, checkExistingDanhGia, getPhongBanById } from "@/actions";
+import { LoaiDanhGia } from "@/types/schema";
 import dayjs from "dayjs";
 
 export default function DanhGiaLanhDaoPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
-  const [truongPhong, setTruongPhong] = useState<User | null>(null);
-  const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
+  const [kyDanhGias, setKyDanhGias] = useState<any[]>([]);
+  const [truongPhong, setTruongPhong] = useState<any>(null);
+  const [bieuMau, setBieuMau] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [daDanhGia, setDaDanhGia] = useState(false);
 
@@ -47,29 +46,31 @@ export default function DanhGiaLanhDaoPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const activeKys = await mockService.kyDanhGias.getActive();
+      const kyResult = await getActiveKyDanhGias();
+      const activeKys = kyResult.success && kyResult.data ? kyResult.data : [];
       setKyDanhGias(activeKys);
 
       if (currentUser) {
-        const phongBan = phongBans.find((pb) => pb.id === currentUser.phongBanId);
-        if (phongBan?.truongPhongId) {
-          const tp = users.find((u) => u.id === phongBan.truongPhongId);
-          if (tp) {
-            setTruongPhong(tp);
+        const phongBanResult = await getPhongBanById(currentUser.phongBanId);
+        const phongBan = phongBanResult.success ? phongBanResult.data : null;
+        
+        if (phongBan?.truongPhong) {
+          setTruongPhong(phongBan.truongPhong);
 
-            const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.LANH_DAO);
-            if (bieuMaus.length > 0) {
-              setBieuMau(bieuMaus[0]);
+          const bieuMausResult = await getBieuMausByLoai(LoaiDanhGia.LANH_DAO);
+          const bieuMaus = bieuMausResult.success && bieuMausResult.data ? bieuMausResult.data : [];
+          
+          if (bieuMaus.length > 0) {
+            setBieuMau(bieuMaus[0]);
 
-              if (activeKys.length > 0) {
-                const existing = await mockService.danhGias.checkExisting(
-                  currentUser.id,
-                  tp.id,
-                  bieuMaus[0].id,
-                  activeKys[0].id
-                );
-                setDaDanhGia(!!existing && existing.daHoanThanh);
-              }
+            if (activeKys.length > 0) {
+              const existingResult = await checkExistingDanhGia(
+                currentUser.id,
+                phongBan.truongPhong.id,
+                bieuMaus[0].id,
+                activeKys[0].id
+              );
+              setDaDanhGia(!!(existingResult.success && existingResult.exists && existingResult.data?.daHoanThanh));
             }
           }
         }
@@ -98,8 +99,7 @@ export default function DanhGiaLanhDaoPage() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const getPhongBanName = (phongBanId: string) => {
-    const phongBan = phongBans.find((pb) => pb.id === phongBanId);
+  const getPhongBanName = (phongBan: any) => {
     return phongBan?.tenPhongBan || "N/A";
   };
 
@@ -206,7 +206,7 @@ export default function DanhGiaLanhDaoPage() {
                       {truongPhong.hoTen}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      {truongPhong.maNhanVien} • {getPhongBanName(truongPhong.phongBanId)}
+                      {truongPhong.maNhanVien} • {getPhongBanName(truongPhong.phongBan)}
                     </Text>
                     <Text size="sm" c="dimmed">
                       {truongPhong.email}

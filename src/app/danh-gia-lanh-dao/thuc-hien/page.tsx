@@ -21,9 +21,7 @@ import { useForm } from "@mantine/form";
 import { IconAlertCircle, IconUserStar } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users, phongBans } from "@/_mock/db";
-import type { User, BieuMau, CauHoi } from "@/types/schema";
+import { getBieuMauById, getUserById, createDanhGia } from "@/actions";
 
 function ThucHienDanhGiaContent() {
   const router = useRouter();
@@ -34,9 +32,9 @@ function ThucHienDanhGiaContent() {
   const bieuMauId = searchParams.get("bieuMauId");
   const kyDanhGiaId = searchParams.get("kyDanhGiaId");
 
-  const [nguoiDuocDanhGia, setNguoiDuocDanhGia] = useState<User | null>(null);
-  const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
-  const [cauHois, setCauHois] = useState<CauHoi[]>([]);
+  const [nguoiDuocDanhGia, setNguoiDuocDanhGia] = useState<any>(null);
+  const [bieuMau, setBieuMau] = useState<any>(null);
+  const [cauHois, setCauHois] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,16 +70,15 @@ function ThucHienDanhGiaContent() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const user = users.find((u) => u.id === nguoiDuocDanhGiaId);
-      if (user) {
-        setNguoiDuocDanhGia(user);
+      const userResult = await getUserById(nguoiDuocDanhGiaId!);
+      if (userResult.success && userResult.data) {
+        setNguoiDuocDanhGia(userResult.data);
       }
 
-      const bm = await mockService.bieuMaus.getById(bieuMauId!);
-      if (bm) {
-        setBieuMau(bm);
-        const chs = await mockService.cauHois.getByBieuMau(bieuMauId!);
-        setCauHois(chs);
+      const bmResult = await getBieuMauById(bieuMauId!);
+      if (bmResult.success && bmResult.data) {
+        setBieuMau(bmResult.data);
+        setCauHois(bmResult.data.cauHois || []);
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -110,27 +107,30 @@ function ThucHienDanhGiaContent() {
 
     setIsSubmitting(true);
     try {
-      const answers = Object.entries(values.answers).map(([cauHoiId, diem]) => ({
+      const cauTraLois = Object.entries(values.answers).map(([cauHoiId, diem]) => ({
         cauHoiId,
         diem,
       }));
 
-      await mockService.danhGias.submitEvaluation(
-        currentUser!.id,
-        nguoiDuocDanhGiaId!,
-        bieuMauId!,
-        kyDanhGiaId!,
-        values.nhanXetChung,
-        answers
-      );
-
-      notifications.show({
-        title: "Thành công",
-        message: "Đánh giá của bạn đã được gửi thành công",
-        color: "green",
+      const result = await createDanhGia({
+        nguoiDanhGiaId: currentUser!.id,
+        nguoiDuocDanhGiaId: nguoiDuocDanhGiaId!,
+        bieuMauId: bieuMauId!,
+        kyDanhGiaId: kyDanhGiaId!,
+        nhanXetChung: values.nhanXetChung,
+        cauTraLois,
       });
 
-      router.push("/danh-gia-lanh-dao");
+      if (result.success) {
+        notifications.show({
+          title: "Thành công",
+          message: "Đánh giá của bạn đã được gửi thành công",
+          color: "green",
+        });
+        router.push("/danh-gia-lanh-dao");
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       console.error("Failed to submit evaluation:", error);
       notifications.show({
@@ -152,8 +152,7 @@ function ThucHienDanhGiaContent() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const getPhongBanName = (phongBanId: string) => {
-    const phongBan = phongBans.find((pb) => pb.id === phongBanId);
+  const getPhongBanName = (phongBan: any) => {
     return phongBan?.tenPhongBan || "N/A";
   };
 
@@ -204,7 +203,7 @@ function ThucHienDanhGiaContent() {
                 </Text>
                 <Text size="sm" c="dimmed">
                   {nguoiDuocDanhGia.maNhanVien} •{" "}
-                  {getPhongBanName(nguoiDuocDanhGia.phongBanId)}
+                  {getPhongBanName(nguoiDuocDanhGia.phongBan)}
                 </Text>
               </div>
             </Group>

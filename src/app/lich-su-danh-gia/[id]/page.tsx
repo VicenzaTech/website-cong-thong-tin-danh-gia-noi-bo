@@ -19,8 +19,8 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft, IconUser, IconStar } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users, phongBans } from "@/_mock/db";
+import { getDanhGiaById } from "@/actions/danh-gia";
+import { getAllUsers } from "@/actions/users";
 import type { DanhGia, User, BieuMau, KyDanhGia, CauHoi, CauTraLoi } from "@/types/schema";
 import { Role } from "@/types/schema";
 import dayjs from "dayjs";
@@ -58,19 +58,16 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
 
     setIsLoading(true);
     try {
-      const [danhGiaData, allUsers, allPhongBans] = await Promise.all([
-        mockService.danhGias.getById(id),
-        mockService.users.getAll(),
-        mockService.phongBans.getAll(),
-      ]);
+      const danhGiaResult = await getDanhGiaById(id);
 
-      if (!danhGiaData) {
+      if (!danhGiaResult.success || !danhGiaResult.data) {
         router.push("/lich-su-danh-gia");
         return;
       }
 
-      const nguoiDanhGiaData = allUsers.find((u) => u.id === danhGiaData.nguoiDanhGiaId);
-      const nguoiDuocDanhGiaData = allUsers.find((u) => u.id === danhGiaData.nguoiDuocDanhGiaId);
+      const danhGiaData = danhGiaResult.data;
+      const nguoiDanhGiaData = danhGiaData.nguoiDanhGia;
+      const nguoiDuocDanhGiaData = danhGiaData.nguoiDuocDanhGia;
 
       if (!nguoiDanhGiaData || !nguoiDuocDanhGiaData) {
         router.push("/lich-su-danh-gia");
@@ -82,8 +79,10 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
       if (currentUser.role === Role.admin) {
         canAccess = true;
       } else if (currentUser.role === Role.truong_phong) {
-        const departmentUserIds = users
-          .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt && u.trangThaiKH)
+        const usersResult = await getAllUsers();
+        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+        const departmentUserIds = allUsers
+          .filter((u) => u.phongBanId === currentUser.phongBanId && u.trangThaiKH)
           .map((u) => u.id);
         canAccess =
           departmentUserIds.includes(danhGiaData.nguoiDanhGiaId) ||
@@ -100,21 +99,13 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
       }
 
       setHasAccess(true);
-
-      const [bieuMauData, kyDanhGiaData, cauHoiData, cauTraLoiData] = await Promise.all([
-        mockService.bieuMaus.getById(danhGiaData.bieuMauId),
-        mockService.kyDanhGias.getById(danhGiaData.kyDanhGiaId),
-        mockService.cauHois.getByBieuMau(danhGiaData.bieuMauId),
-        mockService.cauTraLois.getByDanhGia(id),
-      ]);
-
-      setDanhGia(danhGiaData);
-      setNguoiDanhGia(nguoiDanhGiaData);
-      setNguoiDuocDanhGia(nguoiDuocDanhGiaData);
-      setBieuMau(bieuMauData || null);
-      setKyDanhGia(kyDanhGiaData || null);
-      setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu));
-      setCauTraLois(cauTraLoiData);
+      setDanhGia(danhGiaData as any);
+      setNguoiDanhGia(nguoiDanhGiaData as any);
+      setNguoiDuocDanhGia(nguoiDuocDanhGiaData as any);
+      setBieuMau((danhGiaData.bieuMau || null) as any);
+      setKyDanhGia((danhGiaData.kyDanhGia || null) as any);
+      setCauHois((danhGiaData.bieuMau?.cauHois?.sort((a, b) => a.thuTu - b.thuTu) || []) as any);
+      setCauTraLois((danhGiaData.cauTraLois || []) as any);
     } catch (error) {
       console.error("Failed to load evaluation details:", error);
       router.push("/lich-su-danh-gia");
@@ -123,11 +114,9 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  const getPhongBanName = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return "N/A";
-    const phongBan = phongBans.find((pb) => pb.id === user.phongBanId);
-    return phongBan?.tenPhongBan || "N/A";
+  const getPhongBanName = (user: any) => {
+    if (!user || !user.phongBan) return "N/A";
+    return user.phongBan.tenPhongBan || "N/A";
   };
 
   const getLoaiDanhGiaBadge = (loai?: string) => {
@@ -202,7 +191,7 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
                 <Text size="sm" c="dimmed">
                   Phòng ban
                 </Text>
-                <Text fw={500}>{getPhongBanName(nguoiDanhGia.id)}</Text>
+                <Text fw={500}>{getPhongBanName(nguoiDanhGia)}</Text>
               </div>
             </Stack>
           </Card>
@@ -232,7 +221,7 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
                 <Text size="sm" c="dimmed">
                   Phòng ban
                 </Text>
-                <Text fw={500}>{getPhongBanName(nguoiDuocDanhGia.id)}</Text>
+                <Text fw={500}>{getPhongBanName(nguoiDuocDanhGia)}</Text>
               </div>
             </Stack>
           </Card>

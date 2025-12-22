@@ -20,7 +20,9 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
+import { getDanhGiaById, updateDanhGia } from "@/actions/danh-gia";
+import { getUserById } from "@/actions/users";
+import { getBieuMauById, getCauHoisByBieuMau } from "@/actions/bieu-mau";
 import type { User, BieuMau, CauHoi, DanhGia, CauTraLoi } from "@/types/schema";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -94,16 +96,9 @@ function EditEvaluationFormContent() {
     const loadEvaluationData = async () => {
       setIsLoading(true);
       try {
-        const [danhGiaData, managerData, bieuMauData, cauHoiData, canEditData] =
-          await Promise.all([
-            mockService.danhGias.getById(danhGiaId),
-            mockService.users.getById(managerId),
-            mockService.bieuMaus.getById(formId),
-            mockService.cauHois.getByBieuMau(formId),
-            mockService.danhGias.canEdit(danhGiaId),
-          ]);
+        const danhGiaResult = await getDanhGiaById(danhGiaId);
 
-        if (!danhGiaData || !managerData || !bieuMauData || !cauHoiData) {
+        if (!danhGiaResult.success || !danhGiaResult.data) {
           notifications.show({
             title: "Lỗi",
             message: "Không tìm thấy thông tin đánh giá.",
@@ -112,6 +107,8 @@ function EditEvaluationFormContent() {
           router.push("/lich-su-danh-gia");
           return;
         }
+
+        const danhGiaData = danhGiaResult.data;
 
         // Check if current user is the evaluator
         if (currentUser && danhGiaData.nguoiDanhGiaId !== currentUser.id) {
@@ -124,7 +121,10 @@ function EditEvaluationFormContent() {
           return;
         }
 
-        // Check if can edit
+        // Check if evaluation is completed (can't edit completed evaluations)
+        const kyDanhGiaData = danhGiaData.kyDanhGia;
+        const canEditData = kyDanhGiaData?.dangMo && !danhGiaData.submittedAt;
+
         if (!canEditData) {
           notifications.show({
             title: "Thông báo",
@@ -135,19 +135,16 @@ function EditEvaluationFormContent() {
           return;
         }
 
-        setDanhGia(danhGiaData);
-        setManager(managerData);
-        setBieuMau(bieuMauData);
-        setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu));
+        setDanhGia(danhGiaData as any);
+        setManager(danhGiaData.nguoiDuocDanhGia as any);
+        setBieuMau(danhGiaData.bieuMau as any);
+        setCauHois((danhGiaData.bieuMau?.cauHois?.sort((a, b) => a.thuTu - b.thuTu) || []) as any);
         setCanEdit(canEditData);
-
-        // Load existing answers
-        const existingAnswers = await mockService.cauTraLois.getByDanhGia(danhGiaId);
-        setCauTraLois(existingAnswers);
+        setCauTraLois((danhGiaData.cauTraLois || []) as any);
 
         // Populate form with existing data
         const answersMap: Record<string, number> = {};
-        existingAnswers.forEach((ctl) => {
+        danhGiaData.cauTraLois?.forEach((ctl) => {
           answersMap[ctl.cauHoiId] = ctl.diem;
         });
 
@@ -185,21 +182,25 @@ function EditEvaluationFormContent() {
 
     setIsSubmitting(true);
     try {
-      const answers = cauHois.map((cauHoi) => ({
+      const cauTraLois = cauHois.map((cauHoi) => ({
         cauHoiId: cauHoi.id,
         diem: values.answers[cauHoi.id],
         nhanXet: "",
       }));
 
-      // Use submitEvaluation which handles both create and update
-      await mockService.danhGias.submitEvaluation(
-        currentUser.id,
-        manager.id,
-        bieuMau.id,
-        kyId,
-        values.nhanXetChung,
-        answers
-      );
+      const result = await updateDanhGia(danhGia.id, {
+        nhanXetChung: values.nhanXetChung,
+        cauTraLois,
+      });
+
+      if (!result.success) {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể cập nhật đánh giá",
+          color: "red",
+        });
+        return;
+      }
 
       notifications.show({
         title: "Thành công",

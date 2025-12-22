@@ -20,8 +20,10 @@ import {
 import { BarChart, RadarChart } from "@mantine/charts";
 import { IconTrophy, IconMedal, IconAward } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users } from "@/_mock/db";
+import { getAllDanhGias, getDanhGiasByNguoiDanhGia } from "@/actions/danh-gia";
+import { getAllKyDanhGias } from "@/actions/ky-danh-gia";
+import { getAllPhongBans } from "@/actions/phong-ban";
+import { getAllUsers } from "@/actions/users";
 import type { DanhGia, User, CauTraLoi, CauHoi, KyDanhGia, PhongBan } from "@/types/schema";
 
 interface ScoreDistribution {
@@ -74,8 +76,9 @@ export default function BaoCaoPage() {
 
   const loadKyDanhGias = async () => {
     try {
-      const kys = await mockService.kyDanhGias.getAll();
-      setKyDanhGias(kys);
+      const result = await getAllKyDanhGias();
+      const kys = result.success && result.data ? result.data : [];
+      setKyDanhGias(kys as any);
       if (kys.length > 0) {
         // Select the most recent active period or the first one
         const activeKy = kys.find((ky) => ky.dangMo);
@@ -90,8 +93,9 @@ export default function BaoCaoPage() {
     if (!currentUser) return;
 
     try {
-      const allPhongBans = await mockService.phongBans.getAll();
-      setPhongBans(allPhongBans);
+      const result = await getAllPhongBans();
+      const allPhongBans = result.success && result.data ? result.data : [];
+      setPhongBans(allPhongBans as any);
 
       // Set default department based on role
       if (currentUser.role === "truong_phong") {
@@ -114,17 +118,20 @@ export default function BaoCaoPage() {
 
     setIsLoading(true);
     try {
-      let allDanhGias: DanhGia[] = [];
+      let allDanhGias: any[] = [];
 
       // Load evaluations based on role and department filter
       if (currentUser.role === "admin") {
         // Admin sees all evaluations or filtered by department
-        const allEvals = await mockService.danhGias.getAll();
+        const result = await getAllDanhGias();
+        const allEvals = result.success && result.data ? result.data : [];
         
         if (selectedPhongBanId) {
           // Filter by selected department
-          const departmentUserIds = users
-            .filter((u) => u.phongBanId === selectedPhongBanId && !u.deletedAt)
+          const usersResult = await getAllUsers();
+          const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+          const departmentUserIds = allUsers
+            .filter((u) => u.phongBanId === selectedPhongBanId)
             .map((u) => u.id);
           allDanhGias = allEvals.filter((dg) =>
             departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
@@ -135,16 +142,20 @@ export default function BaoCaoPage() {
         }
       } else if (currentUser.role === "truong_phong") {
         // Manager sees only their department evaluations
-        const allEvals = await mockService.danhGias.getAll();
-        const departmentUserIds = users
-          .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt)
+        const result = await getAllDanhGias();
+        const allEvals = result.success && result.data ? result.data : [];
+        const usersResult = await getAllUsers();
+        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+        const departmentUserIds = allUsers
+          .filter((u) => u.phongBanId === currentUser.phongBanId)
           .map((u) => u.id);
         allDanhGias = allEvals.filter((dg) =>
           departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
         );
       } else {
         // Regular users see their own evaluations
-        allDanhGias = await mockService.danhGias.getByNguoiDanhGia(currentUser.id);
+        const result = await getDanhGiasByNguoiDanhGia(currentUser.id);
+        allDanhGias = result.success && result.data ? result.data : [];
       }
 
       // Filter by selected period
@@ -169,12 +180,13 @@ export default function BaoCaoPage() {
     }
   };
 
-  const calculateScoreDistribution = async (evaluations: DanhGia[]) => {
+  const calculateScoreDistribution = async (evaluations: any[]) => {
     // Get all answers from evaluations
     const allAnswers: CauTraLoi[] = [];
     for (const evaluation of evaluations) {
-      const answers = await mockService.cauTraLois.getByDanhGia(evaluation.id);
-      allAnswers.push(...answers);
+      if (evaluation.cauTraLois) {
+        allAnswers.push(...evaluation.cauTraLois);
+      }
     }
 
     // Count distribution of scores (1-5)
@@ -197,7 +209,7 @@ export default function BaoCaoPage() {
     setScoreDistribution(distributionData);
   };
 
-  const calculateCriteriaScores = async (evaluations: DanhGia[]) => {
+  const calculateCriteriaScores = async (evaluations: any[]) => {
     if (evaluations.length === 0) {
       setCriteriaScores([]);
       return;
@@ -207,10 +219,10 @@ export default function BaoCaoPage() {
     const questionScores: Record<string, { total: number; count: number }> = {};
 
     for (const evaluation of evaluations) {
-      const answers = await mockService.cauTraLois.getByDanhGia(evaluation.id);
+      const answers = evaluation.cauTraLois || [];
       
       for (const answer of answers) {
-        const question = await mockService.cauHois.getById(answer.cauHoiId);
+        const question = answer.cauHoi;
         if (question) {
           const key = question.noiDung.substring(0, 30); // Truncate for display
           if (!questionScores[key]) {
@@ -234,7 +246,7 @@ export default function BaoCaoPage() {
     setCriteriaScores(criteriaData);
   };
 
-  const calculateLeaderboard = async (evaluations: DanhGia[]) => {
+  const calculateLeaderboard = async (evaluations: any[]) => {
     // Group evaluations by person being evaluated
     const userScores: Record<
       string,
@@ -243,8 +255,8 @@ export default function BaoCaoPage() {
 
     for (const evaluation of evaluations) {
       const userId = evaluation.nguoiDuocDanhGiaId;
+      const user = evaluation.nguoiDuocDanhGia;
       if (!userScores[userId]) {
-        const user = await mockService.users.getById(userId);
         userScores[userId] = { totalScore: 0, count: 0, user };
       }
       if (evaluation.diemTrungBinh) {

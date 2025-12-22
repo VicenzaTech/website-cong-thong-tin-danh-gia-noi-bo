@@ -20,8 +20,10 @@ import {
 } from "@mantine/core";
 import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users, phongBans } from "@/_mock/db";
+import { getAllDanhGias } from "@/actions/danh-gia";
+import { getAllKyDanhGias } from "@/actions/ky-danh-gia";
+import { getAllPhongBans } from "@/actions/phong-ban";
+import { getAllUsers } from "@/actions/users";
 import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan } from "@/types/schema";
 import { Role } from "@/types/schema";
 import dayjs from "dayjs";
@@ -78,22 +80,28 @@ export default function XemDanhGiaPage() {
 
     setIsLoading(true);
     try {
-      const [allDanhGias, allKyDanhGias, allPhongBans] = await Promise.all([
-        mockService.danhGias.getAll(),
-        mockService.kyDanhGias.getAll(),
-        mockService.phongBans.getAll(),
+      const [danhGiasResult, kyDanhGiasResult, phongBansResult, usersResult] = await Promise.all([
+        getAllDanhGias(),
+        getAllKyDanhGias(),
+        getAllPhongBans(),
+        getAllUsers(),
       ]);
 
-      setKyDanhGias(allKyDanhGias);
-      setPhongBanList(allPhongBans);
+      const allDanhGias = danhGiasResult.success && danhGiasResult.data ? danhGiasResult.data : [];
+      const allKyDanhGias = kyDanhGiasResult.success && kyDanhGiasResult.data ? kyDanhGiasResult.data : [];
+      const allPhongBans = phongBansResult.success && phongBansResult.data ? phongBansResult.data : [];
+      const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
 
-      let filteredEvaluations: DanhGia[] = [];
+      setKyDanhGias(allKyDanhGias as any);
+      setPhongBanList(allPhongBans as any);
+
+      let filteredEvaluations: typeof allDanhGias = [];
 
       if (currentUser.role === Role.admin) {
         filteredEvaluations = allDanhGias.filter((dg) => dg.daHoanThanh);
       } else if (currentUser.role === Role.truong_phong) {
-        const departmentUserIds = users
-          .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt && u.trangThaiKH)
+        const departmentUserIds = allUsers
+          .filter((u) => u.phongBanId === currentUser.phongBanId && u.trangThaiKH)
           .map((u) => u.id);
         
         filteredEvaluations = allDanhGias.filter(
@@ -103,33 +111,17 @@ export default function XemDanhGiaPage() {
         );
       }
 
-      const danhGiasWithDetails = await Promise.all(
-        filteredEvaluations.map(async (dg) => {
-          const [nguoiDanhGia, nguoiDuocDanhGia, bieuMau, kyDanhGia] = await Promise.all([
-            mockService.users.getById(dg.nguoiDanhGiaId),
-            mockService.users.getById(dg.nguoiDuocDanhGiaId),
-            mockService.bieuMaus.getById(dg.bieuMauId),
-            mockService.kyDanhGias.getById(dg.kyDanhGiaId),
-          ]);
-
-          const phongBanNguoiDanhGia = nguoiDanhGia
-            ? phongBans.find((pb) => pb.id === nguoiDanhGia.phongBanId)
-            : undefined;
-          const phongBanNguoiDuocDanhGia = nguoiDuocDanhGia
-            ? phongBans.find((pb) => pb.id === nguoiDuocDanhGia.phongBanId)
-            : undefined;
-
-          return {
-            ...dg,
-            nguoiDanhGia,
-            nguoiDuocDanhGia,
-            bieuMau,
-            kyDanhGia,
-            phongBanNguoiDanhGia,
-            phongBanNguoiDuocDanhGia,
-          };
-        })
-      );
+      const danhGiasWithDetails = filteredEvaluations.map((dg) => {
+        return {
+          ...dg,
+          nguoiDanhGia: dg.nguoiDanhGia,
+          nguoiDuocDanhGia: dg.nguoiDuocDanhGia,
+          bieuMau: dg.bieuMau,
+          kyDanhGia: dg.kyDanhGia,
+          phongBanNguoiDanhGia: dg.nguoiDanhGia?.phongBan,
+          phongBanNguoiDuocDanhGia: dg.nguoiDuocDanhGia?.phongBan,
+        };
+      });
 
       danhGiasWithDetails.sort((a, b) => {
         const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
@@ -137,7 +129,7 @@ export default function XemDanhGiaPage() {
         return dateB - dateA;
       });
 
-      setDanhGias(danhGiasWithDetails);
+      setDanhGias(danhGiasWithDetails as any);
     } catch (error) {
       console.error("Failed to load evaluations:", error);
     } finally {
@@ -157,13 +149,10 @@ export default function XemDanhGiaPage() {
     }
 
     if (selectedPhongBanId && currentUser?.role === Role.admin) {
-      const departmentUserIds = users
-        .filter((u) => u.phongBanId === selectedPhongBanId && !u.deletedAt && u.trangThaiKH)
-        .map((u) => u.id);
       filtered = filtered.filter(
         (dg) =>
-          departmentUserIds.includes(dg.nguoiDanhGiaId) ||
-          departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
+          dg.nguoiDanhGia?.phongBanId === selectedPhongBanId ||
+          dg.nguoiDuocDanhGia?.phongBanId === selectedPhongBanId
       );
     }
 

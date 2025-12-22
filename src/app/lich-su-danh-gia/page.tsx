@@ -18,7 +18,7 @@ import {
 } from "@mantine/core";
 import { IconEdit, IconEye, IconCalendar } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
+import { getDanhGiasByNguoiDanhGia } from "@/actions/danh-gia";
 import type { DanhGia, User, BieuMau, KyDanhGia } from "@/types/schema";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -55,26 +55,27 @@ export default function LichSuDanhGiaPage() {
 
     setIsLoading(true);
     try {
-      const myDanhGias = await mockService.danhGias.getByNguoiDanhGia(currentUser.id);
+      const result = await getDanhGiasByNguoiDanhGia(currentUser.id);
 
-      const danhGiasWithDetails = await Promise.all(
-        myDanhGias.map(async (dg) => {
-          const [nguoiDuocDanhGia, bieuMau, kyDanhGia, canEdit] = await Promise.all([
-            mockService.users.getById(dg.nguoiDuocDanhGiaId),
-            mockService.bieuMaus.getById(dg.bieuMauId),
-            mockService.kyDanhGias.getById(dg.kyDanhGiaId),
-            mockService.danhGias.canEdit(dg.id),
-          ]);
+      if (!result.success || !result.data) {
+        setDanhGias([]);
+        return;
+      }
 
-          return {
-            ...dg,
-            nguoiDuocDanhGia,
-            bieuMau,
-            kyDanhGia,
-            canEdit,
-          };
-        })
-      );
+      const myDanhGias = result.data;
+
+      const danhGiasWithDetails = myDanhGias.map((dg) => {
+        const kyDanhGiaData = dg.kyDanhGia;
+        const canEdit = kyDanhGiaData?.dangMo && !dg.submittedAt;
+
+        return {
+          ...dg,
+          nguoiDuocDanhGia: dg.nguoiDuocDanhGia,
+          bieuMau: dg.bieuMau,
+          kyDanhGia: dg.kyDanhGia,
+          canEdit,
+        };
+      });
 
       // Sort by submission date, newest first
       danhGiasWithDetails.sort((a, b) => {
@@ -83,7 +84,7 @@ export default function LichSuDanhGiaPage() {
         return dateB - dateA;
       });
 
-      setDanhGias(danhGiasWithDetails);
+      setDanhGias(danhGiasWithDetails as any);
     } catch (error) {
       console.error("Failed to load evaluation history:", error);
     } finally {

@@ -18,8 +18,10 @@ import {
 } from "@mantine/core";
 import { IconUsers, IconCalendar, IconCheck, IconClock } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users } from "@/_mock/db";
+import { getActiveKyDanhGias } from "@/actions/ky-danh-gia";
+import { getBieuMausByLoai } from "@/actions/bieu-mau";
+import { checkExistingDanhGia } from "@/actions/danh-gia";
+import { getUsersByPhongBan } from "@/actions/users";
 import { LoaiDanhGia, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
 import dayjs from "dayjs";
 
@@ -45,38 +47,37 @@ export default function DanhGiaNhanVienPage() {
   }, [currentUser]);
 
   const loadData = async () => {
+    if (!currentUser) return;
+
     setIsLoading(true);
     try {
-      const activeKys = await mockService.kyDanhGias.getActive();
-      setKyDanhGias(activeKys);
+      const kyResult = await getActiveKyDanhGias();
+      const activeKys = kyResult.success && kyResult.data ? kyResult.data : [];
+      setKyDanhGias(activeKys as any);
 
-      if (currentUser) {
-        const colleagues = users.filter(
-          (u) =>
-            u.phongBanId === currentUser.phongBanId &&
-            u.id !== currentUser.id &&
-            !u.deletedAt &&
-            u.trangThaiKH
-        );
-        setDongNghieps(colleagues);
+      const colleaguesResult = await getUsersByPhongBan(currentUser.phongBanId);
+      const colleagues = (colleaguesResult.success && colleaguesResult.data ? colleaguesResult.data : [])
+        .filter((u) => u.id !== currentUser.id && u.trangThaiKH);
+      setDongNghieps(colleagues as any);
 
-        const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.NHAN_VIEN);
-        if (bieuMaus.length > 0) {
-          setBieuMau(bieuMaus[0]);
+      const bieuMauResult = await getBieuMausByLoai(LoaiDanhGia.NHAN_VIEN);
+      const bieuMaus = bieuMauResult.success && bieuMauResult.data ? bieuMauResult.data : [];
+      
+      if (bieuMaus.length > 0) {
+        setBieuMau(bieuMaus[0] as any);
 
-          if (activeKys.length > 0) {
-            const statusMap: Record<string, boolean> = {};
-            for (const colleague of colleagues) {
-              const existing = await mockService.danhGias.checkExisting(
-                currentUser.id,
-                colleague.id,
-                bieuMaus[0].id,
-                activeKys[0].id
-              );
-              statusMap[colleague.id] = !!existing && existing.daHoanThanh;
-            }
-            setDanhGiaStatus(statusMap);
+        if (activeKys.length > 0) {
+          const statusMap: Record<string, boolean> = {};
+          for (const colleague of colleagues) {
+            const existingResult = await checkExistingDanhGia(
+              currentUser.id,
+              colleague.id,
+              bieuMaus[0].id,
+              activeKys[0].id
+            );
+            statusMap[colleague.id] = !!(existingResult.success && existingResult.data?.daHoanThanh);
           }
+          setDanhGiaStatus(statusMap);
         }
       }
     } catch (error) {
