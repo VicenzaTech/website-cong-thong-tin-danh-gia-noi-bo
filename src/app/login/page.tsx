@@ -108,7 +108,18 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        // Map NextAuth error codes to Vietnamese messages
+        let errorMessage = result.error;
+        if (result.error === "CredentialsSignin") {
+          errorMessage = "Mật khẩu không đúng. Vui lòng thử lại.";
+        } else if (result.error === "Configuration") {
+          errorMessage = "Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên.";
+        } else if (result.error === "AccessDenied") {
+          errorMessage = "Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.";
+        } else if (result.error === "Verification") {
+          errorMessage = "Lỗi xác thực. Vui lòng thử lại.";
+        }
+        setError(errorMessage);
         setIsLoading(false);
         return;
       }

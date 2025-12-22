@@ -1108,3 +1108,56 @@ if (trangThai === PrismaTrangThaiBieuMau.KICH_HOAT) {
 ✅ Giữ nguyên line breaks từ input
 
 **Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Login Error Message in Vietnamese (22/12/2024)
+
+### **Vấn đề:**
+Ở giao diện đăng nhập, khi người dùng nhập sai mật khẩu:
+- Hiển thị lỗi: "Lỗi đăng nhập" và "CredentialsSignin"
+- Thông báo lỗi bằng tiếng Anh, không thân thiện với người dùng Việt Nam
+- Các lỗi khác từ NextAuth cũng hiển thị bằng tiếng Anh
+
+### **Nguyên nhân:**
+1. NextAuth trả về error code mặc định bằng tiếng Anh (ví dụ: "CredentialsSignin")
+2. Login page hiển thị trực tiếp error code mà không map sang tiếng Việt
+3. Không có xử lý để chuyển đổi các error codes sang thông báo thân thiện
+
+### **Giải pháp:**
+✅ **Sửa `src/app/login/page.tsx`:**
+- Thêm logic map các NextAuth error codes sang tiếng Việt
+- `CredentialsSignin` → "Mật khẩu không đúng. Vui lòng thử lại."
+- `Configuration` → "Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên."
+- `AccessDenied` → "Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên."
+- `Verification` → "Lỗi xác thực. Vui lòng thử lại."
+- Giữ nguyên các error messages khác nếu không match
+
+**Code thay đổi:**
+```typescript
+if (result?.error) {
+  // Map NextAuth error codes to Vietnamese messages
+  let errorMessage = result.error;
+  if (result.error === "CredentialsSignin") {
+    errorMessage = "Mật khẩu không đúng. Vui lòng thử lại.";
+  } else if (result.error === "Configuration") {
+    errorMessage = "Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên.";
+  } else if (result.error === "AccessDenied") {
+    errorMessage = "Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.";
+  } else if (result.error === "Verification") {
+    errorMessage = "Lỗi xác thực. Vui lòng thử lại.";
+  }
+  setError(errorMessage);
+  setIsLoading(false);
+  return;
+}
+```
+
+### **Kết quả:**
+✅ Thông báo lỗi bằng tiếng Việt, dễ hiểu
+✅ "CredentialsSignin" → "Mật khẩu không đúng. Vui lòng thử lại."
+✅ Các lỗi khác cũng được map sang tiếng Việt
+✅ Trải nghiệm người dùng tốt hơn
+✅ Thông báo lỗi rõ ràng và hữu ích
+
+**Status:** ✅ **FIXED**
