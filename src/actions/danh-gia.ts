@@ -30,6 +30,16 @@ export async function getAllDanhGias() {
           },
         },
         kyDanhGia: true,
+        cauTraLois: {
+          include: {
+            cauHoi: true,
+          },
+          orderBy: {
+            cauHoi: {
+              thuTu: "asc",
+            },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -103,6 +113,16 @@ export async function getDanhGiasByNguoiDanhGia(nguoiDanhGiaId: string) {
           },
         },
         kyDanhGia: true,
+        cauTraLois: {
+          include: {
+            cauHoi: true,
+          },
+          orderBy: {
+            cauHoi: {
+              thuTu: "asc",
+            },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });

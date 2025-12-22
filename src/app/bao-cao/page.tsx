@@ -216,30 +216,47 @@ export default function BaoCaoPage() {
     }
 
     // Get all unique questions from evaluations
-    const questionScores: Record<string, { total: number; count: number }> = {};
+    const questionScores: Record<string, { total: number; count: number; fullText: string }> = {};
 
     for (const evaluation of evaluations) {
       const answers = evaluation.cauTraLois || [];
       
       for (const answer of answers) {
+        // Check if answer has cauHoi and diem
+        if (!answer || answer.diem === null || answer.diem === undefined || answer.diem < 0) continue;
+        
         const question = answer.cauHoi;
-        if (question) {
-          const key = question.noiDung.substring(0, 30); // Truncate for display
-          if (!questionScores[key]) {
-            questionScores[key] = { total: 0, count: 0 };
-          }
-          questionScores[key].total += answer.diem;
-          questionScores[key].count++;
+        if (!question || !question.noiDung) continue;
+
+        // Use full question text as key to avoid duplicates from truncation
+        const fullText = question.noiDung.trim();
+        if (!fullText) continue;
+
+        // Use full text as key, but we'll truncate for display later
+        if (!questionScores[fullText]) {
+          questionScores[fullText] = { total: 0, count: 0, fullText };
         }
+        questionScores[fullText].total += Number(answer.diem);
+        questionScores[fullText].count++;
       }
     }
 
     // Calculate averages and take top 6 criteria for radar chart
-    const criteriaData: CriteriaScore[] = Object.entries(questionScores)
-      .map(([criteria, data]) => ({
-        criteria,
-        score: Math.round((data.total / data.count) * 100) / 100,
-      }))
+    const criteriaData: CriteriaScore[] = Object.values(questionScores)
+      .map((data) => {
+        // Clean and truncate criteria name
+        let criteriaName = data.fullText.trim();
+        if (criteriaName.length > 30) {
+          criteriaName = criteriaName.substring(0, 30) + "...";
+        }
+        return {
+          criteria: criteriaName,
+          score: data.count > 0 
+            ? Math.round((data.total / data.count) * 100) / 100 
+            : 0,
+        };
+      })
+      .filter((item) => item.score > 0 && item.criteria) // Filter out invalid scores and empty criteria
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);
 
@@ -427,15 +444,23 @@ export default function BaoCaoPage() {
           Biểu đồ radar thể hiện điểm trung bình của các tiêu chí đánh giá
         </Text>
         {criteriaScores.length > 0 ? (
-          <Center>
-            <RadarChart
-              h={400}
-              data={criteriaScores}
-              dataKey="criteria"
-              series={[{ name: "score", label: "Điểm TB", color: "teal.6" }]}
-              withPolarRadiusAxis
-            />
-          </Center>
+          <RadarChart
+            h={400}
+            data={criteriaScores}
+            dataKey="criteria"
+            series={[{ name: "score", label: "Điểm TB", color: "teal.6", opacity: 0.4 }]}
+            withPolarGrid
+            withPolarAngleAxis
+            withPolarRadiusAxis
+            withTooltip
+            withDots
+            polarRadiusAxisProps={{
+              domain: [1, 5],
+              tick: true,
+              angle: 90,
+              orientation: "right",
+            }}
+          />
         ) : (
           <Center h={300}>
             <Text c="dimmed">Chưa có dữ liệu tiêu chí</Text>

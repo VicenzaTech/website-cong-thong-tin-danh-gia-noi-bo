@@ -32,3 +32,24 @@ body {
   opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
+
+/* Radar Chart Grid Lines */
+.recharts-polar-grid line,
+.recharts-polar-grid path {
+  stroke: #e0e0e0 !important;
+  stroke-width: 1 !important;
+}
+
+.recharts-polar-grid-angle line {
+  stroke: #d0d0d0 !important;
+}
+
+.recharts-polar-grid-concentric path {
+  stroke: #e0e0e0 !important;
+}
+
+/* Radar Chart Radius Axis Text - Vertical */
+.recharts-polar-radius-axis-tick-value {
+  transform: rotate(90deg) !important;
+  transform-origin: center !important;
+}

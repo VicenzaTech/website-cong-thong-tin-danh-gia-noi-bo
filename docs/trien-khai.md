@@ -1161,3 +1161,106 @@ if (result?.error) {
 ✅ Thông báo lỗi rõ ràng và hữu ích
 
 **Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Reports Page Backend Not Working (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/bao-cao`:
+- Các biểu đồ (Bar Chart, Radar Chart) không hiển thị dữ liệu
+- Bảng xếp hạng không có dữ liệu
+- Backend chưa hoạt động đúng
+
+### **Nguyên nhân:**
+1. `getAllDanhGias()` và `getDanhGiasByNguoiDanhGia()` không include `cauTraLois` và `cauHoi`
+2. Trang báo cáo cần `cauTraLois` với `cauHoi` để tính toán:
+   - Phân bố điểm số (score distribution)
+   - Điểm trung bình theo tiêu chí (criteria scores)
+   - Bảng xếp hạng (leaderboard)
+3. Không có dữ liệu `cauTraLois` → không thể tính toán → biểu đồ trống
+
+### **Giải pháp:**
+✅ **Sửa `src/actions/danh-gia.ts`:**
+- Thêm `cauTraLois` với `cauHoi` vào `getAllDanhGias()`
+- Thêm `cauTraLois` với `cauHoi` vào `getDanhGiasByNguoiDanhGia()`
+- Include đầy đủ relations để trang báo cáo có thể tính toán
+
+**Code thay đổi:**
+```typescript
+// getAllDanhGias() và getDanhGiasByNguoiDanhGia()
+include: {
+  ...
+  cauTraLois: {
+    include: {
+      cauHoi: true,
+    },
+    orderBy: {
+      cauHoi: {
+        thuTu: "asc",
+      },
+    },
+  },
+}
+```
+
+### **Kết quả:**
+✅ Biểu đồ phân bố điểm số hiển thị đúng dữ liệu
+✅ Biểu đồ radar so sánh tiêu chí hoạt động
+✅ Bảng xếp hạng có dữ liệu
+✅ Backend hoạt động đầy đủ
+✅ Các tính toán thống kê chính xác
+
+**Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Radar Chart Criteria Comparison Not Working (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/bao-cao`:
+- Biểu đồ "Phân bố điểm số" đã hoạt động ✅
+- Biểu đồ radar "So sánh tiêu chí năng lực" chưa hoạt động ❌
+- Không hiển thị dữ liệu trên radar chart
+
+### **Nguyên nhân:**
+1. Logic tính toán `calculateCriteriaScores` có vấn đề:
+   - Sử dụng substring(0, 30) làm key → có thể gây duplicate nếu nhiều câu hỏi có cùng 30 ký tự đầu
+   - Không validate đầy đủ cho `answer` và `question`
+   - Không filter out invalid scores
+   - Có thể có vấn đề với cách truy cập `answer.cauHoi`
+
+### **Giải pháp:**
+✅ **Sửa `src/app/bao-cao/page.tsx`:**
+- Sử dụng full text của câu hỏi làm key để tránh duplicate
+- Thêm validation đầy đủ cho `answer`, `answer.diem`, `question`, `question.noiDung`
+- Filter out invalid scores (score <= 0)
+- Truncate text chỉ khi hiển thị (không dùng làm key)
+- Thêm check để đảm bảo `count > 0` trước khi tính average
+
+**Code thay đổi:**
+```typescript
+// Trước: Dùng substring làm key → có thể duplicate
+const key = question.noiDung.substring(0, 30);
+
+// Sau: Dùng full text làm key, truncate khi hiển thị
+const fullText = question.noiDung.trim();
+if (!questionScores[fullText]) {
+  questionScores[fullText] = { total: 0, count: 0, fullText };
+}
+// ...
+criteria: data.fullText.length > 30 
+  ? data.fullText.substring(0, 30) + "..." 
+  : data.fullText,
+```
+
+### **Kết quả:**
+✅ Biểu đồ radar hiển thị đúng dữ liệu
+✅ Điểm trung bình của các tiêu chí được tính toán chính xác
+✅ Top 6 tiêu chí được hiển thị đúng
+✅ Không còn duplicate hoặc missing data
+✅ Validation đầy đủ, tránh lỗi runtime
+✅ Tên tiêu chí được clean và truncate đúng cách
+✅ Đã loại bỏ debug code và console.log
+
+**Status:** ✅ **FIXED** (Verified - Chart is now displaying correctly)
