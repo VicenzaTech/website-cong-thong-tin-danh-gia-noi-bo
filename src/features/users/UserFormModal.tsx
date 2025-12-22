@@ -4,20 +4,31 @@ import { useEffect, useState } from "react";
 import { Modal, Stack, TextInput, Select, Button, Group, Switch } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { mockService } from "@/services/mockService";
-import { phongBans } from "@/_mock/db";
-import { Role, type User } from "@/types/schema";
+import { createUser, updateUser, getAllPhongBans } from "@/actions";
+import { Role } from "@/types/schema";
 
 interface UserFormModalProps {
   opened: boolean;
   onClose: () => void;
-  user: User | null;
+  user: any;
   onSuccess: () => void;
 }
 
 export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [phongBans, setPhongBans] = useState<any[]>([]);
   const isEditing = !!user;
+
+  useEffect(() => {
+    loadPhongBans();
+  }, []);
+
+  const loadPhongBans = async () => {
+    const result = await getAllPhongBans();
+    if (result.success && result.data) {
+      setPhongBans(result.data);
+    }
+  };
 
   const form = useForm({
     initialValues: {
@@ -70,13 +81,23 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
     setIsLoading(true);
     try {
       if (isEditing && user) {
-        await mockService.users.update(user.id, {
+        const result = await updateUser(user.id, {
           hoTen: values.hoTen,
           email: values.email,
           phongBanId: values.phongBanId,
           role: values.role,
           trangThaiKH: values.trangThaiKH,
         });
+
+        if (!result.success) {
+          notifications.show({
+            title: "Lỗi",
+            message: result.error || "Không thể cập nhật người dùng",
+            color: "red",
+          });
+          setIsLoading(false);
+          return;
+        }
 
         notifications.show({
           title: "Thành công",
@@ -84,27 +105,32 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           color: "green",
         });
       } else {
-        const existingUser = await mockService.users.getByMaNhanVien(values.maNhanVien);
-        if (existingUser) {
-          form.setFieldError("maNhanVien", "Mã nhân viên đã tồn tại");
+        const result = await createUser({
+          maNhanVien: values.maNhanVien,
+          hoTen: values.hoTen,
+          email: values.email,
+          matKhau: "123456",
+          phongBanId: values.phongBanId,
+          role: values.role,
+        });
+
+        if (!result.success) {
+          if (result.error?.includes("đã tồn tại")) {
+            form.setFieldError("maNhanVien", result.error);
+          } else {
+            notifications.show({
+              title: "Lỗi",
+              message: result.error || "Không thể tạo người dùng",
+              color: "red",
+            });
+          }
           setIsLoading(false);
           return;
         }
 
-        await mockService.users.create({
-          maNhanVien: values.maNhanVien,
-          hoTen: values.hoTen,
-          email: values.email,
-          phongBanId: values.phongBanId,
-          role: values.role,
-          trangThaiKH: values.trangThaiKH,
-          daDangKy: false,
-          matKhau: "$2a$10$DefaultPasswordHash",
-        });
-
         notifications.show({
           title: "Thành công",
-          message: "Thêm người dùng thành công",
+          message: "Tạo người dùng mới thành công",
           color: "green",
         });
       }
@@ -122,12 +148,10 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
     }
   };
 
-  const phongBanOptions = phongBans
-    .filter((pb) => !pb.deletedAt)
-    .map((pb) => ({
-      value: pb.id,
-      label: pb.tenPhongBan,
-    }));
+  const phongBanOptions = phongBans.map((pb: any) => ({
+    value: pb.id,
+    label: pb.tenPhongBan,
+  }));
 
   const roleOptions = [
     { value: Role.admin, label: "Quản trị viên" },

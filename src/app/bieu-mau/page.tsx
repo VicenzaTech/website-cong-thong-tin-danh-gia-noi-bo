@@ -18,15 +18,14 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconEdit, IconEye, IconTrash } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { phongBans } from "@/_mock/db";
-import { Role, LoaiDanhGia, TrangThaiBieuMau, type BieuMau } from "@/types/schema";
+import { getAllBieuMaus, deleteBieuMau } from "@/actions";
+import { Role, LoaiDanhGia, TrangThaiBieuMau } from "@/types/schema";
 import { notifications } from "@mantine/notifications";
 
 export default function BieuMauPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [bieuMaus, setBieuMaus] = useState<BieuMau[]>([]);
+  const [bieuMaus, setBieuMaus] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterLoai, setFilterLoai] = useState<string | null>(null);
   const [filterTrangThai, setFilterTrangThai] = useState<string | null>(null);
@@ -48,8 +47,10 @@ export default function BieuMauPage() {
   const loadBieuMaus = async () => {
     setIsLoading(true);
     try {
-      const data = await mockService.bieuMaus.getAll();
-      setBieuMaus(data);
+      const result = await getAllBieuMaus();
+      if (result.success && result.data) {
+        setBieuMaus(result.data);
+      }
     } catch (error) {
       console.error("Failed to load bieu maus:", error);
     } finally {
@@ -87,13 +88,21 @@ export default function BieuMauPage() {
     if (!confirm("Bạn có chắc chắn muốn xóa biểu mẫu này?")) return;
 
     try {
-      await mockService.bieuMaus.delete(id);
-      notifications.show({
-        title: "Thành công",
-        message: "Xóa biểu mẫu thành công",
-        color: "green",
-      });
-      loadBieuMaus();
+      const result = await deleteBieuMau(id);
+      if (result.success) {
+        notifications.show({
+          title: "Thành công",
+          message: "Xóa biểu mẫu thành công",
+          color: "green",
+        });
+        loadBieuMaus();
+      } else {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể xóa biểu mẫu",
+          color: "red",
+        });
+      }
     } catch (error) {
       console.error("Failed to delete bieu mau:", error);
       notifications.show({
@@ -122,10 +131,9 @@ export default function BieuMauPage() {
     return <Badge color={color}>{label}</Badge>;
   };
 
-  const getPhongBanName = (phongBanId?: string) => {
-    if (!phongBanId) return "Toàn công ty";
-    const phongBan = phongBans.find((pb) => pb.id === phongBanId);
-    return phongBan?.tenPhongBan || "N/A";
+  const getPhongBanName = (phongBan: any) => {
+    if (!phongBan) return "Toàn công ty";
+    return phongBan.tenPhongBan || "N/A";
   };
 
   if (authLoading || !currentUser) {
@@ -209,7 +217,7 @@ export default function BieuMauPage() {
                     )}
                   </Table.Td>
                   <Table.Td>{getLoaiBadge(bieuMau.loaiDanhGia)}</Table.Td>
-                  <Table.Td>{getPhongBanName(bieuMau.phongBanId)}</Table.Td>
+                  <Table.Td>{getPhongBanName(bieuMau.phongBan)}</Table.Td>
                   <Table.Td>{getTrangThaiBadge(bieuMau.trangThai)}</Table.Td>
                   <Table.Td>
                     <Group gap="xs">

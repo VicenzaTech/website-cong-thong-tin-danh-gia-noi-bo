@@ -17,9 +17,9 @@ import {
   ActionIcon,
 } from "@mantine/core";
 import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { Role, type KyDanhGia } from "@/types/schema";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { getAllKyDanhGias, toggleKyDanhGia } from "@/actions";
+import { Role } from "@/types/schema";
 import { KyDanhGiaFormModal } from "@/features/ky-danh-gia/KyDanhGiaFormModal";
 import { DeleteKyDanhGiaModal } from "@/features/ky-danh-gia/DeleteKyDanhGiaModal";
 import { notifications } from "@mantine/notifications";
@@ -27,12 +27,12 @@ import dayjs from "dayjs";
 
 export default function KyDanhGiaPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
+  const { user: currentUser, isLoading: authLoading } = useAuthSession();
+  const [kyDanhGias, setKyDanhGias] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedKy, setSelectedKy] = useState<KyDanhGia | null>(null);
+  const [selectedKy, setSelectedKy] = useState<any | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,8 +52,10 @@ export default function KyDanhGiaPage() {
   const loadKyDanhGias = async () => {
     setIsLoading(true);
     try {
-      const data = await mockService.kyDanhGias.getAll();
-      setKyDanhGias(data);
+      const result = await getAllKyDanhGias();
+      if (result.success && result.data) {
+        setKyDanhGias(result.data);
+      }
     } catch (error) {
       console.error("Failed to load ky danh gias:", error);
     } finally {
@@ -61,12 +63,20 @@ export default function KyDanhGiaPage() {
     }
   };
 
-  const handleToggleDangMo = async (ky: KyDanhGia) => {
+  const handleToggleDangMo = async (ky: any) => {
     setTogglingId(ky.id);
     try {
-      await mockService.kyDanhGias.update(ky.id, {
-        dangMo: !ky.dangMo,
-      });
+      const result = await toggleKyDanhGia(ky.id, !ky.dangMo);
+      
+      if (!result.success) {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể thay đổi trạng thái",
+          color: "red",
+        });
+        setTogglingId(null);
+        return;
+      }
 
       notifications.show({
         title: "Thành công",
@@ -92,12 +102,12 @@ export default function KyDanhGiaPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleEditKy = (ky: KyDanhGia) => {
+  const handleEditKy = (ky: any) => {
     setSelectedKy(ky);
     setIsFormModalOpen(true);
   };
 
-  const handleDeleteKy = (ky: KyDanhGia) => {
+  const handleDeleteKy = (ky: any) => {
     setSelectedKy(ky);
     setIsDeleteModalOpen(true);
   };
@@ -118,7 +128,7 @@ export default function KyDanhGiaPage() {
     return dayjs(date).format("DD/MM/YYYY");
   };
 
-  const getStatusBadge = (ky: KyDanhGia) => {
+  const getStatusBadge = (ky: any) => {
     const now = new Date();
     const start = new Date(ky.ngayBatDau);
     const end = new Date(ky.ngayKetThuc);

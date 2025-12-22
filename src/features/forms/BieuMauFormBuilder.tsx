@@ -26,14 +26,11 @@ import { useForm } from "@mantine/form";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { IconPlus, IconTrash, IconGripVertical, IconEye } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { mockService } from "@/services/mockService";
-import { phongBans, cauHois as mockCauHois } from "@/_mock/db";
+import { getBieuMauById, createBieuMau, updateBieuMau, getAllPhongBans } from "@/actions";
 import {
   LoaiDanhGia,
   PhamViApDung,
   TrangThaiBieuMau,
-  type BieuMau,
-  type CauHoi,
 } from "@/types/schema";
 import { useAuth } from "@/features/auth/AuthContext";
 
@@ -56,6 +53,7 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [cauHois, setCauHois] = useState<CauHoiForm[]>([]);
+  const [phongBans, setPhongBans] = useState<any[]>([]);
   const isEditing = !!bieuMauId;
 
   const form = useForm({
@@ -83,33 +81,45 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
   });
 
   useEffect(() => {
+    loadPhongBans();
     if (isEditing && bieuMauId) {
       loadBieuMau();
     }
   }, [bieuMauId, isEditing]);
 
+  const loadPhongBans = async () => {
+    try {
+      const result = await getAllPhongBans();
+      if (result.success && result.data) {
+        setPhongBans(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to load phong bans:", error);
+    }
+  };
+
   const loadBieuMau = async () => {
     setIsLoading(true);
     try {
-      const bieuMau = await mockService.bieuMaus.getById(bieuMauId!);
-      if (bieuMau) {
+      const result = await getBieuMauById(bieuMauId!);
+      if (result.success && result.data) {
+        const bieuMau = result.data;
         form.setValues({
           tenBieuMau: bieuMau.tenBieuMau,
           moTa: bieuMau.moTa || "",
-          loaiDanhGia: bieuMau.loaiDanhGia,
-          phamViApDung: bieuMau.phamViApDung,
+          loaiDanhGia: bieuMau.loaiDanhGia as any,
+          phamViApDung: bieuMau.phamViApDung as any,
           phongBanId: bieuMau.phongBanId || "",
-          trangThai: bieuMau.trangThai,
+          trangThai: bieuMau.trangThai as any,
         });
 
-        const existingCauHois = await mockService.cauHois.getByBieuMau(bieuMauId!);
         setCauHois(
-          existingCauHois.map((ch) => ({
+          bieuMau.cauHois?.map((ch: any) => ({
             id: ch.id,
             noiDung: ch.noiDung,
             diemToiDa: ch.diemToiDa,
             batBuoc: ch.batBuoc,
-          }))
+          })) || []
         );
       }
     } catch (error) {
@@ -178,44 +188,38 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
 
     setIsSaving(true);
     try {
-      let bieuMauId: string;
+      const cauHoiData = cauHois.map((ch, index) => ({
+        noiDung: ch.noiDung,
+        thuTu: index + 1,
+        diemToiDa: ch.diemToiDa,
+        batBuoc: ch.batBuoc,
+      }));
 
-      if (isEditing) {
-        await mockService.bieuMaus.update(bieuMauId!, {
+      if (isEditing && bieuMauId) {
+        const result = await updateBieuMau(bieuMauId, {
           tenBieuMau: values.tenBieuMau,
           moTa: values.moTa,
-          loaiDanhGia: values.loaiDanhGia,
-          phamViApDung: values.phamViApDung,
-          phongBanId: values.phamViApDung === PhamViApDung.PHONG_BAN ? values.phongBanId : undefined,
           trangThai: values.trangThai,
+          phongBanId: values.phamViApDung === PhamViApDung.PHONG_BAN ? values.phongBanId : undefined,
         });
-        bieuMauId = bieuMauId!;
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
       } else {
-        const newBieuMau = await mockService.bieuMaus.create({
+        const result = await createBieuMau({
           tenBieuMau: values.tenBieuMau,
           moTa: values.moTa,
           loaiDanhGia: values.loaiDanhGia,
           phamViApDung: values.phamViApDung,
           phongBanId: values.phamViApDung === PhamViApDung.PHONG_BAN ? values.phongBanId : undefined,
-          trangThai: values.trangThai,
-          nguoiTaoId: user?.id,
+          nguoiTaoId: user?.id || "",
+          cauHois: cauHoiData,
         });
-        bieuMauId = newBieuMau.id;
-      }
 
-      const existingCauHois = mockCauHois.filter((ch) => ch.bieuMauId === bieuMauId);
-      for (const existing of existingCauHois) {
-        await mockService.cauHois.delete(existing.id);
-      }
-
-      for (let i = 0; i < cauHois.length; i++) {
-        await mockService.cauHois.create({
-          bieuMauId,
-          noiDung: cauHois[i].noiDung,
-          thuTu: i + 1,
-          diemToiDa: cauHois[i].diemToiDa,
-          batBuoc: cauHois[i].batBuoc,
-        });
+        if (!result.success) {
+          throw new Error(result.error);
+        }
       }
 
       notifications.show({
@@ -229,7 +233,7 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
       console.error("Failed to save bieu mau:", error);
       notifications.show({
         title: "Lỗi",
-        message: "Không thể lưu biểu mẫu",
+        message: error instanceof Error ? error.message : "Không thể lưu biểu mẫu",
         color: "red",
       });
     } finally {

@@ -16,16 +16,15 @@ import {
   Select,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { phongBans, users } from "@/_mock/db";
-import { Role, type PhongBan, type User } from "@/types/schema";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { getAllPhongBans, updatePhongBan, getUsersByPhongBan, updateUser } from "@/actions";
+import { Role } from "@/types/schema";
 import { notifications } from "@mantine/notifications";
 
 export default function PhongBanPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [phongBanList, setPhongBanList] = useState<PhongBan[]>([]);
+  const { user: currentUser, isLoading: authLoading } = useAuthSession();
+  const [phongBanList, setPhongBanList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -46,8 +45,10 @@ export default function PhongBanPage() {
   const loadPhongBans = async () => {
     setIsLoading(true);
     try {
-      const data = await mockService.phongBans.getAll();
-      setPhongBanList(data);
+      const result = await getAllPhongBans();
+      if (result.success && result.data) {
+        setPhongBanList(result.data);
+      }
     } catch (error) {
       console.error("Failed to load phong bans:", error);
     } finally {
@@ -58,12 +59,22 @@ export default function PhongBanPage() {
   const handleAssignTruongPhong = async (phongBanId: string, truongPhongId: string | null) => {
     setUpdatingId(phongBanId);
     try {
-      await mockService.phongBans.update(phongBanId, {
+      const result = await updatePhongBan(phongBanId, {
         truongPhongId: truongPhongId || undefined,
       });
 
+      if (!result.success) {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể gán trưởng phòng",
+          color: "red",
+        });
+        setUpdatingId(null);
+        return;
+      }
+
       if (truongPhongId) {
-        await mockService.users.update(truongPhongId, {
+        await updateUser(truongPhongId, {
           role: Role.truong_phong,
         });
       }
@@ -87,28 +98,26 @@ export default function PhongBanPage() {
     }
   };
 
-  const getTruongPhongName = (truongPhongId?: string) => {
-    if (!truongPhongId) return "Chưa gán";
-    const user = users.find((u) => u.id === truongPhongId);
-    return user?.hoTen || "N/A";
+  const getTruongPhongName = (phongBan: any) => {
+    if (!phongBan.truongPhong) return "Chưa gán";
+    return phongBan.truongPhong.hoTen || "N/A";
   };
 
   const getTruongPhongOptions = (phongBanId: string) => {
-    const phongBanUsers = users.filter(
-      (u) => u.phongBanId === phongBanId && !u.deletedAt && u.trangThaiKH
-    );
+    const phongBan = phongBanList.find((pb: any) => pb.id === phongBanId);
+    const phongBanUsers = phongBan?.users || [];
 
     return [
       { value: "", label: "Chưa gán" },
-      ...phongBanUsers.map((u) => ({
+      ...phongBanUsers.map((u: any) => ({
         value: u.id,
         label: `${u.hoTen} (${u.maNhanVien})`,
       })),
     ];
   };
 
-  const getEmployeeCount = (phongBanId: string) => {
-    return users.filter((u) => u.phongBanId === phongBanId && !u.deletedAt).length;
+  const getEmployeeCount = (phongBan: any) => {
+    return phongBan._count?.users || 0;
   };
 
   if (authLoading || !currentUser) {
@@ -166,7 +175,7 @@ export default function PhongBanPage() {
                   <Table.Td>
                     {phongBan.truongPhongId ? (
                       <Group gap="xs">
-                        <Badge color="blue">{getTruongPhongName(phongBan.truongPhongId)}</Badge>
+                        <Badge color="blue">{getTruongPhongName(phongBan)}</Badge>
                       </Group>
                     ) : (
                       <Text c="dimmed" size="sm">
@@ -175,7 +184,7 @@ export default function PhongBanPage() {
                     )}
                   </Table.Td>
                   <Table.Td>
-                    <Badge variant="light">{getEmployeeCount(phongBan.id)}</Badge>
+                    <Badge variant="light">{getEmployeeCount(phongBan)}</Badge>
                   </Table.Td>
                   <Table.Td>
                     <Select

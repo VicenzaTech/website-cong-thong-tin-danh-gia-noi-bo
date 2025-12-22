@@ -15,14 +15,13 @@ import {
   Textarea,
   Badge,
 } from "@mantine/core";
-import { mockService } from "@/services/mockService";
-import type { BieuMau, CauHoi } from "@/types/schema";
+import { getBieuMauById } from "@/actions";
 
 export default function XemTruocBieuMauPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
-  const [cauHois, setCauHois] = useState<CauHoi[]>([]);
+  const [bieuMau, setBieuMau] = useState<any>(null);
+  const [cauHois, setCauHois] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,11 +31,10 @@ export default function XemTruocBieuMauPage({ params }: { params: Promise<{ id: 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const bm = await mockService.bieuMaus.getById(id);
-      if (bm) {
-        setBieuMau(bm);
-        const chs = await mockService.cauHois.getByBieuMau(id);
-        setCauHois(chs);
+      const result = await getBieuMauById(id);
+      if (result.success && result.data) {
+        setBieuMau(result.data);
+        setCauHois(result.data.cauHois || []);
       }
     } catch (error) {
       console.error("Failed to load bieu mau:", error);

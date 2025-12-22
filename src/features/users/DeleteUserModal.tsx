@@ -4,13 +4,12 @@ import { useState } from "react";
 import { Modal, Stack, Text, Button, Group, Alert } from "@mantine/core";
 import { IconAlertTriangle } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { mockService } from "@/services/mockService";
-import type { User } from "@/types/schema";
+import { updateUser, deleteUser } from "@/actions";
 
 interface DeleteUserModalProps {
   opened: boolean;
   onClose: () => void;
-  user: User | null;
+  user: any;
   onSuccess: () => void;
 }
 
@@ -25,9 +24,19 @@ export function DeleteUserModal({ opened, onClose, user, onSuccess }: DeleteUser
     setIsLoading(true);
     try {
       if (isActive) {
-        await mockService.users.update(user.id, {
+        const result = await updateUser(user.id, {
           trangThaiKH: false,
         });
+
+        if (!result.success) {
+          notifications.show({
+            title: "Lỗi",
+            message: result.error || "Không thể vô hiệu hóa người dùng",
+            color: "red",
+          });
+          setIsLoading(false);
+          return;
+        }
 
         notifications.show({
           title: "Thành công",
@@ -35,7 +44,17 @@ export function DeleteUserModal({ opened, onClose, user, onSuccess }: DeleteUser
           color: "orange",
         });
       } else {
-        await mockService.users.delete(user.id);
+        const result = await deleteUser(user.id);
+
+        if (!result.success) {
+          notifications.show({
+            title: "Lỗi",
+            message: result.error || "Không thể xóa người dùng",
+            color: "red",
+          });
+          setIsLoading(false);
+          return;
+        }
 
         notifications.show({
           title: "Thành công",

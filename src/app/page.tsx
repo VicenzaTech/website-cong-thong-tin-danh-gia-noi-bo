@@ -25,8 +25,7 @@ import {
   IconStar,
 } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { users } from "@/_mock/db";
+import { getActiveKyDanhGias, getDanhGiasByNguoiDanhGia, getAllDanhGias, getAllUsers, getPhongBanById } from "@/actions";
 import type { DanhGia, KyDanhGia } from "@/types/schema";
 
 interface DashboardStats {
@@ -68,30 +67,34 @@ export default function Home() {
     setIsLoading(true);
     try {
       // Get active evaluation period
-      const activeKys = await mockService.kyDanhGias.getActive();
-      const currentKy = activeKys[0] || null;
-      setActiveKyDanhGia(currentKy);
+      const kyResult = await getActiveKyDanhGias();
+      const currentKy = kyResult.success && kyResult.data ? kyResult.data[0] : null;
+      setActiveKyDanhGia(currentKy as any);
 
       // Get user's evaluations
-      const myEvaluations = await mockService.danhGias.getByNguoiDanhGia(user.id);
+      const evalResult = await getDanhGiasByNguoiDanhGia(user.id);
+      const myEvaluations = evalResult.success && evalResult.data ? evalResult.data : [];
       
       // Calculate completed evaluations
-      const completed = myEvaluations.filter((dg) => dg.daHoanThanh).length;
+      const completed = myEvaluations.filter((dg: any) => dg.daHoanThanh).length;
       
       // Calculate average score
       const completedWithScores = myEvaluations.filter(
-        (dg) => dg.daHoanThanh && dg.diemTrungBinh
+        (dg: any) => dg.daHoanThanh && dg.diemTrungBinh
       );
       const avgScore = completedWithScores.length > 0
-        ? completedWithScores.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / completedWithScores.length
+        ? completedWithScores.reduce((sum: number, dg: any) => sum + (dg.diemTrungBinh || 0), 0) / completedWithScores.length
         : 0;
 
       // Calculate personal progress
       let personalProgress = 0;
       if (currentKy) {
-        // Count expected evaluations for current period
-        const colleagues = users.filter(
-          (u) =>
+        // Get all users to count colleagues
+        const usersResult = await getAllUsers();
+        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+        
+        const colleagues = allUsers.filter(
+          (u: any) =>
             u.phongBanId === user.phongBanId &&
             u.id !== user.id &&
             !u.deletedAt &&
@@ -99,14 +102,15 @@ export default function Home() {
         );
         
         // Get department manager
-        const phongBan = await mockService.phongBans.getById(user.phongBanId);
+        const phongBanResult = await getPhongBanById(user.phongBanId);
+        const phongBan = phongBanResult.success ? phongBanResult.data : null;
         const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
         
         const expectedEvaluations = colleagues.length + (hasManager ? 1 : 0);
         
         // Count completed evaluations for current period
         const completedInPeriod = myEvaluations.filter(
-          (dg) => dg.kyDanhGiaId === currentKy.id && dg.daHoanThanh
+          (dg: any) => dg.kyDanhGiaId === currentKy.id && dg.daHoanThanh
         ).length;
         
         personalProgress = expectedEvaluations > 0
@@ -117,27 +121,31 @@ export default function Home() {
       // Calculate department progress (for truong_phong and admin)
       let departmentProgress = 0;
       if (user.role === "truong_phong" || user.role === "admin") {
-        const allDanhGias = await mockService.danhGias.getAll();
+        const allDanhGiasResult = await getAllDanhGias();
+        const allDanhGias = allDanhGiasResult.success && allDanhGiasResult.data ? allDanhGiasResult.data : [];
+        
+        const usersResult = await getAllUsers();
+        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
         
         let departmentUsers: string[] = [];
         if (user.role === "truong_phong") {
-          departmentUsers = users
-            .filter((u) => u.phongBanId === user.phongBanId && !u.deletedAt && u.trangThaiKH)
-            .map((u) => u.id);
+          departmentUsers = allUsers
+            .filter((u: any) => u.phongBanId === user.phongBanId && !u.deletedAt && u.trangThaiKH)
+            .map((u: any) => u.id);
         } else {
-          departmentUsers = users
-            .filter((u) => !u.deletedAt && u.trangThaiKH)
-            .map((u) => u.id);
+          departmentUsers = allUsers
+            .filter((u: any) => !u.deletedAt && u.trangThaiKH)
+            .map((u: any) => u.id);
         }
 
         if (currentKy && departmentUsers.length > 0) {
           const departmentEvaluations = allDanhGias.filter(
-            (dg) =>
+            (dg: any) =>
               departmentUsers.includes(dg.nguoiDanhGiaId) &&
               dg.kyDanhGiaId === currentKy.id
           );
           
-          const departmentCompleted = departmentEvaluations.filter((dg) => dg.daHoanThanh).length;
+          const departmentCompleted = departmentEvaluations.filter((dg: any) => dg.daHoanThanh).length;
           
           // Estimate expected evaluations (each user evaluates colleagues + manager)
           const avgExpectedPerUser = departmentUsers.length > 1 ? departmentUsers.length : 1;

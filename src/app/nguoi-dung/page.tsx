@@ -19,9 +19,8 @@ import {
   Center,
 } from "@mantine/core";
 import { IconSearch, IconPlus, IconEdit, IconTrash, IconUserOff } from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import { phongBans } from "@/_mock/db";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { getAllUsers, getAllPhongBans } from "@/actions";
 import { Role, type User } from "@/types/schema";
 import { UserFormModal } from "@/features/users/UserFormModal";
 import { DeleteUserModal } from "@/features/users/DeleteUserModal";
@@ -30,15 +29,16 @@ const ITEMS_PER_PAGE = 10;
 
 export default function NguoiDungPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const { user: currentUser, isLoading: authLoading } = useAuthSession();
+  const [users, setUsers] = useState<any[]>([]);
+  const [phongBans, setPhongBans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPhongBan, setFilterPhongBan] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -47,16 +47,26 @@ export default function NguoiDungPage() {
   }, [currentUser, authLoading, router]);
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await mockService.users.getAll();
-      setUsers(data);
+      const [usersResult, phongBansResult] = await Promise.all([
+        getAllUsers(),
+        getAllPhongBans()
+      ]);
+      
+      if (usersResult.success && usersResult.data) {
+        setUsers(usersResult.data);
+      }
+      
+      if (phongBansResult.success && phongBansResult.data) {
+        setPhongBans(phongBansResult.data);
+      }
     } catch (error) {
-      console.error("Failed to load users:", error);
+      console.error("Failed to load data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -112,13 +122,13 @@ export default function NguoiDungPage() {
   };
 
   const handleFormSuccess = () => {
-    loadUsers();
+    loadData();
     setIsFormModalOpen(false);
     setSelectedUser(null);
   };
 
   const handleDeleteSuccess = () => {
-    loadUsers();
+    loadData();
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
@@ -134,16 +144,14 @@ export default function NguoiDungPage() {
   };
 
   const getPhongBanName = (phongBanId: string) => {
-    const phongBan = phongBans.find((pb) => pb.id === phongBanId);
+    const phongBan = phongBans.find((pb: any) => pb.id === phongBanId);
     return phongBan?.tenPhongBan || "N/A";
   };
 
-  const phongBanOptions = phongBans
-    .filter((pb) => !pb.deletedAt)
-    .map((pb) => ({
-      value: pb.id,
-      label: pb.tenPhongBan,
-    }));
+  const phongBanOptions = phongBans.map((pb: any) => ({
+    value: pb.id,
+    label: pb.tenPhongBan,
+  }));
 
   const canEdit = currentUser?.role === Role.admin;
 
