@@ -169,6 +169,23 @@
   - Load lại data cũ vào form
   - Cho phép update và lưu lại
 
+### Bước 4.4: Xem Tất Cả Đánh Giá (Admin & Trưởng phòng)
+
+- [x] **Trang Xem Đánh Giá (`/xem-danh-gia`)**
+  - Admin: Xem tất cả đánh giá từ tất cả người trong công ty
+  - Trưởng phòng: Xem tất cả đánh giá từ nhân viên trong phòng ban
+  - Hiển thị cả 2 loại đánh giá: Đánh giá Lãnh đạo và Đánh giá Nhân viên
+  - Hiển thị ai đánh giá ai, điểm số, ngày gửi
+  - Bộ lọc: Kỳ đánh giá, Loại đánh giá, Phòng ban (chỉ Admin)
+  - Xem chi tiết đánh giá: Câu hỏi, câu trả lời, điểm số, nhận xét
+
+- [x] **Trang Chi Tiết Đánh Giá (`/lich-su-danh-gia/[id]`)**
+  - Hiển thị đầy đủ thông tin: Người đánh giá, người được đánh giá, phòng ban
+  - Danh sách câu hỏi và câu trả lời với điểm số
+  - Nhận xét cho từng câu hỏi (nếu có)
+  - Nhận xét chung
+  - Phân quyền: Admin và Trưởng phòng có thể xem đánh giá trong phạm vi quyền hạn
+
 ---
 
 ## 📊 Giai đoạn 5: Dashboard & Báo cáo (Analytics)

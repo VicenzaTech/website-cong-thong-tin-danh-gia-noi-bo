@@ -14,6 +14,7 @@ import {
   IconUserCheck,
   IconUserStar,
   IconHistory,
+  IconEye,
 } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Role } from "@/types/schema";
@@ -49,6 +50,12 @@ const menuItems: MenuItem[] = [
     href: "/lich-su-danh-gia",
     icon: <IconHistory size={20} />,
     allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  },
+  {
+    label: "Xem đánh giá",
+    href: "/xem-danh-gia",
+    icon: <IconEye size={20} />,
+    allowedRoles: [Role.admin, Role.truong_phong],
   },
   {
     label: "Báo cáo & Thống kê",
