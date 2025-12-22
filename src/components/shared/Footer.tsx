@@ -106,7 +106,7 @@ export function Footer() {
           }}
         >
           <Text size="xs" c="dimmed" ta="center">
-            Phát triển bởi Văn phòng Chủ tịch Hội đồng quản trị - Vicenza
+            Phát triển bởi Văn phòng Chủ tịch Hội đồng quản trị - Công ty cổ phần đầu tư phát triển Vicenza
           </Text>
         </Box>
       </Container>

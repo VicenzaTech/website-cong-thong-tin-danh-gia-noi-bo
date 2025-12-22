@@ -241,7 +241,7 @@ export default function ChinhSachPage() {
                   <strong>Điện thoại:</strong> (024) 1234 5678
                 </List.Item>
                 <List.Item>
-                  <strong>Địa chỉ:</strong> Văn phòng Chủ tịch Hội đồng quản trị, Công ty Vicenza
+                  <strong>Địa chỉ:</strong> Văn phòng Chủ tịch Hội đồng quản trị, Công ty cổ phần đầu tư phát triển Vicenza
                 </List.Item>
               </List>
             </div>
@@ -254,7 +254,7 @@ export default function ChinhSachPage() {
               Cam kết của chúng tôi
             </Text>
             <Text size="sm">
-              Vicenza cam kết bảo vệ quyền riêng tư và thông tin cá nhân của tất cả nhân viên.
+              Công ty cổ phần đầu tư phát triển Vicenza cam kết bảo vệ quyền riêng tư và thông tin cá nhân của tất cả nhân viên.
               Chúng tôi tuân thủ nghiêm ngặt các quy định về bảo vệ dữ liệu cá nhân và luôn
               nỗ lực cải thiện các biện pháp bảo mật.
             </Text>

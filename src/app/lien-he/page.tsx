@@ -100,7 +100,7 @@ export default function LienHePage() {
                       <Text fw={500}>
                         Văn phòng Chủ tịch Hội đồng quản trị
                         <br />
-                        Công ty Vicenza
+                        Công ty cổ phần đầu tư phát triển Vicenza
                       </Text>
                     </div>
                   </Group>
