@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Stack, NavLink, Text, Box, Center } from "@mantine/core";
+import { Stack, NavLink, Text, Box, Center, useMantineColorScheme } from "@mantine/core";
 import {
   IconHome,
   IconUsers,
@@ -92,10 +92,15 @@ const menuItems: MenuItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, checkPermission } = useAuth();
+  const { colorScheme } = useMantineColorScheme();
 
   if (!user) return null;
 
   const filteredMenuItems = menuItems.filter((item) => checkPermission(item.allowedRoles));
+
+  const borderColor = colorScheme === "dark" 
+    ? "var(--mantine-color-dark-4)" 
+    : "var(--mantine-color-gray-3)";
 
   return (
     <Box
@@ -105,12 +110,12 @@ export function Sidebar() {
         position: "fixed",
         left: 0,
         top: 0,
-        borderRight: "1px solid var(--mantine-color-gray-3)",
+        borderRight: `1px solid ${borderColor}`,
         backgroundColor: "var(--mantine-color-body)",
         overflowY: "auto",
       }}
     >
-      <Box p="md" style={{ borderBottom: "1px solid var(--mantine-color-gray-3)" }}>
+      <Box p="md" style={{ borderBottom: `1px solid ${borderColor}` }}>
         <Center mb="sm">
           <Image
             src="/logo-vicenza.png"
@@ -142,7 +147,7 @@ export function Sidebar() {
         ))}
       </Stack>
 
-      <Box p="md" mt="auto" style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+      <Box p="md" mt="auto" style={{ borderTop: `1px solid ${borderColor}` }}>
         <Text size="xs" c="dimmed">
           Vai trò:{" "}
           {user.role === Role.admin

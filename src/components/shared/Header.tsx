@@ -47,11 +47,15 @@ export function Header() {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const borderColor = colorScheme === "dark" 
+    ? "var(--mantine-color-dark-4)" 
+    : "var(--mantine-color-gray-3)";
+
   return (
     <Box
       style={{
         height: 60,
-        borderBottom: "1px solid var(--mantine-color-gray-3)",
+        borderBottom: `1px solid ${borderColor}`,
         backgroundColor: "var(--mantine-color-body)",
         position: "fixed",
         top: 0,

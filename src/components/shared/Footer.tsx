@@ -1,17 +1,22 @@
 "use client";
 
-import { Box, Container, Text, Group, Anchor, Stack, SimpleGrid } from "@mantine/core";
+import { Box, Container, Text, Group, Anchor, Stack, SimpleGrid, useMantineColorScheme } from "@mantine/core";
 import Link from "next/link";
 import Image from "next/image";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const { colorScheme } = useMantineColorScheme();
+
+  const borderColor = colorScheme === "dark" 
+    ? "var(--mantine-color-dark-4)" 
+    : "var(--mantine-color-gray-3)";
 
   return (
     <Box
       component="footer"
       style={{
-        borderTop: "1px solid var(--mantine-color-gray-3)",
+        borderTop: `1px solid ${borderColor}`,
         backgroundColor: "var(--mantine-color-body)",
         padding: "30px 0 20px",
       }}
@@ -101,7 +106,7 @@ export function Footer() {
 
         <Box
           style={{
-            borderTop: "1px solid var(--mantine-color-gray-3)",
+            borderTop: `1px solid ${borderColor}`,
             paddingTop: "15px",
           }}
         >
