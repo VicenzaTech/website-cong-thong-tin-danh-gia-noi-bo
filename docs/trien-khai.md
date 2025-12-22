@@ -28,8 +28,12 @@
   - Copy các model từ `schema.md` chuyển sang Interface (User, PhongBan, KyDanhGia, BieuMau, DanhGia...)
   - Lưu ý: Merge model User theo thiết kế mới nhất
 
-- [x] **Tạo Mock Data (Seed Data)**
-  - Tạo `_mock/db.ts`: Chứa các mảng dữ liệu cố định (5 phòng ban, 1 Admin, 5 Trưởng phòng, 20 Nhân viên)
+- [x] **Tạo Mock Data (Seed Data)** ✅ **Đã cập nhật với dữ liệu thực (22/12/2024)**
+  - Tạo `_mock/db.ts`: Đã chuyển sang dữ liệu thực từ `nhan_su_van_phong.json`
+  - **Dữ liệu người dùng:** 1 Admin, 12 Trưởng phòng, 300 Nhân viên (tổng 313 người)
+  - **Phòng ban (13):** Ban kinh doanh, Ban kiểm soát, Ban tổng giám đốc, Ban đầu tư, Dự án cát nhân tạo, Hội đồng Quản trị, Hội đồng cổ đông, Phòng Kế toán, Phòng Tổ chức - Hành chính, Phòng khai thác, Thanh tra sản xuất - KCS, Thuê ngoài, Văn phòng Chủ tịch
+  - **Trưởng phòng được gán:** 12/13 phòng ban có trưởng phòng (Thuê ngoài không có)
+  - Mật khẩu mặc định: **123456** (đã hash bằng bcrypt)
   - Tạo dữ liệu Kỳ đánh giá (1 kỳ Active, 1 kỳ Closed)
   - Tạo dữ liệu Biểu mẫu mẫu (Lãnh đạo, Nhân viên)
 
