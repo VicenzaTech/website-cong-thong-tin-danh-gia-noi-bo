@@ -1062,3 +1062,49 @@ if (trangThai === PrismaTrangThaiBieuMau.KICH_HOAT) {
 ✅ UI nhất quán và rõ ràng
 
 **Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Text Wrapping Issue in Nhan Xet Chung (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/lich-su-danh-gia/[id]`, phần "Nhận xét chung":
+- Khi nội dung dài, text đang kéo dài mãi mãi chứ không xuống dòng
+- Text overflow ra ngoài container
+- UI không đẹp và khó đọc
+
+### **Nguyên nhân:**
+1. Component `Text` chỉ có `whiteSpace: "pre-wrap"` nhưng thiếu các CSS properties để break long words
+2. Không có `word-break` hoặc `overflow-wrap` để xử lý words dài
+3. Không có constraint về width
+
+### **Giải pháp:**
+✅ **Sửa `src/app/lich-su-danh-gia/[id]/page.tsx`:**
+- Thêm `wordBreak: "break-word"` để break long words
+- Thêm `overflowWrap: "break-word"` để wrap text khi cần
+- Thêm `maxWidth: "100%"` để đảm bảo không overflow container
+- Giữ nguyên `whiteSpace: "pre-wrap"` để giữ line breaks từ input
+
+**Code thay đổi:**
+```typescript
+<Text
+  size="sm"
+  style={{
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    overflowWrap: "break-word",
+    maxWidth: "100%",
+  }}
+>
+  {danhGia.nhanXetChung || "Không có nhận xét chung"}
+</Text>
+```
+
+### **Kết quả:**
+✅ Text tự động xuống dòng khi dài
+✅ Long words được break đúng cách
+✅ Không còn text overflow ra ngoài container
+✅ UI đẹp và dễ đọc hơn
+✅ Giữ nguyên line breaks từ input
+
+**Status:** ✅ **FIXED**

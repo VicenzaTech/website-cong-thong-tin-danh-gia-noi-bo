@@ -342,7 +342,15 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
           Nhận xét chung
         </Text>
         <Divider mb="md" />
-        <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+        <Text
+          size="sm"
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            maxWidth: "100%",
+          }}
+        >
           {danhGia.nhanXetChung || "Không có nhận xét chung"}
         </Text>
       </Paper>
