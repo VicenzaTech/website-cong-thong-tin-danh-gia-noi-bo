@@ -121,3 +121,38 @@ export async function toggleKyDanhGia(id: string, dangMo: boolean) {
   }
 }
 
+export async function deleteKyDanhGia(id: string) {
+  try {
+    const kyDanhGia = await prisma.kyDanhGia.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            danhGias: true,
+          },
+        },
+      },
+    });
+
+    if (!kyDanhGia) {
+      return { success: false, error: "Không tìm thấy kỳ đánh giá" };
+    }
+
+    if (kyDanhGia._count.danhGias > 0) {
+      return {
+        success: false,
+        error: `Không thể xóa kỳ đánh giá này vì đã có ${kyDanhGia._count.danhGias} đánh giá liên quan`,
+      };
+    }
+
+    await prisma.kyDanhGia.delete({
+      where: { id },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting ky danh gia:", error);
+    return { success: false, error: "Không thể xóa kỳ đánh giá" };
+  }
+}
+

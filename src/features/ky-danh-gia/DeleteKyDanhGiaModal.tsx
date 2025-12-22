@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal, Stack, Text, Button, Group, Alert } from "@mantine/core";
 import { IconAlertTriangle } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-import { mockService } from "@/services/mockService";
+import { deleteKyDanhGia } from "@/actions/ky-danh-gia";
 import type { KyDanhGia } from "@/types/schema";
 import dayjs from "dayjs";
 
@@ -28,6 +28,17 @@ export function DeleteKyDanhGiaModal({
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
+      const result = await deleteKyDanhGia(kyDanhGia.id);
+
+      if (!result.success) {
+        notifications.show({
+          title: "Lỗi",
+          message: result.error || "Không thể xóa kỳ đánh giá",
+          color: "red",
+        });
+        return;
+      }
+
       notifications.show({
         title: "Thành công",
         message: "Xóa kỳ đánh giá thành công",

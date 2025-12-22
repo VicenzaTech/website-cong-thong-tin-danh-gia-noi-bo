@@ -5,7 +5,7 @@ import { Modal, Stack, TextInput, Textarea, Button, Group, Switch } from "@manti
 import { DatePickerInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { mockService } from "@/services/mockService";
+import { createKyDanhGia, updateKyDanhGia } from "@/actions/ky-danh-gia";
 import type { KyDanhGia } from "@/types/schema";
 
 interface KyDanhGiaFormModalProps {
@@ -66,14 +66,25 @@ export function KyDanhGiaFormModal({
   const handleSubmit = async (values: typeof form.values) => {
     setIsLoading(true);
     try {
+      let result;
+      
       if (isEditing && kyDanhGia) {
-        await mockService.kyDanhGias.update(kyDanhGia.id, {
+        result = await updateKyDanhGia(kyDanhGia.id, {
           tenKy: values.tenKy,
-          moTa: values.moTa,
+          moTa: values.moTa || undefined,
           ngayBatDau: values.ngayBatDau,
           ngayKetThuc: values.ngayKetThuc,
           dangMo: values.dangMo,
         });
+
+        if (!result.success) {
+          notifications.show({
+            title: "Lỗi",
+            message: result.error || "Không thể cập nhật kỳ đánh giá",
+            color: "red",
+          });
+          return;
+        }
 
         notifications.show({
           title: "Thành công",
@@ -81,13 +92,22 @@ export function KyDanhGiaFormModal({
           color: "green",
         });
       } else {
-        await mockService.kyDanhGias.create({
+        result = await createKyDanhGia({
           tenKy: values.tenKy,
-          moTa: values.moTa,
+          moTa: values.moTa || undefined,
           ngayBatDau: values.ngayBatDau,
           ngayKetThuc: values.ngayKetThuc,
           dangMo: values.dangMo,
         });
+
+        if (!result.success) {
+          notifications.show({
+            title: "Lỗi",
+            message: result.error || "Không thể tạo kỳ đánh giá",
+            color: "red",
+          });
+          return;
+        }
 
         notifications.show({
           title: "Thành công",

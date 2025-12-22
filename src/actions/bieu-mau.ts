@@ -2,6 +2,7 @@
 
 import { prisma } from "@/libs/prisma";
 import { LoaiDanhGia, PhamViApDung, TrangThaiBieuMau } from "@/types/schema";
+import { TrangThaiBieuMau as PrismaTrangThaiBieuMau } from "@prisma/client";
 
 export async function getAllBieuMaus() {
   try {
@@ -101,6 +102,7 @@ export async function createBieuMau(data: {
   phongBanId?: string;
   moTa?: string;
   nguoiTaoId: string;
+  trangThai?: TrangThaiBieuMau;
   cauHois: Array<{
     noiDung: string;
     thuTu: number;
@@ -109,19 +111,32 @@ export async function createBieuMau(data: {
   }>;
 }) {
   try {
-    const bieuMau = await prisma.bieuMau.create({
-      data: {
-        tenBieuMau: data.tenBieuMau,
-        loaiDanhGia: data.loaiDanhGia,
-        phamViApDung: data.phamViApDung,
-        phongBanId: data.phongBanId || null,
-        moTa: data.moTa || null,
-        nguoiTaoId: data.nguoiTaoId,
-        trangThai: TrangThaiBieuMau.NHAP,
-        cauHois: {
-          create: data.cauHois,
-        },
+    let trangThai: PrismaTrangThaiBieuMau;
+    if (data.trangThai) {
+      trangThai = data.trangThai as PrismaTrangThaiBieuMau;
+    } else {
+      trangThai = PrismaTrangThaiBieuMau.NHAP;
+    }
+
+    const createData: any = {
+      tenBieuMau: data.tenBieuMau,
+      loaiDanhGia: data.loaiDanhGia,
+      phamViApDung: data.phamViApDung,
+      phongBanId: data.phongBanId || null,
+      moTa: data.moTa || null,
+      nguoiTaoId: data.nguoiTaoId,
+      trangThai,
+      cauHois: {
+        create: data.cauHois,
       },
+    };
+
+    if (trangThai === PrismaTrangThaiBieuMau.KICH_HOAT) {
+      createData.ngayPhatHanh = new Date();
+    }
+
+    const bieuMau = await prisma.bieuMau.create({
+      data: createData,
       include: {
         cauHois: true,
         phongBan: true,

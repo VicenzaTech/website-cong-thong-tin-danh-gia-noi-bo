@@ -762,3 +762,303 @@ Các trang còn lại theo same pattern as migrated pages:
 - ✅ Code Quality: Clean and maintainable
 
 **DỰ ÁN SẴN SÀNG CHO PRODUCTION!** 🚀
+
+---
+
+## 🐛 BUG FIX - Login Redirect Issue (22/12/2024)
+
+### **Vấn đề:**
+Sau khi đăng nhập thành công, user vẫn bị redirect về trang login thay vì vào dashboard.
+
+### **Nguyên nhân:**
+1. Sau khi `signIn()` thành công, NextAuth session chưa được refresh ngay lập tức
+2. `AuthContext` sử dụng `useSession()` nhưng session chưa kịp update
+3. Khi redirect về `/`, `user` vẫn là `null` → trigger redirect về `/login` trong `useEffect`
+4. `router.push()` không force reload nên session không được refresh
+
+### **Giải pháp:**
+✅ **Sửa `src/app/login/page.tsx`:**
+- Thay `router.push("/")` và `router.refresh()` bằng `window.location.href = "/"`
+- Force reload toàn bộ page để session được refresh từ server
+- Đảm bảo `result?.ok` trước khi redirect
+
+**Code thay đổi:**
+```typescript
+// Trước:
+router.push("/");
+router.refresh();
+
+// Sau:
+if (result?.ok) {
+  window.location.href = "/";
+}
+```
+
+### **Kết quả:**
+✅ Login thành công → Redirect đúng về dashboard
+✅ Session được refresh đúng cách
+✅ AuthContext nhận được user từ session
+✅ Không còn redirect loop về login
+
+**Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Hydration Mismatch Error (22/12/2024)
+
+### **Vấn đề:**
+Lỗi hydration mismatch với Mantine color scheme:
+```
+Error: A tree hydrated but some attributes of the server rendered HTML didn't match the client properties.
+- data-mantine-color-scheme="light"
+```
+
+### **Nguyên nhân:**
+1. `ColorSchemeScript` set `data-mantine-color-scheme` trên server
+2. Mantine có thể đọc color scheme từ localStorage trên client
+3. Server render với "light" nhưng client có thể là "dark" → mismatch
+4. Nhiều components dùng `useMantineColorScheme()` có thể gây conflict
+
+### **Giải pháp:**
+✅ **Sửa `src/app/layout.tsx`:**
+- Thêm `suppressHydrationWarning` vào thẻ `<html>` (expected behavior với Mantine)
+- Thêm `defaultColorScheme="light"` vào `ColorSchemeScript`
+
+✅ **Sửa `src/app/providers.tsx`:**
+- Thêm `defaultColorScheme="light"` vào `MantineProvider`
+
+**Code thay đổi:**
+```typescript
+// layout.tsx
+<html lang="vi" suppressHydrationWarning>
+  <head>
+    <ColorSchemeScript defaultColorScheme="light" />
+  </head>
+  ...
+</html>
+
+// providers.tsx
+<MantineProvider theme={theme} defaultColorScheme="light">
+  ...
+</MantineProvider>
+```
+
+### **Kết quả:**
+✅ Không còn hydration mismatch warning
+✅ Color scheme được set đồng nhất giữa server và client
+✅ Mantine color scheme toggle vẫn hoạt động bình thường
+✅ Không ảnh hưởng đến functionality
+
+**Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Ky Danh Gia CRUD Not Working (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/ky-danh-gia`:
+- Bấm xóa kỳ đánh giá không thấy xóa
+- Bấm thêm cũng không được
+- Sửa cũng không được
+
+### **Nguyên nhân:**
+1. `KyDanhGiaFormModal` vẫn dùng `mockService` thay vì server actions thật
+2. `DeleteKyDanhGiaModal` vẫn dùng `mockService` và không có code gọi delete thật
+3. Thiếu action `deleteKyDanhGia` trong `src/actions/ky-danh-gia.ts`
+
+### **Giải pháp:**
+✅ **Thêm `deleteKyDanhGia` action vào `src/actions/ky-danh-gia.ts`:**
+- Kiểm tra kỳ đánh giá có tồn tại
+- Kiểm tra có đánh giá liên quan không (không cho xóa nếu có)
+- Xóa kỳ đánh giá nếu hợp lệ
+
+✅ **Migrate `KyDanhGiaFormModal`:**
+- Thay `mockService.kyDanhGias.create()` → `createKyDanhGia()`
+- Thay `mockService.kyDanhGias.update()` → `updateKyDanhGia()`
+- Thêm error handling đúng cách
+
+✅ **Migrate `DeleteKyDanhGiaModal`:**
+- Thay `mockService` → `deleteKyDanhGia()`
+- Thêm code gọi delete action thật
+- Thêm error handling
+
+**Files changed:**
+- `src/actions/ky-danh-gia.ts` - Thêm `deleteKyDanhGia` action
+- `src/features/ky-danh-gia/KyDanhGiaFormModal.tsx` - Migrate sang server actions
+- `src/features/ky-danh-gia/DeleteKyDanhGiaModal.tsx` - Migrate sang server actions
+
+### **Kết quả:**
+✅ Thêm kỳ đánh giá mới hoạt động
+✅ Sửa kỳ đánh giá hoạt động
+✅ Xóa kỳ đánh giá hoạt động (với validation)
+✅ Tất cả CRUD operations dùng database thật
+✅ Error handling đầy đủ
+
+**Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Bieu Mau Trang Thai Not Saved (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/bieu-mau`, khi tạo biểu mẫu:
+- Mặc dù đã chọn "Kích hoạt" nhưng khi lưu vẫn thành "Nháp"
+- Trạng thái không được lưu đúng
+
+### **Nguyên nhân:**
+1. `createBieuMau` action luôn hardcode `trangThai: TrangThaiBieuMau.NHAP` (line 120)
+2. `BieuMauFormBuilder` không truyền `trangThai` vào `createBieuMau` khi tạo mới
+3. Action không nhận `trangThai` từ input
+
+### **Giải pháp:**
+✅ **Sửa `src/actions/bieu-mau.ts`:**
+- Thêm `trangThai?: TrangThaiBieuMau` vào input của `createBieuMau`
+- Sử dụng `trangThai` từ input thay vì hardcode `NHAP`
+- Set `ngayPhatHanh` nếu `trangThai === KICH_HOAT` (giống như `updateBieuMau`)
+
+✅ **Sửa `src/features/forms/BieuMauFormBuilder.tsx`:**
+- Truyền `trangThai: values.trangThai` vào `createBieuMau` khi tạo mới
+
+**Code thay đổi:**
+```typescript
+// actions/bieu-mau.ts
+export async function createBieuMau(data: {
+  ...
+  trangThai?: TrangThaiBieuMau;  // Thêm field này
+  ...
+}) {
+  const trangThai = data.trangThai || TrangThaiBieuMau.NHAP;
+  const createData: any = {
+    ...
+    trangThai,  // Sử dụng từ input
+  };
+  
+  if (trangThai === TrangThaiBieuMau.KICH_HOAT) {
+    createData.ngayPhatHanh = new Date();
+  }
+  ...
+}
+
+// BieuMauFormBuilder.tsx
+const result = await createBieuMau({
+  ...
+  trangThai: values.trangThai,  // Truyền trangThai
+  ...
+});
+```
+
+### **Kết quả:**
+✅ Trạng thái biểu mẫu được lưu đúng khi tạo mới
+✅ Chọn "Kích hoạt" → Lưu thành "Kích hoạt"
+✅ Chọn "Nháp" → Lưu thành "Nháp"
+✅ `ngayPhatHanh` được set đúng khi kích hoạt
+✅ Logic nhất quán giữa create và update
+
+**Status:** ✅ **FIXED** (Updated - Fixed enum type mismatch)
+
+---
+
+## 🐛 BUG FIX - Bieu Mau Trang Thai Still Not Saved (22/12/2024 - Follow-up)
+
+### **Vấn đề:**
+Mặc dù đã sửa lần trước, nhưng khi tạo biểu mẫu với trạng thái "Kích hoạt", sau khi lưu vẫn thành "Nháp".
+
+### **Nguyên nhân:**
+1. Type mismatch giữa TypeScript enum (`TrangThaiBieuMau` từ `@/types/schema`) và Prisma enum (`TrangThaiBieuMau` từ `@prisma/client`)
+2. Prisma Client yêu cầu đúng Prisma enum type, không phải TypeScript enum
+3. So sánh enum có thể fail nếu type không match
+
+### **Giải pháp:**
+✅ **Sửa `src/actions/bieu-mau.ts`:**
+- Import Prisma enum: `import { TrangThaiBieuMau as PrismaTrangThaiBieuMau } from "@prisma/client"`
+- Sử dụng `PrismaTrangThaiBieuMau` thay vì `TrangThaiBieuMau` từ types/schema
+- Đảm bảo giá trị được cast đúng sang Prisma enum type
+- So sánh với Prisma enum để set `ngayPhatHanh`
+
+✅ **Sửa `src/features/forms/BieuMauFormBuilder.tsx`:**
+- Thêm explicit cast `as TrangThaiBieuMau` khi truyền vào `createBieuMau`
+- Đảm bảo giá trị được truyền đúng type
+
+**Code thay đổi:**
+```typescript
+// actions/bieu-mau.ts
+import { TrangThaiBieuMau as PrismaTrangThaiBieuMau } from "@prisma/client";
+
+let trangThai: PrismaTrangThaiBieuMau;
+if (data.trangThai) {
+  trangThai = data.trangThai as PrismaTrangThaiBieuMau;
+} else {
+  trangThai = PrismaTrangThaiBieuMau.NHAP;
+}
+
+const createData: any = {
+  ...
+  trangThai,  // Sử dụng Prisma enum
+  ...
+};
+
+if (trangThai === PrismaTrangThaiBieuMau.KICH_HOAT) {
+  createData.ngayPhatHanh = new Date();
+}
+```
+
+### **Kết quả:**
+✅ Trạng thái biểu mẫu được lưu đúng vào database
+✅ Chọn "Kích hoạt" → Lưu thành "Kích hoạt" trong DB
+✅ Chọn "Nháp" → Lưu thành "Nháp" trong DB
+✅ `ngayPhatHanh` được set đúng khi kích hoạt
+✅ Không còn type mismatch issues
+
+**Status:** ✅ **FIXED**
+
+---
+
+## 🐛 BUG FIX - Select Component Text Color Issue (22/12/2024)
+
+### **Vấn đề:**
+Ở trang `/bieu-mau`, khi tạo/chỉnh sửa biểu mẫu:
+- Ở các field "Loại đánh giá" và "Phạm vi áp dụng", có lúc bấm vào chọn xong, text hiển thị màu trắng (không thấy)
+- Chọn lại thì lại bình thường
+- UI không nhất quán
+
+### **Nguyên nhân:**
+1. Select component đang dùng `form.getInputProps()` với enum values
+2. Có thể gây ra mismatch giữa value và data options
+3. Mantine Select có thể không handle enum values tốt với getInputProps
+4. Color scheme có thể bị conflict khi value không match
+
+### **Giải pháp:**
+✅ **Sửa `src/features/forms/BieuMauFormBuilder.tsx`:**
+- Thay `{...form.getInputProps("loaiDanhGia")}` bằng explicit `value` và `onChange`
+- Thay `{...form.getInputProps("phamViApDung")}` bằng explicit `value` và `onChange`
+- Thay `{...form.getInputProps("trangThai")}` bằng explicit `value` và `onChange`
+- Đảm bảo value được cast đúng type (enum)
+- Thêm logic clear `phongBanId` khi đổi phạm vi áp dụng
+
+**Code thay đổi:**
+```typescript
+// Trước:
+<Select
+  label="Loại đánh giá"
+  data={[...]}
+  {...form.getInputProps("loaiDanhGia")}
+/>
+
+// Sau:
+<Select
+  label="Loại đánh giá"
+  data={[...]}
+  value={form.values.loaiDanhGia}
+  onChange={(value) => form.setFieldValue("loaiDanhGia", value as LoaiDanhGia)}
+  error={form.errors.loaiDanhGia}
+/>
+```
+
+### **Kết quả:**
+✅ Text luôn hiển thị đúng màu, không còn màu trắng
+✅ Select component hoạt động ổn định
+✅ Value được update đúng cách
+✅ Không cần chọn lại để thấy text
+✅ UI nhất quán và rõ ràng
+
+**Status:** ✅ **FIXED**

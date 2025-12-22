@@ -113,14 +113,18 @@ export default function LoginPage() {
         return;
       }
 
-      notifications.show({
-        title: "Đăng nhập thành công",
-        message: `Chào mừng ${foundUser.hoTen || foundUser.maNhanVien}!`,
-        color: "green",
-      });
+      if (result?.ok) {
+        notifications.show({
+          title: "Đăng nhập thành công",
+          message: `Chào mừng ${foundUser.hoTen || foundUser.maNhanVien}!`,
+          color: "green",
+        });
 
-      router.push("/");
-      router.refresh();
+        window.location.href = "/";
+      } else {
+        setError("Đăng nhập thất bại. Vui lòng thử lại");
+        setIsLoading(false);
+      }
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");

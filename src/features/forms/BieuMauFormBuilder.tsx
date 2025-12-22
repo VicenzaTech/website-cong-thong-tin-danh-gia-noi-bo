@@ -207,15 +207,18 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
           throw new Error(result.error);
         }
       } else {
-        const result = await createBieuMau({
+        const createData = {
           tenBieuMau: values.tenBieuMau,
           moTa: values.moTa,
           loaiDanhGia: values.loaiDanhGia,
           phamViApDung: values.phamViApDung,
           phongBanId: values.phamViApDung === PhamViApDung.PHONG_BAN ? values.phongBanId : undefined,
           nguoiTaoId: user?.id || "",
+          trangThai: values.trangThai as TrangThaiBieuMau,
           cauHois: cauHoiData,
-        });
+        };
+
+        const result = await createBieuMau(createData);
 
         if (!result.success) {
           throw new Error(result.error);
@@ -303,7 +306,9 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
                 { value: LoaiDanhGia.LANH_DAO, label: "Đánh giá lãnh đạo" },
                 { value: LoaiDanhGia.NHAN_VIEN, label: "Đánh giá nhân viên" },
               ]}
-              {...form.getInputProps("loaiDanhGia")}
+              value={form.values.loaiDanhGia}
+              onChange={(value) => form.setFieldValue("loaiDanhGia", value as LoaiDanhGia)}
+              error={form.errors.loaiDanhGia}
             />
 
             <Select
@@ -313,7 +318,14 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
                 { value: PhamViApDung.TOAN_CONG_TY, label: "Toàn công ty" },
                 { value: PhamViApDung.PHONG_BAN, label: "Phòng ban cụ thể" },
               ]}
-              {...form.getInputProps("phamViApDung")}
+              value={form.values.phamViApDung}
+              onChange={(value) => {
+                form.setFieldValue("phamViApDung", value as PhamViApDung);
+                if (value !== PhamViApDung.PHONG_BAN) {
+                  form.setFieldValue("phongBanId", "");
+                }
+              }}
+              error={form.errors.phamViApDung}
             />
 
             {form.values.phamViApDung === PhamViApDung.PHONG_BAN && (
@@ -335,7 +347,9 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
                 { value: TrangThaiBieuMau.KICH_HOAT, label: "Kích hoạt" },
                 { value: TrangThaiBieuMau.VO_HIEU, label: "Vô hiệu" },
               ]}
-              {...form.getInputProps("trangThai")}
+              value={form.values.trangThai}
+              onChange={(value) => form.setFieldValue("trangThai", value as TrangThaiBieuMau)}
+              error={form.errors.trangThai}
             />
           </Stack>
         </Paper>

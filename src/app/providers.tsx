@@ -8,7 +8,7 @@ import { AuthProvider } from "@/features/auth/AuthContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <MantineProvider theme={theme}>
+    <MantineProvider theme={theme} defaultColorScheme="light">
       <NextAuthProvider>
         <AuthProvider>
           <Notifications position="bottom-right" />
