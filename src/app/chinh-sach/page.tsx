@@ -11,12 +11,14 @@ import {
   List,
   Divider,
   Badge,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useAuth } from "@/features/auth/AuthContext";
 
 export default function ChinhSachPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const { colorScheme } = useMantineColorScheme();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -248,7 +250,13 @@ export default function ChinhSachPage() {
           </Stack>
         </Paper>
 
-        <Paper withBorder shadow="sm" p="xl" radius="md" bg="blue.0">
+        <Paper 
+          withBorder 
+          shadow="sm" 
+          p="xl" 
+          radius="md" 
+          bg={colorScheme === "dark" ? "dark.6" : "blue.0"}
+        >
           <Stack gap="xs">
             <Text fw={600} size="lg">
               Cam kết của chúng tôi

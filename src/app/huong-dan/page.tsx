@@ -12,6 +12,7 @@ import {
   List,
   ThemeIcon,
   Badge,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { IconCircleCheck } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -19,6 +20,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 export default function HuongDanPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const { colorScheme } = useMantineColorScheme();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -238,7 +240,13 @@ export default function HuongDanPage() {
           </Accordion>
         </Paper>
 
-        <Paper withBorder shadow="sm" p="xl" radius="md" bg="blue.0">
+        <Paper 
+          withBorder 
+          shadow="sm" 
+          p="xl" 
+          radius="md" 
+          bg={colorScheme === "dark" ? "dark.6" : "blue.0"}
+        >
           <Stack gap="xs">
             <Text fw={600} size="lg">
               Cần hỗ trợ thêm?

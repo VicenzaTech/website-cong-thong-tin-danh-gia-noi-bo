@@ -40,7 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           marginLeft: 280,
           marginTop: 60,
           minHeight: "calc(100vh - 60px)",
-          backgroundColor: "var(--mantine-color-gray-0)",
+          backgroundColor: "var(--mantine-color-body)",
           display: "flex",
           flexDirection: "column",
         }}

@@ -20,6 +20,7 @@ import {
   Card,
   Checkbox,
   NumberInput,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -50,6 +51,7 @@ interface CauHoiForm {
 export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { colorScheme } = useMantineColorScheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -427,7 +429,13 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
         </Paper>
 
         {showPreview && (
-          <Paper withBorder shadow="sm" p="lg" radius="md" bg="gray.0">
+          <Paper 
+            withBorder 
+            shadow="sm" 
+            p="lg" 
+            radius="md" 
+            bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
+          >
             <Stack gap="md">
               <Title order={4}>Xem trước biểu mẫu</Title>
               <Divider />

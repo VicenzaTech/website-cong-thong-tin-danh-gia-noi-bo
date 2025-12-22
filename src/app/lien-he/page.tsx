@@ -13,6 +13,7 @@ import {
   Group,
   Divider,
   Button,
+  useMantineColorScheme,
 } from "@mantine/core";
 import {
   IconMail,
@@ -28,6 +29,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 export default function LienHePage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const { colorScheme } = useMantineColorScheme();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -217,7 +219,13 @@ export default function LienHePage() {
           </Stack>
         </Paper>
 
-        <Paper withBorder shadow="sm" p="xl" radius="md" bg="blue.0">
+        <Paper 
+          withBorder 
+          shadow="sm" 
+          p="xl" 
+          radius="md" 
+          bg={colorScheme === "dark" ? "dark.6" : "blue.0"}
+        >
           <Stack gap="xs">
             <Text fw={600} size="lg">
               Câu hỏi thường gặp
