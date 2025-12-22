@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
 import {
   Container,
@@ -19,17 +20,14 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import type { User } from "@/types/schema";
+import { checkUserByMaNhanVien } from "@/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [foundUser, setFoundUser] = useState<User | null>(null);
+  const [foundUser, setFoundUser] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
@@ -59,28 +57,20 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const user = await mockService.users.getByMaNhanVien(maNhanVien);
+      const result = await checkUserByMaNhanVien(maNhanVien);
 
-      if (!user) {
-        setError("Không tìm thấy mã nhân viên này");
+      if (!result.success) {
+        setError(result.error || "Đã xảy ra lỗi");
         setFoundUser(null);
         setShowPassword(false);
         setIsCheckingUser(false);
         return;
       }
 
-      if (!user.trangThaiKH) {
-        setError("Tài khoản của bạn đã bị vô hiệu hóa");
-        setFoundUser(null);
-        setShowPassword(false);
-        setIsCheckingUser(false);
-        return;
-      }
+      setFoundUser(result.user);
 
-      setFoundUser(user);
-
-      if (!user.matKhau || user.matKhau.trim() === "") {
-        localStorage.setItem("pending_user", JSON.stringify(user));
+      if (result.user && !result.user.hasPassword) {
+        localStorage.setItem("pending_user", JSON.stringify(result.user));
         notifications.show({
           title: "Chào mừng!",
           message: "Vui lòng hoàn tất thông tin đăng ký",
@@ -111,13 +101,18 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (foundUser.matKhau !== values.matKhau) {
-        setError("Mật khẩu không chính xác");
+      const result = await signIn("credentials", {
+        maNhanVien: values.maNhanVien,
+        matKhau: values.matKhau,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(result.error);
         setIsLoading(false);
         return;
       }
 
-      login(foundUser);
       notifications.show({
         title: "Đăng nhập thành công",
         message: `Chào mừng ${foundUser.hoTen || foundUser.maNhanVien}!`,
@@ -125,6 +120,7 @@ export default function LoginPage() {
       });
 
       router.push("/");
+      router.refresh();
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");
@@ -253,4 +249,3 @@ export default function LoginPage() {
     </Box>
   );
 }
-

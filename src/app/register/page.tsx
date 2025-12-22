@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
 import {
   Container,
@@ -18,16 +19,13 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
-import type { User } from "@/types/schema";
+import { updateUserPassword } from "@/actions/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [pendingUser, setPendingUser] = useState<any>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("pending_user");
@@ -59,7 +57,7 @@ export default function RegisterPage() {
         return null;
       },
       email: (value) => {
-        if (!value) return "Vui lòng nhập email";
+        if (!value) return null;
         if (!/^\S+@\S+$/.test(value)) return "Email không hợp lệ";
         return null;
       },
@@ -86,22 +84,36 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const updatedUser = await mockService.users.update(pendingUser.id, {
-        hoTen: values.hoTen,
-        email: values.email,
-        matKhau: values.matKhau,
-        daDangKy: true,
-      });
+      const result = await updateUserPassword(
+        pendingUser.id,
+        values.hoTen,
+        values.email || null,
+        values.matKhau
+      );
 
-      if (!updatedUser) {
-        setError("Không thể cập nhật thông tin. Vui lòng thử lại");
+      if (!result.success) {
+        setError(result.error || "Đã xảy ra lỗi");
         setIsLoading(false);
         return;
       }
 
       localStorage.removeItem("pending_user");
 
-      login(updatedUser);
+      const signInResult = await signIn("credentials", {
+        maNhanVien: pendingUser.maNhanVien,
+        matKhau: values.matKhau,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        notifications.show({
+          title: "Đăng ký thành công",
+          message: "Vui lòng đăng nhập lại",
+          color: "blue",
+        });
+        router.push("/login");
+        return;
+      }
 
       notifications.show({
         title: "Đăng ký thành công",
@@ -110,6 +122,7 @@ export default function RegisterPage() {
       });
 
       router.push("/");
+      router.refresh();
     } catch (err) {
       console.error("Registration error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");
@@ -146,12 +159,7 @@ export default function RegisterPage() {
             <strong>Mã nhân viên:</strong> {pendingUser.maNhanVien}
           </Text>
           <Text size="sm">
-            <strong>Vai trò:</strong>{" "}
-            {pendingUser.role === "admin"
-              ? "Quản trị viên"
-              : pendingUser.role === "truong_phong"
-                ? "Trưởng phòng"
-                : "Nhân viên"}
+            <strong>Phòng ban:</strong> {pendingUser.phongBanName}
           </Text>
         </Alert>
 
@@ -174,7 +182,6 @@ export default function RegisterPage() {
               label="Email"
               placeholder="example@company.com"
               type="email"
-              required
               {...form.getInputProps("email")}
             />
 
@@ -213,4 +220,3 @@ export default function RegisterPage() {
     </Container>
   );
 }
-

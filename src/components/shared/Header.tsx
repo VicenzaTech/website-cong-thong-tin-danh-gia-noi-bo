@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   Group,
   Avatar,
@@ -18,24 +19,25 @@ import {
   IconSun,
   IconMoon,
 } from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { notifications } from "@mantine/notifications";
 
 export function Header() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuthSession();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   if (!user) return null;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     notifications.show({
       title: "Đăng xuất thành công",
       message: "Hẹn gặp lại bạn!",
       color: "blue",
     });
     router.push("/login");
+    router.refresh();
   };
 
   const getInitials = (name?: string) => {
@@ -84,15 +86,17 @@ export function Header() {
               <UnstyledButton>
                 <Group gap="sm">
                   <Avatar color="blue" radius="xl">
-                    {getInitials(user.hoTen)}
+                    {getInitials(user.hoTen || undefined)}
                   </Avatar>
                   <div style={{ flex: 1 }}>
                     <Text size="sm" fw={500}>
                       {user.hoTen}
                     </Text>
-                    <Text size="xs" c="dimmed">
-                      {user.email}
-                    </Text>
+                    {user.email && (
+                      <Text size="xs" c="dimmed">
+                        {user.email}
+                      </Text>
+                    )}
                   </div>
                 </Group>
               </UnstyledButton>

@@ -14,12 +14,12 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { changePassword } from "@/actions/auth";
 
 export default function CaiDatPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, updateUser } = useAuth();
+  const { user, isLoading: authLoading } = useAuthSession();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,30 +60,17 @@ export default function CaiDatPage() {
     setError(null);
 
     try {
-      const currentUser = await mockService.users.getById(user.id);
-      if (!currentUser) {
-        setError("Không tìm thấy thông tin người dùng");
+      const result = await changePassword(
+        user.id,
+        values.matKhauHienTai,
+        values.matKhauMoi
+      );
+
+      if (!result.success) {
+        setError(result.error || "Đã xảy ra lỗi");
         setIsLoading(false);
         return;
       }
-
-      if (currentUser.matKhau !== values.matKhauHienTai) {
-        setError("Mật khẩu hiện tại không chính xác");
-        setIsLoading(false);
-        return;
-      }
-
-      const updatedUser = await mockService.users.update(user.id, {
-        matKhau: values.matKhauMoi,
-      });
-
-      if (!updatedUser) {
-        setError("Không thể cập nhật mật khẩu. Vui lòng thử lại");
-        setIsLoading(false);
-        return;
-      }
-
-      updateUser({ matKhau: updatedUser.matKhau });
 
       form.reset();
       notifications.show({
@@ -159,4 +146,3 @@ export default function CaiDatPage() {
     </Container>
   );
 }
-

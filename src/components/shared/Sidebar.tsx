@@ -16,7 +16,7 @@ import {
   IconHistory,
   IconEye,
 } from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { Role } from "@/types/schema";
 
 interface MenuItem {
@@ -91,7 +91,7 @@ const menuItems: MenuItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, checkPermission } = useAuth();
+  const { user, checkPermission } = useAuthSession();
   const { colorScheme } = useMantineColorScheme();
 
   if (!user) return null;

@@ -3,15 +3,15 @@
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "@/styles/theme";
-import { AuthProvider } from "@/features/auth/AuthContext";
+import { NextAuthProvider } from "@/features/auth/NextAuthProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider theme={theme}>
-      <AuthProvider>
+      <NextAuthProvider>
         <Notifications position="bottom-right" />
         {children}
-      </AuthProvider>
+      </NextAuthProvider>
     </MantineProvider>
   );
 }

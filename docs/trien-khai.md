@@ -248,16 +248,16 @@
 
 ### Bước 6.2: Implement Auth Thật (NextAuth.js)
 
-- [ ] **Cài đặt Dependencies**
+- [x] **Cài đặt Dependencies**
   - `next-auth`, `@next-auth/prisma-adapter`, `bcrypt`
 
-- [ ] **Cấu hình NextAuth**
+- [x] **Cấu hình NextAuth**
   - Cấu hình `route.ts` cho NextAuth (Credentials Provider)
 
-- [ ] **Thay thế Mock Auth**
+- [x] **Thay thế Mock Auth**
   - Thay thế `MockAuthProvider` bằng `SessionProvider` của NextAuth
 
-- [ ] **Update Login Logic**
+- [x] **Update Login Logic**
   - Cập nhật logic Login để gọi API NextAuth thực tế
 
 ### Bước 6.3: API Implementation (Server Actions)
