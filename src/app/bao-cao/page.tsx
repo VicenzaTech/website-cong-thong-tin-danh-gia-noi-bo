@@ -185,12 +185,14 @@ export default function BaoCaoPage() {
       }
     });
 
-    const distributionData: ScoreDistribution[] = Object.entries(distribution).map(
-      ([score, count]) => ({
+    const distributionData: ScoreDistribution[] = Object.entries(distribution)
+      .map(([score, count]) => ({
         score: `${score} sao`,
         count,
-      })
-    );
+        order: parseInt(score), // Add order for sorting
+      }))
+      .sort((a, b) => a.order - b.order) // Sort by score order
+      .map(({ order, ...rest }) => rest); // Remove order field
 
     setScoreDistribution(distributionData);
   };
@@ -377,6 +379,25 @@ export default function BaoCaoPage() {
             series={[{ name: "count", label: "Số lượng", color: "blue.6" }]}
             tickLine="y"
             gridAxis="y"
+            tooltipProps={{
+              content: ({ label, payload }) => {
+                if (!payload || payload.length === 0) return null;
+                return (
+                  <div style={{
+                    backgroundColor: 'white',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '8px 12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                  }}>
+                    <div style={{ fontWeight: 600, marginBottom: '4px' }}>{label}</div>
+                    <div style={{ color: '#228be6' }}>
+                      Số lượng: <strong>{payload[0].value}</strong>
+                    </div>
+                  </div>
+                );
+              }
+            }}
           />
         ) : (
           <Center h={300}>
