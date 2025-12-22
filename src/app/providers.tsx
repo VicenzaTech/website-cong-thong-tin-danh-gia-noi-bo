@@ -9,7 +9,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider theme={theme}>
       <AuthProvider>
-        <Notifications position="top-right" />
+        <Notifications position="bottom-right" />
         {children}
       </AuthProvider>
     </MantineProvider>

@@ -15,6 +15,7 @@ import {
   Alert,
   Center,
   Loader,
+  Box,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -142,87 +143,114 @@ export default function LoginPage() {
   };
 
   return (
-    <Container size={420} my={40}>
-      <Center mb="xl">
-        <Image
-          src="/logo-vicenza.png"
-          alt="Vicenza Logo"
-          width={120}
-          height={120}
-          priority
-        />
-      </Center>
-      
-      <Title ta="center" mb="md">
-        Đăng nhập
-      </Title>
-      <Text c="dimmed" size="sm" ta="center" mb="xl">
-        Hệ thống Đánh giá Nội bộ
-      </Text>
-
-      <Paper withBorder shadow="md" p={30} radius="md">
-        <form onSubmit={form.onSubmit(handleSubmit)}>
+    <Box
+      style={{
+        minHeight: "100vh",
+        backgroundImage: "url(/company.jpg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Box
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+          zIndex: 1,
+        }}
+      />
+      <Container size={420} style={{ position: "relative", zIndex: 2 }} my={40}>
+        <Paper withBorder shadow="xl" p={30} radius="md" bg="rgba(255, 255, 255, 0.95)">
           <Stack gap="md">
-            {error && (
-              <Alert color="red" title="Lỗi đăng nhập">
-                {error}
-              </Alert>
-            )}
-
-            {foundUser && foundUser.hoTen && (
-              <Alert color="blue" title="Thông tin người dùng">
-                <Text size="sm">
-                  <strong>Họ tên:</strong> {foundUser.hoTen}
-                </Text>
-              </Alert>
-            )}
-
-            <TextInput
-              label="Mã nhân viên"
-              placeholder="Nhập mã nhân viên"
-              required
-              disabled={isLoading || isCheckingUser}
-              rightSection={isCheckingUser ? <Loader size="xs" /> : null}
-              {...form.getInputProps("maNhanVien")}
-              onChange={(e) => handleMaNhanVienChange(e.target.value)}
-              onBlur={() => {
-                if (form.values.maNhanVien.trim() && !foundUser && !isCheckingUser) {
-                  handleCheckUser();
-                }
-              }}
-            />
-
-            {showPassword && foundUser && (
-              <PasswordInput
-                label="Mật khẩu"
-                placeholder="Nhập mật khẩu"
-                required
-                {...form.getInputProps("matKhau")}
+            <Center mb="md">
+              <Image
+                src="/logo-vicenza.png"
+                alt="Vicenza Logo"
+                width={120}
+                height={120}
+                priority
               />
-            )}
+            </Center>
+            
+            <Title ta="center" mb="xs">
+              Đăng nhập
+            </Title>
+            <Text c="dimmed" size="sm" ta="center" mb="lg">
+              Hệ thống Đánh giá Nội bộ
+            </Text>
 
-            {!showPassword ? (
-              <Button
-                type="button"
-                fullWidth
-                loading={isCheckingUser}
-                onClick={handleCheckUser}
-              >
-                Tiếp tục
-              </Button>
-            ) : (
-              <Button type="submit" fullWidth loading={isLoading}>
-                Đăng nhập
-              </Button>
-            )}
+            <form onSubmit={form.onSubmit(handleSubmit)}>
+              <Stack gap="md">
+              {error && (
+                <Alert color="red" title="Lỗi đăng nhập">
+                  {error}
+                </Alert>
+              )}
+
+              {foundUser && foundUser.hoTen && (
+                <Alert color="blue" title="Thông tin người dùng">
+                  <Text size="sm">
+                    <strong>Họ tên:</strong> {foundUser.hoTen}
+                  </Text>
+                </Alert>
+              )}
+
+              <TextInput
+                label="Mã nhân viên"
+                placeholder="Nhập mã nhân viên"
+                required
+                disabled={isLoading || isCheckingUser}
+                rightSection={isCheckingUser ? <Loader size="xs" /> : null}
+                {...form.getInputProps("maNhanVien")}
+                onChange={(e) => handleMaNhanVienChange(e.target.value)}
+                onBlur={() => {
+                  if (form.values.maNhanVien.trim() && !foundUser && !isCheckingUser) {
+                    handleCheckUser();
+                  }
+                }}
+              />
+
+              {showPassword && foundUser && (
+                <PasswordInput
+                  label="Mật khẩu"
+                  placeholder="Nhập mật khẩu"
+                  required
+                  {...form.getInputProps("matKhau")}
+                />
+              )}
+
+              {!showPassword ? (
+                <Button
+                  type="button"
+                  fullWidth
+                  loading={isCheckingUser}
+                  onClick={handleCheckUser}
+                >
+                  Tiếp tục
+                </Button>
+              ) : (
+                <Button type="submit" fullWidth loading={isLoading}>
+                  Đăng nhập
+                </Button>
+              )}
+              </Stack>
+            </form>
+
+            <Text size="sm" c="dimmed" mt="md" ta="center">
+              Lần đầu đăng nhập? Hệ thống sẽ yêu cầu bạn cập nhật thông tin
+            </Text>
           </Stack>
-        </form>
-
-        <Text size="sm" c="dimmed" mt="md" ta="center">
-          Lần đầu đăng nhập? Hệ thống sẽ yêu cầu bạn cập nhật thông tin
-        </Text>
-      </Paper>
-    </Container>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
 
