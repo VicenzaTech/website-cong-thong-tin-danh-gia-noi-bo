@@ -47,8 +47,8 @@
 ### Bước 2.1: Authentication UI (Mock)
 
 - [x] **Trang Đăng nhập (`/login`)**
-  - UI: Form nhập Mã NV + Chọn Phòng ban (Select) + Mật khẩu
-  - Logic: Check `maNhanVien` trong Mock DB. Nếu đúng → lưu user vào localStorage hoặc Context
+  - UI: Form nhập Mã NV (bỏ chọn phòng ban vì mã NV đã là ID riêng). Khi nhập mã NV, hiển thị tên người dùng. Nếu chưa có password → redirect đăng ký. Nếu có password → hiển thị field password
+  - Logic: Check `maNhanVien` trong Mock DB. Hiển thị tên người dùng khi tìm thấy. Nếu `matKhau` chưa có → redirect `/register`. Nếu có → hiển thị field password và xác thực. Đăng nhập thành công → lưu user vào localStorage hoặc Context
 
 - [x] **Trang Đăng ký/Update Info (`/register`)**
   - UI: Form cho user lần đầu (cập nhật Họ tên, Email, Password)

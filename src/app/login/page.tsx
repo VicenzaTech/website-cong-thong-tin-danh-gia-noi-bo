@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -10,63 +10,75 @@ import {
   TextInput,
   PasswordInput,
   Button,
-  Select,
   Stack,
   Text,
   Alert,
   Center,
+  Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
-import { phongBans } from "@/_mock/db";
+import type { User } from "@/types/schema";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [foundUser, setFoundUser] = useState<User | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
     initialValues: {
       maNhanVien: "",
-      phongBanId: "",
       matKhau: "",
     },
     validate: {
       maNhanVien: (value) => (!value ? "Vui lòng nhập mã nhân viên" : null),
-      phongBanId: (value) => (!value ? "Vui lòng chọn phòng ban" : null),
-      matKhau: (value) => (!value ? "Vui lòng nhập mật khẩu" : null),
+      matKhau: (value) => {
+        if (showPassword && !value) {
+          return "Vui lòng nhập mật khẩu";
+        }
+        return null;
+      },
     },
   });
 
-  const handleSubmit = async (values: typeof form.values) => {
-    setIsLoading(true);
+  const handleCheckUser = async () => {
+    const maNhanVien = form.values.maNhanVien.trim();
+    if (!maNhanVien) {
+      form.setFieldError("maNhanVien", "Vui lòng nhập mã nhân viên");
+      return;
+    }
+
+    setIsCheckingUser(true);
     setError(null);
 
     try {
-      const user = await mockService.users.getByMaNhanVien(values.maNhanVien);
+      const user = await mockService.users.getByMaNhanVien(maNhanVien);
 
       if (!user) {
         setError("Không tìm thấy mã nhân viên này");
-        setIsLoading(false);
-        return;
-      }
-
-      if (user.phongBanId !== values.phongBanId) {
-        setError("Mã nhân viên không thuộc phòng ban đã chọn");
-        setIsLoading(false);
+        setFoundUser(null);
+        setShowPassword(false);
+        setIsCheckingUser(false);
         return;
       }
 
       if (!user.trangThaiKH) {
         setError("Tài khoản của bạn đã bị vô hiệu hóa");
-        setIsLoading(false);
+        setFoundUser(null);
+        setShowPassword(false);
+        setIsCheckingUser(false);
         return;
       }
 
-      if (!user.daDangKy) {
+      setFoundUser(user);
+
+      if (!user.matKhau || user.matKhau.trim() === "") {
         localStorage.setItem("pending_user", JSON.stringify(user));
         notifications.show({
           title: "Chào mừng!",
@@ -77,16 +89,37 @@ export default function LoginPage() {
         return;
       }
 
-      if (user.matKhau !== values.matKhau) {
+      setShowPassword(true);
+    } catch (err) {
+      console.error("Check user error:", err);
+      setError("Đã xảy ra lỗi. Vui lòng thử lại");
+      setFoundUser(null);
+      setShowPassword(false);
+    } finally {
+      setIsCheckingUser(false);
+    }
+  };
+
+  const handleSubmit = async (values: typeof form.values) => {
+    if (!foundUser) {
+      handleCheckUser();
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (foundUser.matKhau !== values.matKhau) {
         setError("Mật khẩu không chính xác");
         setIsLoading(false);
         return;
       }
 
-      login(user);
+      login(foundUser);
       notifications.show({
         title: "Đăng nhập thành công",
-        message: `Chào mừng ${user.hoTen}!`,
+        message: `Chào mừng ${foundUser.hoTen || foundUser.maNhanVien}!`,
         color: "green",
       });
 
@@ -98,12 +131,15 @@ export default function LoginPage() {
     }
   };
 
-  const phongBanOptions = phongBans
-    .filter((pb) => !pb.deletedAt)
-    .map((pb) => ({
-      value: pb.id,
-      label: pb.tenPhongBan,
-    }));
+  const handleMaNhanVienChange = (value: string) => {
+    form.setFieldValue("maNhanVien", value);
+    if (foundUser) {
+      setFoundUser(null);
+      setShowPassword(false);
+      form.setFieldValue("matKhau", "");
+    }
+    setError(null);
+  };
 
   return (
     <Container size={420} my={40}>
@@ -133,32 +169,52 @@ export default function LoginPage() {
               </Alert>
             )}
 
+            {foundUser && foundUser.hoTen && (
+              <Alert color="blue" title="Thông tin người dùng">
+                <Text size="sm">
+                  <strong>Họ tên:</strong> {foundUser.hoTen}
+                </Text>
+              </Alert>
+            )}
+
             <TextInput
               label="Mã nhân viên"
               placeholder="Nhập mã nhân viên"
               required
+              disabled={isLoading || isCheckingUser}
+              rightSection={isCheckingUser ? <Loader size="xs" /> : null}
               {...form.getInputProps("maNhanVien")}
+              onChange={(e) => handleMaNhanVienChange(e.target.value)}
+              onBlur={() => {
+                if (form.values.maNhanVien.trim() && !foundUser && !isCheckingUser) {
+                  handleCheckUser();
+                }
+              }}
             />
 
-            <Select
-              label="Phòng ban"
-              placeholder="Chọn phòng ban"
-              data={phongBanOptions}
-              required
-              searchable
-              {...form.getInputProps("phongBanId")}
-            />
+            {showPassword && foundUser && (
+              <PasswordInput
+                label="Mật khẩu"
+                placeholder="Nhập mật khẩu"
+                required
+                {...form.getInputProps("matKhau")}
+              />
+            )}
 
-            <PasswordInput
-              label="Mật khẩu"
-              placeholder="Nhập mật khẩu"
-              required
-              {...form.getInputProps("matKhau")}
-            />
-
-            <Button type="submit" fullWidth loading={isLoading}>
-              Đăng nhập
-            </Button>
+            {!showPassword ? (
+              <Button
+                type="button"
+                fullWidth
+                loading={isCheckingUser}
+                onClick={handleCheckUser}
+              >
+                Tiếp tục
+              </Button>
+            ) : (
+              <Button type="submit" fullWidth loading={isLoading}>
+                Đăng nhập
+              </Button>
+            )}
           </Stack>
         </form>
 
