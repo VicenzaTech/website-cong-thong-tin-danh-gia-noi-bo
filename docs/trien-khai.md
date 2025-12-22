@@ -231,19 +231,19 @@
 
 ### Bước 6.1: Setup Database & Prisma
 
-- [ ] **Cài đặt PostgreSQL**
+- [x] **Cài đặt PostgreSQL**
   - Local hoặc Docker
 
-- [ ] **Khởi tạo Prisma**
+- [x] **Khởi tạo Prisma**
   - Chạy `npx prisma init`
 
-- [ ] **Cấu hình Schema**
+- [x] **Cấu hình Schema**
   - Copy nội dung `schema.md` vào `schema.prisma`
 
-- [ ] **Migration**
+- [x] **Migration**
   - Chạy `npx prisma migrate dev` để tạo bảng DB thật
 
-- [ ] **Seed Data**
+- [x] **Seed Data**
   - Viết script `seed.ts` để nạp dữ liệu mẫu ban đầu vào DB thật
 
 ### Bước 6.2: Implement Auth Thật (NextAuth.js)
