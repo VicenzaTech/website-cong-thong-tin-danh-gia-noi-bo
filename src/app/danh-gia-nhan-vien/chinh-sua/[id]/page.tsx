@@ -91,18 +91,26 @@ function EditPeerEvaluationFormContent() {
       return;
     }
 
+    if (!currentUser) return;
+
+    let cancelled = false;
+
     const loadEvaluationData = async () => {
       setIsLoading(true);
       try {
         const danhGiaResult = await getDanhGiaById(danhGiaId);
 
+        if (cancelled) return;
+
         if (!danhGiaResult.success || !danhGiaResult.data) {
-          notifications.show({
-            title: "Lỗi",
-            message: "Không tìm thấy thông tin đánh giá.",
-            color: "red",
-          });
-          router.push("/lich-su-danh-gia");
+          if (!cancelled) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Không tìm thấy thông tin đánh giá.",
+              color: "red",
+            });
+            router.push("/lich-su-danh-gia");
+          }
           return;
         }
 
@@ -110,12 +118,14 @@ function EditPeerEvaluationFormContent() {
 
         // Check if current user is the evaluator
         if (currentUser && danhGiaData.nguoiDanhGiaId !== currentUser.id) {
-          notifications.show({
-            title: "Lỗi",
-            message: "Bạn không có quyền chỉnh sửa đánh giá này.",
-            color: "red",
-          });
-          router.push("/lich-su-danh-gia");
+          if (!cancelled) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Bạn không có quyền chỉnh sửa đánh giá này.",
+              color: "red",
+            });
+            router.push("/lich-su-danh-gia");
+          }
           return;
         }
 
@@ -124,49 +134,59 @@ function EditPeerEvaluationFormContent() {
         const canEditData = kyDanhGiaData?.dangMo && !danhGiaData.submittedAt;
 
         if (!canEditData) {
-          notifications.show({
-            title: "Thông báo",
-            message: "Đánh giá này đã hết hạn chỉnh sửa.",
-            color: "orange",
-          });
-          router.push("/lich-su-danh-gia");
+          if (!cancelled) {
+            notifications.show({
+              title: "Thông báo",
+              message: "Đánh giá này đã hết hạn chỉnh sửa.",
+              color: "orange",
+            });
+            router.push("/lich-su-danh-gia");
+          }
           return;
         }
 
-        setDanhGia(danhGiaData as any);
-        setNguoiDuocDanhGia(danhGiaData.nguoiDuocDanhGia as any);
-        setBieuMau(danhGiaData.bieuMau as any);
-        setCauHois((danhGiaData.bieuMau?.cauHois?.sort((a, b) => a.thuTu - b.thuTu) || []) as any);
-        setCanEdit(canEditData);
-        setCauTraLois((danhGiaData.cauTraLois || []) as any);
+        if (!cancelled) {
+          setDanhGia(danhGiaData as any);
+          setNguoiDuocDanhGia(danhGiaData.nguoiDuocDanhGia as any);
+          setBieuMau(danhGiaData.bieuMau as any);
+          setCauHois((danhGiaData.bieuMau?.cauHois?.sort((a, b) => a.thuTu - b.thuTu) || []) as any);
+          setCanEdit(canEditData);
+          setCauTraLois((danhGiaData.cauTraLois || []) as any);
 
-        // Populate form with existing data
-        const answersMap: Record<string, number> = {};
-        danhGiaData.cauTraLois?.forEach((ctl) => {
-          answersMap[ctl.cauHoiId] = ctl.diem;
-        });
+          // Populate form with existing data
+          const answersMap: Record<string, number> = {};
+          danhGiaData.cauTraLois?.forEach((ctl) => {
+            answersMap[ctl.cauHoiId] = ctl.diem;
+          });
 
-        form.setValues({
-          answers: answersMap,
-          nhanXetChung: danhGiaData.nhanXetChung || "",
-        });
+          form.setValues({
+            answers: answersMap,
+            nhanXetChung: danhGiaData.nhanXetChung || "",
+          });
+        }
       } catch (error) {
-        console.error("Failed to load evaluation data:", error);
-        notifications.show({
-          title: "Lỗi",
-          message: "Không thể tải dữ liệu đánh giá. Vui lòng thử lại.",
-          color: "red",
-        });
-        router.push("/lich-su-danh-gia");
+        if (!cancelled) {
+          console.error("Failed to load evaluation data:", error);
+          notifications.show({
+            title: "Lỗi",
+            message: "Không thể tải dữ liệu đánh giá. Vui lòng thử lại.",
+            color: "red",
+          });
+          router.push("/lich-su-danh-gia");
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    if (currentUser) {
-      loadEvaluationData();
-    }
-  }, [currentUser, authLoading, router, danhGiaId, nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId]);
+    loadEvaluationData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser, authLoading, router, danhGiaId, nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId, form]);
 
   const handleSubmit = async (values: EvaluationFormValues) => {
     if (!currentUser || !nguoiDuocDanhGia || !bieuMau || !kyDanhGiaId || !danhGia) {

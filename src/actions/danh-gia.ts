@@ -242,6 +242,11 @@ export async function createDanhGia(data: {
   }>;
 }) {
   try {
+    // Validate: Phải có ít nhất một câu trả lời
+    if (!data.cauTraLois || data.cauTraLois.length === 0) {
+      return { success: false, error: "Phải có ít nhất một câu trả lời" };
+    }
+
     const existing = await checkExistingDanhGia(
       data.nguoiDanhGiaId,
       data.nguoiDuocDanhGiaId,
@@ -313,6 +318,11 @@ export async function updateDanhGia(
     }
 
     if (data.cauTraLois) {
+      // Validate: Phải có ít nhất một câu trả lời
+      if (data.cauTraLois.length === 0) {
+        return { success: false, error: "Phải có ít nhất một câu trả lời" };
+      }
+
       await prisma.cauTraLoi.deleteMany({
         where: { danhGiaId: id },
       });

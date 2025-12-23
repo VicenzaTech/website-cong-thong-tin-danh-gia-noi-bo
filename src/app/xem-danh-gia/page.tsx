@@ -73,7 +73,7 @@ export default function XemDanhGiaPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId]);
+  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, currentUser]);
 
   const loadData = async () => {
     if (!currentUser) return;

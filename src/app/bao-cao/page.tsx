@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Stack,
@@ -68,55 +68,11 @@ export default function BaoCaoPage() {
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    if (selectedKyId) {
-      loadReportData();
-    }
-  }, [selectedKyId, selectedPhongBanId]);
-
-  const loadKyDanhGias = async () => {
-    try {
-      const result = await getAllKyDanhGias();
-      const kys = result.success && result.data ? result.data : [];
-      setKyDanhGias(kys as any);
-      if (kys.length > 0) {
-        // Select the most recent active period or the first one
-        const activeKy = kys.find((ky) => ky.dangMo);
-        setSelectedKyId(activeKy?.id || kys[0].id);
-      }
-    } catch (error) {
-      console.error("Failed to load evaluation periods:", error);
-    }
-  };
-
-  const loadPhongBans = async () => {
-    if (!currentUser) return;
-
-    try {
-      const result = await getAllPhongBans();
-      const allPhongBans = result.success && result.data ? result.data : [];
-      setPhongBans(allPhongBans as any);
-
-      // Set default department based on role
-      if (currentUser.role === "truong_phong") {
-        // Manager can only see their own department
-        setSelectedPhongBanId(currentUser.phongBanId);
-      } else if (currentUser.role === "admin") {
-        // Admin defaults to "all departments" (null means all)
-        setSelectedPhongBanId(null);
-      } else {
-        // Regular employee sees their department
-        setSelectedPhongBanId(currentUser.phongBanId);
-      }
-    } catch (error) {
-      console.error("Failed to load departments:", error);
-    }
-  };
-
-  const loadReportData = async () => {
+  const loadReportData = useCallback(async (cancelledRef: { current: boolean }) => {
     if (!currentUser || !selectedKyId) return;
 
     setIsLoading(true);
+
     try {
       let allDanhGias: any[] = [];
 
@@ -158,145 +114,187 @@ export default function BaoCaoPage() {
         allDanhGias = result.success && result.data ? result.data : [];
       }
 
+      if (cancelledRef.current) return;
+
       // Filter by selected period
       const periodEvaluations = allDanhGias.filter(
         (dg) => dg.kyDanhGiaId === selectedKyId && dg.daHoanThanh
       );
 
       // Calculate score distribution
-      await calculateScoreDistribution(periodEvaluations);
+      const allAnswers: CauTraLoi[] = [];
+      for (const evaluation of periodEvaluations) {
+        if (evaluation.cauTraLois) {
+          allAnswers.push(...evaluation.cauTraLois);
+        }
+      }
+
+      const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      allAnswers.forEach((answer) => {
+        if (answer.diem >= 1 && answer.diem <= 5) {
+          distribution[answer.diem]++;
+        }
+      });
+
+      const distributionData: ScoreDistribution[] = Object.entries(distribution)
+        .map(([score, count]) => ({
+          score: `${score} sao`,
+          count,
+          order: parseInt(score),
+        }))
+        .sort((a, b) => a.order - b.order)
+        .map(({ order, ...rest }) => rest);
+
+      if (!cancelledRef.current) {
+        setScoreDistribution(distributionData);
+      }
 
       // Calculate criteria scores (radar chart)
-      await calculateCriteriaScores(periodEvaluations);
+      if (periodEvaluations.length === 0) {
+        if (!cancelledRef.current) {
+          setCriteriaScores([]);
+        }
+      } else {
+        const questionScores: Record<string, { total: number; count: number; fullText: string }> = {};
+
+        for (const evaluation of periodEvaluations) {
+          const answers = evaluation.cauTraLois || [];
+          
+          for (const answer of answers) {
+            if (!answer || answer.diem === null || answer.diem === undefined || answer.diem < 0) continue;
+            
+            const question = answer.cauHoi;
+            if (!question || !question.noiDung) continue;
+
+            const fullText = question.noiDung.trim();
+            if (!fullText) continue;
+
+            if (!questionScores[fullText]) {
+              questionScores[fullText] = { total: 0, count: 0, fullText };
+            }
+            questionScores[fullText].total += Number(answer.diem);
+            questionScores[fullText].count++;
+          }
+        }
+
+        const criteriaData: CriteriaScore[] = Object.values(questionScores)
+          .map((data) => {
+            let criteriaName = data.fullText.trim();
+            if (criteriaName.length > 30) {
+              criteriaName = criteriaName.substring(0, 30) + "...";
+            }
+            return {
+              criteria: criteriaName,
+              score: data.count > 0 
+                ? Math.round((data.total / data.count) * 100) / 100 
+                : 0,
+            };
+          })
+          .filter((item) => item.score > 0 && item.criteria)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 6);
+
+        if (!cancelledRef.current) {
+          setCriteriaScores(criteriaData);
+        }
+      }
 
       // Calculate leaderboard (for admin and managers only)
       if (currentUser.role === "admin" || currentUser.role === "truong_phong") {
-        await calculateLeaderboard(periodEvaluations);
+        const userScores: Record<
+          string,
+          { totalScore: number; count: number; user: User | null | undefined }
+        > = {};
+
+        for (const evaluation of periodEvaluations) {
+          const userId = evaluation.nguoiDuocDanhGiaId;
+          const user = evaluation.nguoiDuocDanhGia;
+          if (!userScores[userId]) {
+            userScores[userId] = { totalScore: 0, count: 0, user };
+          }
+          if (evaluation.diemTrungBinh) {
+            userScores[userId].totalScore += evaluation.diemTrungBinh;
+            userScores[userId].count++;
+          }
+        }
+
+        const leaderboardData: LeaderboardEntry[] = Object.values(userScores)
+          .filter((data) => data.user && data.count > 0)
+          .map((data) => ({
+            user: data.user!,
+            averageScore: data.totalScore / data.count,
+            totalEvaluations: data.count,
+            rank: 0,
+          }))
+          .sort((a, b) => b.averageScore - a.averageScore)
+          .map((entry, index) => ({ ...entry, rank: index + 1 }))
+          .slice(0, 10);
+
+        if (!cancelledRef.current) {
+          setLeaderboard(leaderboardData);
+        }
       }
     } catch (error) {
-      console.error("Failed to load report data:", error);
+      if (!cancelledRef.current) {
+        console.error("Failed to load report data:", error);
+      }
     } finally {
-      setIsLoading(false);
+      if (!cancelledRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [currentUser, selectedKyId, selectedPhongBanId]);
+
+  useEffect(() => {
+    if (!selectedKyId) return;
+
+    const cancelledRef = { current: false };
+    loadReportData(cancelledRef);
+
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [selectedKyId, selectedPhongBanId, loadReportData]);
+
+  const loadKyDanhGias = async () => {
+    try {
+      const result = await getAllKyDanhGias();
+      const kys = result.success && result.data ? result.data : [];
+      setKyDanhGias(kys as any);
+      if (kys.length > 0) {
+        // Select the most recent active period or the first one
+        const activeKy = kys.find((ky) => ky.dangMo);
+        setSelectedKyId(activeKy?.id || kys[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load evaluation periods:", error);
     }
   };
 
-  const calculateScoreDistribution = async (evaluations: any[]) => {
-    // Get all answers from evaluations
-    const allAnswers: CauTraLoi[] = [];
-    for (const evaluation of evaluations) {
-      if (evaluation.cauTraLois) {
-        allAnswers.push(...evaluation.cauTraLois);
+  const loadPhongBans = async () => {
+    if (!currentUser) return;
+
+    try {
+      const result = await getAllPhongBans();
+      const allPhongBans = result.success && result.data ? result.data : [];
+      setPhongBans(allPhongBans as any);
+
+      // Set default department based on role
+      if (currentUser.role === "truong_phong") {
+        // Manager can only see their own department
+        setSelectedPhongBanId(currentUser.phongBanId);
+      } else if (currentUser.role === "admin") {
+        // Admin defaults to "all departments" (null means all)
+        setSelectedPhongBanId(null);
+      } else {
+        // Regular employee sees their department
+        setSelectedPhongBanId(currentUser.phongBanId);
       }
+    } catch (error) {
+      console.error("Failed to load departments:", error);
     }
-
-    // Count distribution of scores (1-5)
-    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    allAnswers.forEach((answer) => {
-      if (answer.diem >= 1 && answer.diem <= 5) {
-        distribution[answer.diem]++;
-      }
-    });
-
-    const distributionData: ScoreDistribution[] = Object.entries(distribution)
-      .map(([score, count]) => ({
-        score: `${score} sao`,
-        count,
-        order: parseInt(score), // Add order for sorting
-      }))
-      .sort((a, b) => a.order - b.order) // Sort by score order
-      .map(({ order, ...rest }) => rest); // Remove order field
-
-    setScoreDistribution(distributionData);
   };
 
-  const calculateCriteriaScores = async (evaluations: any[]) => {
-    if (evaluations.length === 0) {
-      setCriteriaScores([]);
-      return;
-    }
-
-    // Get all unique questions from evaluations
-    const questionScores: Record<string, { total: number; count: number; fullText: string }> = {};
-
-    for (const evaluation of evaluations) {
-      const answers = evaluation.cauTraLois || [];
-      
-      for (const answer of answers) {
-        // Check if answer has cauHoi and diem
-        if (!answer || answer.diem === null || answer.diem === undefined || answer.diem < 0) continue;
-        
-        const question = answer.cauHoi;
-        if (!question || !question.noiDung) continue;
-
-        // Use full question text as key to avoid duplicates from truncation
-        const fullText = question.noiDung.trim();
-        if (!fullText) continue;
-
-        // Use full text as key, but we'll truncate for display later
-        if (!questionScores[fullText]) {
-          questionScores[fullText] = { total: 0, count: 0, fullText };
-        }
-        questionScores[fullText].total += Number(answer.diem);
-        questionScores[fullText].count++;
-      }
-    }
-
-    // Calculate averages and take top 6 criteria for radar chart
-    const criteriaData: CriteriaScore[] = Object.values(questionScores)
-      .map((data) => {
-        // Clean and truncate criteria name
-        let criteriaName = data.fullText.trim();
-        if (criteriaName.length > 30) {
-          criteriaName = criteriaName.substring(0, 30) + "...";
-        }
-        return {
-          criteria: criteriaName,
-          score: data.count > 0 
-            ? Math.round((data.total / data.count) * 100) / 100 
-            : 0,
-        };
-      })
-      .filter((item) => item.score > 0 && item.criteria) // Filter out invalid scores and empty criteria
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6);
-
-    setCriteriaScores(criteriaData);
-  };
-
-  const calculateLeaderboard = async (evaluations: any[]) => {
-    // Group evaluations by person being evaluated
-    const userScores: Record<
-      string,
-      { totalScore: number; count: number; user: User | null | undefined }
-    > = {};
-
-    for (const evaluation of evaluations) {
-      const userId = evaluation.nguoiDuocDanhGiaId;
-      const user = evaluation.nguoiDuocDanhGia;
-      if (!userScores[userId]) {
-        userScores[userId] = { totalScore: 0, count: 0, user };
-      }
-      if (evaluation.diemTrungBinh) {
-        userScores[userId].totalScore += evaluation.diemTrungBinh;
-        userScores[userId].count++;
-      }
-    }
-
-    // Calculate averages and create leaderboard
-    const leaderboardData: LeaderboardEntry[] = Object.values(userScores)
-      .filter((data) => data.user && data.count > 0)
-      .map((data) => ({
-        user: data.user!,
-        averageScore: data.totalScore / data.count,
-        totalEvaluations: data.count,
-        rank: 0,
-      }))
-      .sort((a, b) => b.averageScore - a.averageScore)
-      .map((entry, index) => ({ ...entry, rank: index + 1 }))
-      .slice(0, 10); // Top 10
-
-    setLeaderboard(leaderboardData);
-  };
 
   const getInitials = (name?: string) => {
     if (!name) return "U";

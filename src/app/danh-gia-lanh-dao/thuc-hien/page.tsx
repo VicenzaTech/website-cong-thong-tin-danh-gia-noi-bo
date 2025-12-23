@@ -64,35 +64,56 @@ function ThucHienDanhGiaContent() {
       router.push("/danh-gia-lanh-dao");
       return;
     }
+
+    let cancelled = false;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const userResult = await getUserById(nguoiDuocDanhGiaId!);
+        if (!cancelled && userResult.success && userResult.data) {
+          setNguoiDuocDanhGia(userResult.data);
+        }
+
+        const bmResult = await getBieuMauById(bieuMauId!);
+        if (!cancelled && bmResult.success && bmResult.data) {
+          setBieuMau(bmResult.data);
+          setCauHois(bmResult.data.cauHois || []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load data:", error);
+          notifications.show({
+            title: "Lỗi",
+            message: "Không thể tải dữ liệu đánh giá",
+            color: "red",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
     loadData();
-  }, [nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const userResult = await getUserById(nguoiDuocDanhGiaId!);
-      if (userResult.success && userResult.data) {
-        setNguoiDuocDanhGia(userResult.data);
-      }
-
-      const bmResult = await getBieuMauById(bieuMauId!);
-      if (bmResult.success && bmResult.data) {
-        setBieuMau(bmResult.data);
-        setCauHois(bmResult.data.cauHois || []);
-      }
-    } catch (error) {
-      console.error("Failed to load data:", error);
-      notifications.show({
-        title: "Lỗi",
-        message: "Không thể tải dữ liệu đánh giá",
-        color: "red",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId, router]);
 
   const handleSubmit = async (values: typeof form.values) => {
+    if (!currentUser) {
+      notifications.show({
+        title: "Lỗi",
+        message: "Vui lòng đăng nhập lại",
+        color: "red",
+      });
+      router.push("/login");
+      return;
+    }
+
     const requiredCauHois = cauHois.filter((ch) => ch.batBuoc);
     const missingAnswers = requiredCauHois.filter((ch) => !values.answers[ch.id]);
 
@@ -113,7 +134,7 @@ function ThucHienDanhGiaContent() {
       }));
 
       const result = await createDanhGia({
-        nguoiDanhGiaId: currentUser!.id,
+        nguoiDanhGiaId: currentUser.id,
         nguoiDuocDanhGiaId: nguoiDuocDanhGiaId!,
         bieuMauId: bieuMauId!,
         kyDanhGiaId: kyDanhGiaId!,

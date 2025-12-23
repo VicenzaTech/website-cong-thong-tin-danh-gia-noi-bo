@@ -54,120 +54,132 @@ export default function Home() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
-      loadDashboardStats();
-    }
-  }, [user]);
-
-  const loadDashboardStats = async () => {
     if (!user) return;
 
-    setIsLoading(true);
-    try {
-      // Get active evaluation period
-      const kyResult = await getActiveKyDanhGias();
-      const currentKy = kyResult.success && kyResult.data ? kyResult.data[0] : null;
-      setActiveKyDanhGia(currentKy as any);
+    let cancelled = false;
 
-      // Get user's evaluations
-      const evalResult = await getDanhGiasByNguoiDanhGia(user.id);
-      const myEvaluations = evalResult.success && evalResult.data ? evalResult.data : [];
-      
-      // Calculate completed evaluations
-      const completed = myEvaluations.filter((dg: any) => dg.daHoanThanh).length;
-      
-      // Calculate average score
-      const completedWithScores = myEvaluations.filter(
-        (dg: any) => dg.daHoanThanh && dg.diemTrungBinh
-      );
-      const avgScore = completedWithScores.length > 0
-        ? completedWithScores.reduce((sum: number, dg: any) => sum + (dg.diemTrungBinh || 0), 0) / completedWithScores.length
-        : 0;
-
-      // Calculate personal progress
-      let personalProgress = 0;
-      if (currentKy) {
-        // Get all users to count colleagues
-        const usersResult = await getAllUsers();
-        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
-        
-        const colleagues = allUsers.filter(
-          (u: any) =>
-            u.phongBanId === user.phongBanId &&
-            u.id !== user.id &&
-            !u.deletedAt &&
-            u.trangThaiKH
-        );
-        
-        // Get department manager
-        const phongBanResult = await getPhongBanById(user.phongBanId);
-        const phongBan = phongBanResult.success ? phongBanResult.data : null;
-        const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
-        
-        const expectedEvaluations = colleagues.length + (hasManager ? 1 : 0);
-        
-        // Count completed evaluations for current period
-        const completedInPeriod = myEvaluations.filter(
-          (dg: any) => dg.kyDanhGiaId === currentKy.id && dg.daHoanThanh
-        ).length;
-        
-        personalProgress = expectedEvaluations > 0
-          ? Math.round((completedInPeriod / expectedEvaluations) * 100)
-          : 0;
-      }
-
-      // Calculate department progress (for truong_phong and admin)
-      let departmentProgress = 0;
-      if (user.role === "truong_phong" || user.role === "admin") {
-        const allDanhGiasResult = await getAllDanhGias();
-        const allDanhGias = allDanhGiasResult.success && allDanhGiasResult.data ? allDanhGiasResult.data : [];
-        
-        const usersResult = await getAllUsers();
-        const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
-        
-        let departmentUsers: string[] = [];
-        if (user.role === "truong_phong") {
-          departmentUsers = allUsers
-            .filter((u: any) => u.phongBanId === user.phongBanId && !u.deletedAt && u.trangThaiKH)
-            .map((u: any) => u.id);
-        } else {
-          departmentUsers = allUsers
-            .filter((u: any) => !u.deletedAt && u.trangThaiKH)
-            .map((u: any) => u.id);
+    const loadDashboardStats = async () => {
+      setIsLoading(true);
+      try {
+        // Get active evaluation period
+        const kyResult = await getActiveKyDanhGias();
+        const currentKy = kyResult.success && kyResult.data ? kyResult.data[0] : null;
+        if (!cancelled) {
+          setActiveKyDanhGia(currentKy as any);
         }
 
-        if (currentKy && departmentUsers.length > 0) {
-          const departmentEvaluations = allDanhGias.filter(
-            (dg: any) =>
-              departmentUsers.includes(dg.nguoiDanhGiaId) &&
-              dg.kyDanhGiaId === currentKy.id
+        // Get user's evaluations
+        const evalResult = await getDanhGiasByNguoiDanhGia(user.id);
+        const myEvaluations = evalResult.success && evalResult.data ? evalResult.data : [];
+        
+        // Calculate completed evaluations
+        const completed = myEvaluations.filter((dg: any) => dg.daHoanThanh).length;
+        
+        // Calculate average score
+        const completedWithScores = myEvaluations.filter(
+          (dg: any) => dg.daHoanThanh && dg.diemTrungBinh
+        );
+        const avgScore = completedWithScores.length > 0
+          ? completedWithScores.reduce((sum: number, dg: any) => sum + (dg.diemTrungBinh || 0), 0) / completedWithScores.length
+          : 0;
+
+        // Calculate personal progress
+        let personalProgress = 0;
+        if (currentKy) {
+          // Get all users to count colleagues
+          const usersResult = await getAllUsers();
+          const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+          
+          const colleagues = allUsers.filter(
+            (u: any) =>
+              u.phongBanId === user.phongBanId &&
+              u.id !== user.id &&
+              !u.deletedAt &&
+              u.trangThaiKH
           );
           
-          const departmentCompleted = departmentEvaluations.filter((dg: any) => dg.daHoanThanh).length;
+          // Get department manager
+          const phongBanResult = await getPhongBanById(user.phongBanId);
+          const phongBan = phongBanResult.success ? phongBanResult.data : null;
+          const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
           
-          // Estimate expected evaluations (each user evaluates colleagues + manager)
-          const avgExpectedPerUser = departmentUsers.length > 1 ? departmentUsers.length : 1;
-          const totalExpected = departmentUsers.length * avgExpectedPerUser;
+          const expectedEvaluations = colleagues.length + (hasManager ? 1 : 0);
           
-          departmentProgress = totalExpected > 0
-            ? Math.round((departmentCompleted / totalExpected) * 100)
+          // Count completed evaluations for current period
+          const completedInPeriod = myEvaluations.filter(
+            (dg: any) => dg.kyDanhGiaId === currentKy.id && dg.daHoanThanh
+          ).length;
+          
+          personalProgress = expectedEvaluations > 0
+            ? Math.round((completedInPeriod / expectedEvaluations) * 100)
             : 0;
         }
-      }
 
-      setStats({
-        totalEvaluations: myEvaluations.length,
-        completedEvaluations: completed,
-        averageScore: avgScore,
-        personalProgress,
-        departmentProgress,
-      });
-    } catch (error) {
-      console.error("Failed to load dashboard stats:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // Calculate department progress (for truong_phong and admin)
+        let departmentProgress = 0;
+        if (user.role === "truong_phong" || user.role === "admin") {
+          const allDanhGiasResult = await getAllDanhGias();
+          const allDanhGias = allDanhGiasResult.success && allDanhGiasResult.data ? allDanhGiasResult.data : [];
+          
+          const usersResult = await getAllUsers();
+          const allUsers = usersResult.success && usersResult.data ? usersResult.data : [];
+          
+          let departmentUsers: string[] = [];
+          if (user.role === "truong_phong") {
+            departmentUsers = allUsers
+              .filter((u: any) => u.phongBanId === user.phongBanId && !u.deletedAt && u.trangThaiKH)
+              .map((u: any) => u.id);
+          } else {
+            departmentUsers = allUsers
+              .filter((u: any) => !u.deletedAt && u.trangThaiKH)
+              .map((u: any) => u.id);
+          }
+
+          if (currentKy && departmentUsers.length > 0) {
+            const departmentEvaluations = allDanhGias.filter(
+              (dg: any) =>
+                departmentUsers.includes(dg.nguoiDanhGiaId) &&
+                dg.kyDanhGiaId === currentKy.id
+            );
+            
+            const departmentCompleted = departmentEvaluations.filter((dg: any) => dg.daHoanThanh).length;
+            
+            // Estimate expected evaluations (each user evaluates colleagues + manager)
+            const avgExpectedPerUser = departmentUsers.length > 1 ? departmentUsers.length : 1;
+            const totalExpected = departmentUsers.length * avgExpectedPerUser;
+            
+            departmentProgress = totalExpected > 0
+              ? Math.round((departmentCompleted / totalExpected) * 100)
+              : 0;
+          }
+        }
+
+        if (!cancelled) {
+          setStats({
+            totalEvaluations: myEvaluations.length,
+            completedEvaluations: completed,
+            averageScore: avgScore,
+            personalProgress,
+            departmentProgress,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load dashboard stats:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadDashboardStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   if (authLoading || isLoading) {
     return (

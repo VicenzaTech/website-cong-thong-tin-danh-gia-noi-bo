@@ -87,6 +87,10 @@ function EvaluationFormContent() {
       return;
     }
 
+    if (!currentUser) return;
+
+    let cancelled = false;
+
     const loadEvaluationData = async () => {
       setIsLoading(true);
       try {
@@ -96,28 +100,34 @@ function EvaluationFormContent() {
           getCauHoisByBieuMau(bieuMauId),
         ]);
 
+        if (cancelled) return;
+
         const nguoiDuocDanhGiaData = nguoiDuocDanhGiaResult.success ? nguoiDuocDanhGiaResult.data : null;
         const bieuMauData = bieuMauResult.success ? bieuMauResult.data : null;
         const cauHoiData = cauHoiResult.success ? cauHoiResult.data : null;
 
         if (!nguoiDuocDanhGiaData || !bieuMauData || !cauHoiData) {
-          notifications.show({
-            title: "Lỗi",
-            message: "Không tìm thấy thông tin người được đánh giá hoặc biểu mẫu.",
-            color: "red",
-          });
-          router.push("/danh-gia-nhan-vien");
+          if (!cancelled) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Không tìm thấy thông tin người được đánh giá hoặc biểu mẫu.",
+              color: "red",
+            });
+            router.push("/danh-gia-nhan-vien");
+          }
           return;
         }
 
         // Check if evaluating self
         if (currentUser && nguoiDuocDanhGiaId === currentUser.id) {
-          notifications.show({
-            title: "Lỗi",
-            message: "Bạn không thể tự đánh giá bản thân.",
-            color: "red",
-          });
-          router.push("/danh-gia-nhan-vien");
+          if (!cancelled) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Bạn không thể tự đánh giá bản thân.",
+              color: "red",
+            });
+            router.push("/danh-gia-nhan-vien");
+          }
           return;
         }
 
@@ -126,28 +136,32 @@ function EvaluationFormContent() {
           currentUser &&
           nguoiDuocDanhGiaData.phongBanId !== currentUser.phongBanId
         ) {
-          notifications.show({
-            title: "Lỗi",
-            message: "Bạn chỉ có thể đánh giá đồng nghiệp cùng phòng ban.",
-            color: "red",
-          });
-          router.push("/danh-gia-nhan-vien");
+          if (!cancelled) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Bạn chỉ có thể đánh giá đồng nghiệp cùng phòng ban.",
+              color: "red",
+            });
+            router.push("/danh-gia-nhan-vien");
+          }
           return;
         }
 
-        setNguoiDuocDanhGia(nguoiDuocDanhGiaData as any);
-        setBieuMau(bieuMauData as any);
-        setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu) as any);
+        if (!cancelled) {
+          setNguoiDuocDanhGia(nguoiDuocDanhGiaData as any);
+          setBieuMau(bieuMauData as any);
+          setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu) as any);
+        }
 
         // Check if already evaluated
-        if (currentUser) {
+        if (currentUser && !cancelled) {
           const hasEvaluatedResult = await checkExistingDanhGia(
             currentUser.id,
             nguoiDuocDanhGiaId,
             bieuMauId,
             kyDanhGiaId
           );
-          if (hasEvaluatedResult.success && hasEvaluatedResult.data?.daHoanThanh) {
+          if (!cancelled && hasEvaluatedResult.success && hasEvaluatedResult.data?.daHoanThanh) {
             notifications.show({
               title: "Thông báo",
               message: "Bạn đã hoàn thành đánh giá người này rồi.",
@@ -157,21 +171,27 @@ function EvaluationFormContent() {
           }
         }
       } catch (error) {
-        console.error("Failed to load evaluation form:", error);
-        notifications.show({
-          title: "Lỗi",
-          message: "Không thể tải biểu mẫu đánh giá. Vui lòng thử lại.",
-          color: "red",
-        });
-        router.push("/danh-gia-nhan-vien");
+        if (!cancelled) {
+          console.error("Failed to load evaluation form:", error);
+          notifications.show({
+            title: "Lỗi",
+            message: "Không thể tải biểu mẫu đánh giá. Vui lòng thử lại.",
+            color: "red",
+          });
+          router.push("/danh-gia-nhan-vien");
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    if (currentUser) {
-      loadEvaluationData();
-    }
+    loadEvaluationData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser, authLoading, router, nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId]);
 
   const handleSubmit = async (values: EvaluationFormValues) => {
