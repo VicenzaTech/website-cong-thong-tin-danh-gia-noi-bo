@@ -282,8 +282,14 @@ export const mockService = {
       return true;
     },
   },
-
+  cauTraLois: {
+    getByDanhGia: async (danhGiaId: string): Promise<CauTraLoi[]> => {
+      await fakeDelay();
+      return cauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
+    },
+  },
   danhGias: {
+
     getAll: async (): Promise<DanhGia[]> => {
       await fakeDelay();
       return danhGias;
@@ -445,13 +451,6 @@ export const mockService = {
       }
 
       return danhGia;
-    },
-
-    cauTraLois: {
-      getByDanhGia: async (danhGiaId: string): Promise<CauTraLoi[]> => {
-        await fakeDelay();
-        return cauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
-      },
     },
   },
 };

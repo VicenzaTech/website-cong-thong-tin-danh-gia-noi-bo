@@ -40,7 +40,6 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ items });
     } catch (err) {
-        console.log("VCL THẬT ĐẤY")
         return NextResponse.json({ items: [] });
     }
 }
