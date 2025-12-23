@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
@@ -29,6 +29,16 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [foundUser, setFoundUser] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const form = useForm({
     initialValues: {
@@ -70,7 +80,15 @@ export default function LoginPage() {
       setFoundUser(result.user);
 
       if (result.user && !result.user.hasPassword) {
-        localStorage.setItem("pending_user", JSON.stringify(result.user));
+        // Save to localStorage with SSR check
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("pending_user", JSON.stringify(result.user));
+          } catch (error) {
+            console.error("Failed to save to localStorage:", error);
+            // Fallback: could use sessionStorage or cookie if needed
+          }
+        }
         notifications.show({
           title: "Chào mừng!",
           message: "Vui lòng hoàn tất thông tin đăng ký",
@@ -223,8 +241,18 @@ export default function LoginPage() {
                 {...form.getInputProps("maNhanVien")}
                 onChange={(e) => handleMaNhanVienChange(e.target.value)}
                 onBlur={() => {
+                  // Clear any pending debounce
+                  if (debounceTimeoutRef.current) {
+                    clearTimeout(debounceTimeoutRef.current);
+                    debounceTimeoutRef.current = null;
+                  }
+                  
+                  // Only auto-check if user has entered something and not already checking
                   if (form.values.maNhanVien.trim() && !foundUser && !isCheckingUser) {
-                    handleCheckUser();
+                    // Debounce to avoid multiple rapid requests
+                    debounceTimeoutRef.current = setTimeout(() => {
+                      handleCheckUser();
+                    }, 300);
                   }
                 }}
               />

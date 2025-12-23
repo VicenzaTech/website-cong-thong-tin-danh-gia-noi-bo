@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 
 export async function checkUserByMaNhanVien(maNhanVien: string) {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: {
         maNhanVien,
         deletedAt: null,
@@ -31,7 +31,7 @@ export async function checkUserByMaNhanVien(maNhanVien: string) {
         hoTen: user.hoTen,
         email: user.email,
         phongBanId: user.phongBanId,
-        phongBanName: user.phongBan.tenPhongBan,
+        phongBanName: user.phongBan?.tenPhongBan || "N/A",
         daDangKy: user.daDangKy,
         hasPassword: !!user.matKhau,
       },

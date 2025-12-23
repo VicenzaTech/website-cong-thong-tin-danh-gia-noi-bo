@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
           where: {
             maNhanVien: String(credentials.maNhanVien),
             deletedAt: null,
@@ -28,7 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
-        if (!user || !user.trangThaiKH || !user.matKhau) {
+        if (!user || user.trangThaiKH !== true || !user.matKhau) {
           return null;
         }
 
@@ -41,10 +41,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
+        // Update lastLoginAt with error handling
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          });
+        } catch (error) {
+          // Log error but don't block authentication
+          console.error("Failed to update lastLoginAt:", error);
+        }
 
         return {
           id: user.id,
@@ -53,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role as Role,
           phongBanId: user.phongBanId,
-          phongBanName: user.phongBan.tenPhongBan,
+          phongBanName: user.phongBan?.tenPhongBan || "N/A",
           daDangKy: user.daDangKy,
           trangThaiKH: user.trangThaiKH,
           image: user.image,
