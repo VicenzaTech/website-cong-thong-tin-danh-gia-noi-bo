@@ -27,12 +27,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  {
-    label: "Tổng quan",
-    href: "/",
-    icon: <IconHome size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  },
+  // {
+  //   label: "Tổng quan",
+  //   href: "/",
+  //   icon: <IconHome size={20} />,
+  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  // },
   {
     label: "Đánh giá lãnh đạo",
     href: "/danh-gia-lanh-dao",
@@ -57,36 +57,36 @@ const menuItems: MenuItem[] = [
     icon: <IconEye size={20} />,
     allowedRoles: [Role.admin, Role.truong_phong],
   },
-  {
-    label: "Báo cáo & Thống kê",
-    href: "/bao-cao",
-    icon: <IconChartBar size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  },
-  {
-    label: "Quản lý người dùng",
-    href: "/nguoi-dung",
-    icon: <IconUsers size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  },
-  {
-    label: "Quản lý biểu mẫu",
-    href: "/bieu-mau",
-    icon: <IconFileText size={20} />,
-    allowedRoles: [Role.admin],
-  },
-  {
-    label: "Quản lý kỳ đánh giá",
-    href: "/ky-danh-gia",
-    icon: <IconClipboardText size={20} />,
-    allowedRoles: [Role.admin],
-  },
-  {
-    label: "Cài đặt",
-    href: "/cai-dat",
-    icon: <IconSettings size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  },
+  // {
+  //   label: "Báo cáo & Thống kê",
+  //   href: "/bao-cao",
+  //   icon: <IconChartBar size={20} />,
+  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  // },
+  // {
+  //   label: "Quản lý người dùng",
+  //   href: "/nguoi-dung",
+  //   icon: <IconUsers size={20} />,
+  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  // },
+  // {
+  //   label: "Quản lý biểu mẫu",
+  //   href: "/bieu-mau",
+  //   icon: <IconFileText size={20} />,
+  //   allowedRoles: [Role.admin],
+  // },
+  // {
+  //   label: "Quản lý kỳ đánh giá",
+  //   href: "/ky-danh-gia",
+  //   icon: <IconClipboardText size={20} />,
+  //   allowedRoles: [Role.admin],
+  // },
+  // {
+  //   label: "Cài đặt",
+  //   href: "/cai-dat",
+  //   icon: <IconSettings size={20} />,
+  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  // },
 ];
 
 export function Sidebar() {

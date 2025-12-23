@@ -195,11 +195,41 @@ function EvaluationFormContent() {
         answers
       );
 
+      // Sync to server-side mock DB so server APIs see the new evaluation
+      try {
+        await fetch(`/api/danh-gias/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nguoiDanhGiaId: currentUser.id,
+            nguoiDuocDanhGiaId: nguoiDuocDanhGia.id,
+            bieuMauId: bieuMau.id,
+            kyDanhGiaId,
+            nhanXetChung: values.nhanXetChung,
+            answers,
+          }),
+        });
+      } catch (e) {
+        // ignore sync errors in dev mock environment
+      }
+
       notifications.show({
         title: "Thành công",
         message: "Đánh giá đã được gửi thành công!",
         color: "green",
       });
+      try {
+        const bc = new BroadcastChannel("evaluations");
+        bc.postMessage({
+          nguoiDuocDanhGiaId: nguoiDuocDanhGia.id,
+          bieuMauId: bieuMau.id,
+          kyDanhGiaId,
+          nguoiDanhGiaId: currentUser.id,
+        });
+        bc.close();
+      } catch (e) {
+        // BroadcastChannel may not be available in some environments; ignore.
+      }
       router.push("/danh-gia-nhan-vien");
     } catch (error) {
       console.error("Failed to submit evaluation:", error);

@@ -19,8 +19,8 @@ import {
 import { IconUsers, IconCalendar, IconCheck, IconClock } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
-import { users } from "@/_mock/db";
-import { LoaiDanhGia, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
+import { LoaiDanhGia, Role, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
+import { Tabs, Table } from "@mantine/core";
 import dayjs from "dayjs";
 
 export default function DanhGiaNhanVienPage() {
@@ -30,7 +30,10 @@ export default function DanhGiaNhanVienPage() {
   const [dongNghieps, setDongNghieps] = useState<User[]>([]);
   const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
   const [danhGiaStatus, setDanhGiaStatus] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<string>("list");
+  const [departmentEvals, setDepartmentEvals] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedNhanVienId, setSelectedNhanVienId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -38,11 +41,49 @@ export default function DanhGiaNhanVienPage() {
     }
   }, [currentUser, authLoading, router]);
 
+  // Listen for evaluation completion broadcasts to update UI optimistically
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("evaluations");
+      const handler = (ev: MessageEvent) => {
+        const id = ev.data?.nguoiDuocDanhGiaId;
+        if (!id) return;
+        setDongNghieps((prev) => prev.filter((u) => u.id !== id));
+        setDanhGiaStatus((prev) => ({ ...prev, [id]: true }));
+      };
+      bc.addEventListener("message", handler);
+      return () => {
+        bc?.removeEventListener("message", handler);
+        bc?.close();
+      };
+    } catch (e) {
+      // ignore if BroadcastChannel not supported
+    }
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       loadData();
     }
   }, [currentUser]);
+
+  // load manager summary when tab active
+  useEffect(() => {
+    if (activeTab !== "summary" && activeTab !== "export") return;
+    if (!currentUser || currentUser.role !== Role.truong_phong) return;
+    const loadSummary = async () => {
+      try {
+        const res = await fetch(`/api/danh-gias/for-department?phongBanId=${currentUser.phongBanId}`);
+        const data = await res.json();
+        setDepartmentEvals(data.items || []);
+      } catch (e) {
+        console.error("Failed to load department evaluations", e);
+      }
+    };
+    loadSummary();
+  }, [activeTab, currentUser]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -51,13 +92,11 @@ export default function DanhGiaNhanVienPage() {
       setKyDanhGias(activeKys);
 
       if (currentUser) {
-        const colleagues = users.filter(
-          (u) =>
-            u.phongBanId === currentUser.phongBanId &&
-            u.id !== currentUser.id &&
-            !u.deletedAt &&
-            u.trangThaiKH
+        const usersRes = await fetch(
+          `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
         );
+        const usersData = await usersRes.json();
+        const colleagues = usersData.items || [];
         setDongNghieps(colleagues);
 
         const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.NHAN_VIEN);
@@ -65,16 +104,18 @@ export default function DanhGiaNhanVienPage() {
           setBieuMau(bieuMaus[0]);
 
           if (activeKys.length > 0) {
-            const statusMap: Record<string, boolean> = {};
-            for (const colleague of colleagues) {
-              const existing = await mockService.danhGias.checkExisting(
-                currentUser.id,
-                colleague.id,
-                bieuMaus[0].id,
-                activeKys[0].id
-              );
-              statusMap[colleague.id] = !!existing && existing.daHoanThanh;
-            }
+            const checkRes = await fetch(`/api/danh-gias/check-status`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nguoiDanhGiaId: currentUser.id,
+                bieuMauId: bieuMaus[0].id,
+                kyDanhGiaId: activeKys[0].id,
+                nguoiDuocDanhGiaIds: colleagues.map((c: any) => c.id),
+              }),
+            });
+            const checkData = await checkRes.json();
+            const statusMap: Record<string, boolean> = checkData.statuses || {};
             setDanhGiaStatus(statusMap);
           }
         }
@@ -92,6 +133,29 @@ export default function DanhGiaNhanVienPage() {
         `/danh-gia-nhan-vien/thuc-hien?nguoiDuocDanhGiaId=${dongNghiepId}&bieuMauId=${bieuMau.id}&kyDanhGiaId=${kyDanhGias[0].id}`
       );
     }
+  };
+  const handleExportDanhGia = () => {
+    const rows = [
+      ["Người đánh giá", "Người được đánh giá", "Biểu mẫu", "Điểm TB", "Hoàn thành", "Ngày"],
+      ...departmentEvals.map((e) => [
+        e.nguoiDanhGiaName,
+        e.nguoiDuocDanhGiaName,
+        e.bieuMauName,
+        e.diemTrungBinh ?? "-",
+        e.daHoanThanh ? "Có" : "Chưa",
+        e.submittedAt
+          ? dayjs(e.submittedAt).format("DD/MM/YYYY HH:mm:ss")
+          : "-"
+      ])
+    ];
+    const csvContent = "\uFEFF" + rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "danh_gia.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getInitials = (name?: string) => {
@@ -124,150 +188,257 @@ export default function DanhGiaNhanVienPage() {
 
   return (
     <Stack gap="lg">
-      <Title order={2}>Đánh giá Năng lực Nhân viên</Title>
+      {currentUser?.role === Role.truong_phong ? (
+        <Tabs value={activeTab} onChange={(v) => setActiveTab(v || "list")}>
+          <Tabs.List>
+            <Tabs.Tab value="list">Danh sách đồng nghiệp</Tabs.Tab>
+            <Tabs.Tab value="summary">Tổng hợp đánh giá</Tabs.Tab>
+            <Tabs.Tab value="export">Xuất file đánh giá</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+      ) : null}
 
-      {kyDanhGias.length === 0 ? (
-        <Paper withBorder shadow="sm" p="xl" radius="md">
-          <Center>
-            <Stack align="center" gap="md">
-              <IconCalendar size={48} color="gray" />
-              <Text c="dimmed" size="lg">
-                Hiện tại không có kỳ đánh giá nào đang mở
-              </Text>
-              <Text c="dimmed" size="sm">
-                Vui lòng quay lại khi có kỳ đánh giá mới
-              </Text>
-            </Stack>
-          </Center>
-        </Paper>
-      ) : (
-        <Stack gap="lg">
-          <Card withBorder shadow="sm" padding="lg" radius="md">
-            <Group>
-              <IconCalendar size={24} color="var(--mantine-color-blue-6)" />
-              <div style={{ flex: 1 }}>
-                <Text fw={600} size="lg">
-                  {kyDanhGias[0].tenKy}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {dayjs(kyDanhGias[0].ngayBatDau).format("DD/MM/YYYY")} -{" "}
-                  {dayjs(kyDanhGias[0].ngayKetThuc).format("DD/MM/YYYY")}
-                </Text>
-              </div>
-              <Badge color="green" size="lg">
-                Đang mở
-              </Badge>
-            </Group>
-          </Card>
+      {activeTab === "summary" && currentUser?.role === Role.truong_phong ? (
+        <div>
+          <Title order={3}>Danh sách nhân viên trong phòng ban</Title>
+          <Stack>
+            {dongNghieps.map((nhanVien) => (
+              <Card key={nhanVien.id} withBorder shadow="sm" padding="md" radius="md">
+                <Group justify="space-between">
+                  <Group>
+                    <Avatar color="blue" radius="xl" size="md">
+                      {getInitials(nhanVien.hoTen)}
+                    </Avatar>
+                    <Text fw={600}>{nhanVien.hoTen}</Text>
+                    <Text size="xs" c="dimmed">{nhanVien.maNhanVien}</Text>
+                  </Group>
+                  <Button
+                    size="xs"
+                    onClick={() =>
+                      setSelectedNhanVienId(selectedNhanVienId === nhanVien.id ? null : nhanVien.id)
+                    }
+                  >
+                    {selectedNhanVienId === nhanVien.id ? "Đóng" : "Xem đánh giá"}
+                  </Button>
+                </Group>
+                {selectedNhanVienId === nhanVien.id && (
+                  <div style={{ marginTop: 16 }}>
+                    <Table highlightOnHover withColumnBorders>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 180, textAlign: "left" }}>Người đánh giá</th>
+                          <th style={{ width: 220, textAlign: "left" }}>Biểu mẫu</th>
+                          <th style={{ width: 100, textAlign: "center" }}>Điểm TB</th>
+                          <th style={{ width: 120, textAlign: "center" }}>Hoàn thành</th>
+                          <th style={{ width: 180, textAlign: "center" }}>Ngày</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {departmentEvals
+                          .filter((e) => e.nguoiDuocDanhGiaId === nhanVien.id)
+                          .map((e) => (
+                            <tr key={e.id}>
+                              <td style={{ textAlign: "left" }}>{e.nguoiDanhGiaName}</td>
+                              <td style={{ textAlign: "left" }}>{e.bieuMauName}</td>
+                              <td style={{ textAlign: "center" }}>{e.diemTrungBinh ?? "-"}</td>
+                              <td style={{ textAlign: "center" }}>{e.daHoanThanh ? "Có" : "Chưa"}</td>
+                              <td style={{ textAlign: "center" }}>
+                                {e.submittedAt ? new Date(e.submittedAt).toLocaleString() : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </Stack>
+        </div>
+      ) : null}
 
-          {!bieuMau ? (
+      {activeTab === "export" && currentUser?.role === Role.truong_phong ? (
+        <div>
+          <Title order={3}>Xuất file đánh giá</Title>
+          <Text mb="md">Tất cả thông tin đánh giá giữa các nhân viên và lãnh đạo.</Text>
+          {/* Nút xuất file, ví dụ xuất CSV */}
+          <Button mb="md" onClick={handleExportDanhGia}>
+            Xuất file CSV
+          </Button>
+          <Table highlightOnHover withColumnBorders>
+            <thead>
+              <tr>
+                <th style={{ width: 180 }}>Người đánh giá</th>
+                <th style={{ width: 180 }}>Người được đánh giá</th>
+                <th style={{ width: 220 }}>Biểu mẫu</th>
+                <th style={{ width: 100 }}>Điểm TB</th>
+                <th style={{ width: 120 }}>Hoàn thành</th>
+                <th style={{ width: 180 }}>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {departmentEvals.map((e) => (
+                <tr key={e.id}>
+                  <td>{e.nguoiDanhGiaName}</td>
+                  <td>{e.nguoiDuocDanhGiaName}</td>
+                  <td>{e.bieuMauName}</td>
+                  <td>{e.diemTrungBinh ?? "-"}</td>
+                  <td>{e.daHoanThanh ? "Có" : "Chưa"}</td>
+                  <td>{e.submittedAt ? new Date(e.submittedAt).toLocaleString() : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      ) : null}
+      {activeTab !== "summary" && (
+        <>
+          <Title order={2}>Đánh giá Năng lực Nhân viên</Title>
+
+          {kyDanhGias.length === 0 ? (
             <Paper withBorder shadow="sm" p="xl" radius="md">
               <Center>
                 <Stack align="center" gap="md">
-                  <IconUsers size={48} color="gray" />
+                  <IconCalendar size={48} color="gray" />
                   <Text c="dimmed" size="lg">
-                    Chưa có biểu mẫu đánh giá nhân viên
+                    Hiện tại không có kỳ đánh giá nào đang mở
                   </Text>
                   <Text c="dimmed" size="sm">
-                    Vui lòng liên hệ quản trị viên để được hỗ trợ
-                  </Text>
-                </Stack>
-              </Center>
-            </Paper>
-          ) : dongNghieps.length === 0 ? (
-            <Paper withBorder shadow="sm" p="xl" radius="md">
-              <Center>
-                <Stack align="center" gap="md">
-                  <IconUsers size={48} color="gray" />
-                  <Text c="dimmed" size="lg">
-                    Không có đồng nghiệp nào trong phòng ban
-                  </Text>
-                  <Text c="dimmed" size="sm">
-                    Bạn là người duy nhất trong phòng ban này
+                    Vui lòng quay lại khi có kỳ đánh giá mới
                   </Text>
                 </Stack>
               </Center>
             </Paper>
           ) : (
-            <Stack gap="md">
-              <Paper withBorder shadow="sm" p="md" radius="md">
-                <Group justify="space-between">
-                  <Group>
-                    <IconUsers size={24} color="var(--mantine-color-blue-6)" />
-                    <div>
-                      <Text fw={600} size="lg">
-                        Danh sách đồng nghiệp
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        Biểu mẫu: {bieuMau.tenBieuMau}
-                      </Text>
-                    </div>
-                  </Group>
-                  <div style={{ textAlign: "right" }}>
-                    <Text size="xl" fw={700} c="blue">
-                      {completedCount}/{totalCount}
+            <Stack gap="lg">
+              <Card withBorder shadow="sm" padding="lg" radius="md">
+                <Group>
+                  <IconCalendar size={24} color="var(--mantine-color-blue-6)" />
+                  <div style={{ flex: 1 }}>
+                    <Text fw={600} size="lg">
+                      {kyDanhGias[0].tenKy}
                     </Text>
-                    <Text size="xs" c="dimmed">
-                      Đã hoàn thành
+                    <Text size="sm" c="dimmed">
+                      {dayjs(kyDanhGias[0].ngayBatDau).format("DD/MM/YYYY")} -{" "}
+                      {dayjs(kyDanhGias[0].ngayKetThuc).format("DD/MM/YYYY")}
                     </Text>
                   </div>
+                  <Badge color="green" size="lg">
+                    Đang mở
+                  </Badge>
                 </Group>
-              </Paper>
+              </Card>
 
-              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-                {dongNghieps.map((dongNghiep) => {
-                  const daDanhGia = danhGiaStatus[dongNghiep.id];
-                  return (
-                    <Card key={dongNghiep.id} withBorder shadow="sm" padding="lg" radius="md">
-                      <Stack gap="md">
-                        <Group>
-                          <Avatar color="blue" radius="xl" size="md">
-                            {getInitials(dongNghiep.hoTen)}
-                          </Avatar>
-                          <div style={{ flex: 1 }}>
-                            <Text fw={600}>{dongNghiep.hoTen}</Text>
-                            <Text size="xs" c="dimmed">
-                              {dongNghiep.maNhanVien}
-                            </Text>
-                          </div>
-                        </Group>
+              {!bieuMau ? (
+                <Paper withBorder shadow="sm" p="xl" radius="md">
+                  <Center>
+                    <Stack align="center" gap="md">
+                      <IconUsers size={48} color="gray" />
+                      <Text c="dimmed" size="lg">
+                        Chưa có biểu mẫu đánh giá nhân viên
+                      </Text>
+                      <Text c="dimmed" size="sm">
+                        Vui lòng liên hệ quản trị viên để được hỗ trợ
+                      </Text>
+                    </Stack>
+                  </Center>
+                </Paper>
+              ) : dongNghieps.length === 0 ? (
+                <Paper withBorder shadow="sm" p="xl" radius="md">
+                  <Center>
+                    <Stack align="center" gap="md">
+                      <IconUsers size={48} color="gray" />
+                      <Text c="dimmed" size="lg">
+                        Không có đồng nghiệp nào trong phòng ban
+                      </Text>
+                      <Text c="dimmed" size="sm">
+                        Bạn là người duy nhất trong phòng ban này
+                      </Text>
+                    </Stack>
+                  </Center>
+                </Paper>
+              ) : (
+                <Stack gap="md">
+                  <Paper withBorder shadow="sm" p="md" radius="md">
+                    <Group justify="space-between">
+                      <Group>
+                        <IconUsers size={24} color="var(--mantine-color-blue-6)" />
+                        <div>
+                          <Text fw={600} size="lg">
+                            Danh sách đồng nghiệp
+                          </Text>
+                          <Text size="sm" c="dimmed">
+                            Biểu mẫu: {bieuMau.tenBieuMau}
+                          </Text>
+                        </div>
+                      </Group>
+                      <div style={{ textAlign: "right" }}>
+                        <Text size="xl" fw={700} c="blue">
+                          {completedCount}/{totalCount}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          Đã hoàn thành
+                        </Text>
+                      </div>
+                    </Group>
+                  </Paper>
 
-                        {daDanhGia ? (
-                          <Badge
-                            color="green"
-                            size="lg"
-                            leftSection={<IconCheck size={16} />}
-                            fullWidth
-                          >
-                            Đã đánh giá
-                          </Badge>
-                        ) : (
-                          <Badge
-                            color="orange"
-                            size="lg"
-                            leftSection={<IconClock size={16} />}
-                            fullWidth
-                          >
-                            Chưa đánh giá
-                          </Badge>
-                        )}
+                  <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+                    {dongNghieps.map((dongNghiep) => {
+                      const daDanhGia = danhGiaStatus[dongNghiep.id];
+                      return (
+                        <Card key={dongNghiep.id} withBorder shadow="sm" padding="lg" radius="md">
+                          <Stack gap="md">
+                            <Group>
+                              <Avatar color="blue" radius="xl" size="md">
+                                {getInitials(dongNghiep.hoTen)}
+                              </Avatar>
+                              <div style={{ flex: 1 }}>
+                                <Text fw={600}>{dongNghiep.hoTen}</Text>
+                                <Text size="xs" c="dimmed">
+                                  {dongNghiep.maNhanVien}
+                                </Text>
+                              </div>
+                            </Group>
 
-                        <Button
-                          onClick={() => handleStartEvaluation(dongNghiep.id)}
-                          disabled={daDanhGia}
-                          fullWidth
-                          size="sm"
-                        >
-                          {daDanhGia ? "Đã hoàn thành" : "Bắt đầu đánh giá"}
-                        </Button>
-                      </Stack>
-                    </Card>
-                  );
-                })}
-              </SimpleGrid>
+                            {daDanhGia ? (
+                              <Badge
+                                color="green"
+                                size="lg"
+                                leftSection={<IconCheck size={16} />}
+                                fullWidth
+                              >
+                                Đã đánh giá
+                              </Badge>
+                            ) : (
+                              <Badge
+                                color="orange"
+                                size="lg"
+                                leftSection={<IconClock size={16} />}
+                                fullWidth
+                              >
+                                Chưa đánh giá
+                              </Badge>
+                            )}
+
+                            <Button
+                              onClick={() => handleStartEvaluation(dongNghiep.id)}
+                              disabled={daDanhGia}
+                              fullWidth
+                              size="sm"
+                            >
+                              {daDanhGia ? "Đã hoàn thành" : "Bắt đầu đánh giá"}
+                            </Button>
+                          </Stack>
+                        </Card>
+                      );
+                    })}
+                  </SimpleGrid>
+                </Stack>
+              )}
             </Stack>
           )}
-        </Stack>
+        </>
       )}
     </Stack>
   );
