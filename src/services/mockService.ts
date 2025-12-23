@@ -21,6 +21,12 @@ export const fakeDelay = (ms: number = 500): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+export interface ChiTietTieuChi {
+  tenTieuChi: string;
+  diem: number | null;
+  nhanXet: string;
+}
+
 export const mockService = {
   users: {
     getAll: async (): Promise<User[]> => {
@@ -378,6 +384,19 @@ export const mockService = {
       const tongDiem = answers.reduce((sum, ans) => sum + ans.diem, 0);
       const diemTrungBinh = answers.length > 0 ? tongDiem / answers.length : 0;
 
+      // Lấy danh sách câu hỏi theo biểu mẫu
+      const cauHoiList = cauHois.filter((ch) => ch.bieuMauId === bieuMauId);
+
+      // Map chi tiết tiêu chí
+      const chiTietTieuChi = cauHoiList.map((ch) => {
+        const ans = answers.find((a) => a.cauHoiId === ch.id);
+        return {
+          tenTieuChi: ch.noiDung,
+          diem: ans?.diem ?? null,
+          nhanXet: ans?.nhanXet ?? "",
+        };
+      });
+
       const danhGia: DanhGia = {
         id: existing?.id || `dg_${Date.now()}`,
         nguoiDanhGiaId,
@@ -391,6 +410,7 @@ export const mockService = {
         submittedAt: new Date(),
         createdAt: existing?.createdAt || new Date(),
         updatedAt: new Date(),
+        chiTietTieuChi, // <-- Thêm dòng này
       };
 
       if (existing) {
@@ -426,13 +446,12 @@ export const mockService = {
 
       return danhGia;
     },
-  },
 
-  cauTraLois: {
-    getByDanhGia: async (danhGiaId: string): Promise<CauTraLoi[]> => {
-      await fakeDelay();
-      return cauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
+    cauTraLois: {
+      getByDanhGia: async (danhGiaId: string): Promise<CauTraLoi[]> => {
+        await fakeDelay();
+        return cauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
+      },
     },
   },
 };
-

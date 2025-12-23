@@ -124,7 +124,7 @@ export default function LoginPage() {
         color: "green",
       });
 
-      router.push("/");
+      router.push("/danh-gia-nhan-vien");
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");

@@ -74,6 +74,12 @@ export interface CauHoi {
   updatedAt: Date;
 }
 
+export interface ChiTietTieuChi {
+  tenTieuChi: string;
+  diem: number | null;
+  nhanXet: string;
+}
+
 export interface DanhGia {
   id: string;
   nguoiDanhGiaId: string;
@@ -87,6 +93,8 @@ export interface DanhGia {
   submittedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  chiTietTieuChi: ChiTietTieuChi[];
+
 }
 
 export interface CauTraLoi {

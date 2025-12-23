@@ -22,6 +22,7 @@ import { mockService } from "@/services/mockService";
 import { LoaiDanhGia, Role, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
 import { Tabs, Table } from "@mantine/core";
 import dayjs from "dayjs";
+import React from "react";
 
 export default function DanhGiaNhanVienPage() {
   const router = useRouter();
@@ -77,6 +78,7 @@ export default function DanhGiaNhanVienPage() {
       try {
         const res = await fetch(`/api/danh-gias/for-department?phongBanId=${currentUser.phongBanId}`);
         const data = await res.json();
+        console.log("CHECK DATA: " , data)
         setDepartmentEvals(data.items || []);
       } catch (e) {
         console.error("Failed to load department evaluations", e);
@@ -237,15 +239,42 @@ export default function DanhGiaNhanVienPage() {
                         {departmentEvals
                           .filter((e) => e.nguoiDuocDanhGiaId === nhanVien.id)
                           .map((e) => (
-                            <tr key={e.id}>
-                              <td style={{ textAlign: "left" }}>{e.nguoiDanhGiaName}</td>
-                              <td style={{ textAlign: "left" }}>{e.bieuMauName}</td>
-                              <td style={{ textAlign: "center" }}>{e.diemTrungBinh ?? "-"}</td>
-                              <td style={{ textAlign: "center" }}>{e.daHoanThanh ? "Có" : "Chưa"}</td>
-                              <td style={{ textAlign: "center" }}>
-                                {e.submittedAt ? new Date(e.submittedAt).toLocaleString() : "-"}
-                              </td>
-                            </tr>
+                            <React.Fragment key={e.id}>
+                              <tr>
+                                <td style={{ textAlign: "left" }}>{e.nguoiDanhGiaName}</td>
+                                <td style={{ textAlign: "left" }}>{e.bieuMauName}</td>
+                                <td style={{ textAlign: "center" }}>{e.diemTrungBinh ?? "-"}</td>
+                                <td style={{ textAlign: "center" }}>{e.daHoanThanh ? "Có" : "Chưa"}</td>
+                                <td style={{ textAlign: "center" }}>
+                                  {e.submittedAt ? dayjs(e.submittedAt).format("DD/MM/YYYY HH:mm:ss") : "-"}
+                                </td>
+                              </tr>
+                              {/* Hiển thị chi tiết tiêu chí nếu có */}
+                              {/* {e.chiTietTieuChi && Array.isArray(e.chiTietTieuChi) && (
+                                <tr>
+                                  <td colSpan={5} style={{ background: "#f8f9fa" }}>
+                                    <Table withColumnBorders>
+                                      <thead>
+                                        <tr>
+                                          <th style={{ width: 200 }}>Tiêu chí</th>
+                                          <th style={{ width: 100 }}>Điểm</th>
+                                          <th style={{ width: 300 }}>Nhận xét</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {e.chiTietTieuChi.map((ct: { tenTieuChi: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; diem: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; nhanXet: any; }, idx: React.Key | null | undefined) => (
+                                          <tr key={idx}>
+                                            <td>{ct.tenTieuChi}</td>
+                                            <td style={{ textAlign: "center" }}>{ct.diem}</td>
+                                            <td>{ct.nhanXet || ""}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </Table>
+                                  </td>
+                                </tr>
+                              )} */}
+                            </React.Fragment>
                           ))}
                       </tbody>
                     </Table>
