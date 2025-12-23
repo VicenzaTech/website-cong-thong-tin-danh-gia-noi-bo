@@ -18,7 +18,7 @@ import {
   Button,
   Flex,
 } from "@mantine/core";
-import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
+import { IconEye, IconRefresh } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { getAllDanhGias } from "@/actions/danh-gia";
 import { getAllKyDanhGias } from "@/actions/ky-danh-gia";

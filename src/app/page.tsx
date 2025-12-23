@@ -17,10 +17,8 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { 
-  IconUsers, 
   IconClipboardCheck, 
   IconChartBar, 
-  IconFileText,
   IconTrendingUp,
   IconStar,
 } from "@tabler/icons-react";

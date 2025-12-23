@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { getAllPhongBans, updatePhongBan, getUsersByPhongBan, updateUser } from "@/actions";
+import { getAllPhongBans, updatePhongBan, updateUser } from "@/actions";
 import { Role } from "@/types/schema";
 import { notifications } from "@mantine/notifications";
 
