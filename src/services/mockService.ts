@@ -391,13 +391,19 @@ export const mockService = {
       const cauHoiList = cauHois.filter((ch) => ch.bieuMauId === bieuMauId);
 
       // Lọc các câu hỏi có điểm (bỏ qua các câu bắt buộc với diemToiDa === 0) để tính điểm
-      const scoringAnswers = answers.filter((a) => {
-        const ch = cauHoiList.find((ch) => ch.id === a.cauHoiId);
-        return ch && ch.diemToiDa > 0;
-      });
+      const scoringQuestions = cauHois.filter((ch) => ch.diemToiDa > 0);
+      const scoringAnswers = answers.filter((a) =>
+        scoringQuestions.some((ch) => ch.id === a.cauHoiId)
+      );
+      console.log("SCORING ANSWERS:", scoringAnswers);
+      const totalScore = scoringAnswers.reduce((sum, a) => sum + (a.diem || 0), 0);
+      const diemTrungBinh =
+        scoringQuestions.length > 0
+          ? totalScore / scoringQuestions.length
+          : 0;
 
       const tongDiem = scoringAnswers.reduce((sum, ans) => sum + (ans.diem ?? 0), 0);
-      const diemTrungBinh = scoringAnswers.length > 0 ? tongDiem / scoringAnswers.length : 0;
+      // const diemTrungBinh = scoringAnswers.length > 0 ? tongDiem / scoringAnswers.length : 0;
 
       // Kiểm tra vi phạm các mục bắt buộc: nếu có câu hỏi có diemToiDa === 0 mà người đánh giá chọn "Có" (mã 1)
       const khongXetThiDua = cauHoiList.some(

@@ -33,9 +33,10 @@ export async function POST(request: Request) {
         dg.kyDanhGiaId === kyDanhGiaId
     );
 
-    const tongDiem = answers.reduce((s: number, a) => s + (a.diem || 0), 0);
-    const diemTrungBinh = answers.length > 0 ? tongDiem / answers.length : 0;
-
+    // Lọc các câu trả lời có điểm (bỏ qua mandatory: diem === 0)
+    const scoringAnswers = answers.filter((a) => a.diem > 0);
+    const tongDiem = scoringAnswers.reduce((s: number, a) => s + (a.diem || 0), 0);
+    const diemTrungBinh = scoringAnswers.length > 0 ? tongDiem / scoringAnswers.length : 0;
     const danhGia = {
       id: existingIndex !== -1 ? danhGias[existingIndex].id : `dg_${Date.now()}`,
       nguoiDanhGiaId,
