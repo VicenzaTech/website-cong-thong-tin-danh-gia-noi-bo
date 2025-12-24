@@ -387,19 +387,30 @@ export const mockService = {
         throw new Error("Bạn đã hoàn thành đánh giá này rồi");
       }
 
-      const tongDiem = answers.reduce((sum, ans) => sum + ans.diem, 0);
-      const diemTrungBinh = answers.length > 0 ? tongDiem / answers.length : 0;
-
       // Lấy danh sách câu hỏi theo biểu mẫu
       const cauHoiList = cauHois.filter((ch) => ch.bieuMauId === bieuMauId);
 
-      // Map chi tiết tiêu chí
-      const chiTietTieuChi = cauHoiList.map((ch) => {
-        const ans = answers.find((a) => a.cauHoiId === ch.id);
+      // Lọc các câu hỏi có điểm (bỏ qua các câu bắt buộc với diemToiDa === 0) để tính điểm
+      const scoringAnswers = answers.filter((a) => {
+        const ch = cauHoiList.find((ch) => ch.id === a.cauHoiId);
+        return ch && ch.diemToiDa > 0;
+      });
+
+      const tongDiem = scoringAnswers.reduce((sum, ans) => sum + (ans.diem ?? 0), 0);
+      const diemTrungBinh = scoringAnswers.length > 0 ? tongDiem / scoringAnswers.length : 0;
+
+      // Kiểm tra vi phạm các mục bắt buộc: nếu có câu hỏi có diemToiDa === 0 mà người đánh giá chọn "Có" (mã 1)
+      const khongXetThiDua = cauHoiList.some(
+        (ch) => ch.diemToiDa === 0 && answers.find((a) => a.cauHoiId === ch.id && a.diem === 1)
+      );
+
+      // Tạo chi tiết tiêu chí từ danh sách câu hỏi và câu trả lời
+      const chiTietTieuChi: ChiTietTieuChi[] = cauHoiList.map((ch) => {
+        const answer = answers.find((a) => a.cauHoiId === ch.id);
         return {
           tenTieuChi: ch.noiDung,
-          diem: ans?.diem ?? null,
-          nhanXet: ans?.nhanXet ?? "",
+          diem: answer?.diem ?? null,
+          nhanXet: answer?.nhanXet ?? "",
         };
       });
 
@@ -411,12 +422,13 @@ export const mockService = {
         kyDanhGiaId,
         nhanXetChung,
         tongDiem,
-        diemTrungBinh,
+        diemTrungBinh: khongXetThiDua ? 0 : diemTrungBinh,
         daHoanThanh: true,
         submittedAt: new Date(),
         createdAt: existing?.createdAt || new Date(),
         updatedAt: new Date(),
-        chiTietTieuChi, // <-- Thêm dòng này
+        khongXetThiDua,
+        chiTietTieuChi,
       };
 
       if (existing) {

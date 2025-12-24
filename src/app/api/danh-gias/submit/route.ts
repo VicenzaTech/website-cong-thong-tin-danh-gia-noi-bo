@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { danhGias, cauTraLois } from "@/_mock/db";
+import { danhGias, cauTraLois, users } from "@/_mock/db";
+import { writeEvaluationFile } from "@/libs/evalStorage";
 
 export async function POST(request: Request) {
   try {
@@ -56,19 +57,23 @@ export async function POST(request: Request) {
       danhGias.push(danhGia as any);
     }
 
-    // store answers as cauTraLois
+    // store answers as cauTraLois (in-memory)
     for (const ans of answers) {
       const existingAnsIndex = cauTraLois.findIndex(
         (ctl) => ctl.danhGiaId === danhGia.id && ctl.cauHoiId === ans.cauHoiId
       );
       const ctl = {
-        id: existingAnsIndex !== -1 ? cauTraLois[existingAnsIndex].id : `ctl_${Date.now()}_${ans.cauHoiId}`,
+        id:
+          existingAnsIndex !== -1
+            ? cauTraLois[existingAnsIndex].id
+            : `ctl_${Date.now()}_${ans.cauHoiId}`,
         danhGiaId: danhGia.id,
         cauHoiId: ans.cauHoiId,
         nguoiDungId: nguoiDanhGiaId,
         diem: ans.diem,
         nhanXet: ans.nhanXet || "",
-        createdAt: existingAnsIndex !== -1 ? cauTraLois[existingAnsIndex].createdAt : new Date(),
+        createdAt:
+          existingAnsIndex !== -1 ? cauTraLois[existingAnsIndex].createdAt : new Date(),
         updatedAt: new Date(),
       };
 
@@ -77,6 +82,28 @@ export async function POST(request: Request) {
       } else {
         cauTraLois.push(ctl as any);
       }
+    }
+
+    // Persist to filesystem: folder per phongBan of nguoiDuocDanhGia
+    try {
+      const user = users.find((u) => u.id === nguoiDuocDanhGiaId);
+      const phongBanId = user?.phongBanId || "unknown";
+      const payload = {
+        danhGia,
+        answers,
+        meta: {
+          nguoiDanhGiaId,
+          nguoiDuocDanhGiaId,
+          phongBanId,
+          bieuMauId,
+          kyDanhGiaId,
+          savedAt: new Date(),
+        },
+      };
+      await writeEvaluationFile(phongBanId, danhGia.id, payload);
+    } catch (err) {
+      // ignore file write errors in dev
+      console.error("Failed to write evaluation file:", err);
     }
 
     return NextResponse.json({ success: true, danhGia });

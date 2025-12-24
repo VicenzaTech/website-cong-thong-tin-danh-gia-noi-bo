@@ -56,6 +56,20 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [cauHois, setCauHois] = useState<CauHoiForm[]>([]);
+  const mandatoryConditions: CauHoiForm[] = [
+    {
+      id: "mandatory_nv",
+      noiDung: "Vi phạm Nội quy lao động, kỷ luật",
+      diemToiDa: 0,
+      batBuoc: true,
+    },
+    {
+      id: "mandatory_atld",
+      noiDung: "Vi phạm quy định về an toàn lao động – PCCN",
+      diemToiDa: 0,
+      batBuoc: true,
+    },
+  ];
   const isEditing = !!bieuMauId;
 
   const form = useForm({
@@ -66,6 +80,7 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
       phamViApDung: PhamViApDung.TOAN_CONG_TY,
       phongBanId: "",
       trangThai: TrangThaiBieuMau.NHAP,
+      includeMandatoryConditions: true,
     },
     validate: {
       tenBieuMau: (value) => {
@@ -103,13 +118,23 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
         });
 
         const existingCauHois = await mockService.cauHois.getByBieuMau(bieuMauId!);
+
+        // Detect nếu biểu mẫu đã có 2 mục bắt buộc và bật switch tương ứng
+        const hasMandatory = existingCauHois.some((ch) =>
+          mandatoryConditions.some((mc) => mc.noiDung === ch.noiDung)
+        );
+        form.setFieldValue("includeMandatoryConditions", hasMandatory);
+
+        // Lưu chỉ những câu hỏi có thể chỉnh sửa (loại bỏ các mục bắt buộc)
         setCauHois(
-          existingCauHois.map((ch) => ({
-            id: ch.id,
-            noiDung: ch.noiDung,
-            diemToiDa: ch.diemToiDa,
-            batBuoc: ch.batBuoc,
-          }))
+          existingCauHois
+            .filter((ch) => !mandatoryConditions.some((mc) => mc.noiDung === ch.noiDung))
+            .map((ch) => ({
+              id: ch.id,
+              noiDung: ch.noiDung,
+              diemToiDa: ch.diemToiDa,
+              batBuoc: ch.batBuoc,
+            }))
         );
       }
     } catch (error) {
@@ -208,16 +233,20 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
         await mockService.cauHois.delete(existing.id);
       }
 
-      for (let i = 0; i < cauHois.length; i++) {
+      const finalCauHois: CauHoiForm[] = [
+        ...(values.includeMandatoryConditions ? mandatoryConditions : []),
+        ...cauHois,
+      ];
+
+      for (let i = 0; i < finalCauHois.length; i++) {
         await mockService.cauHois.create({
           bieuMauId,
-          noiDung: cauHois[i].noiDung,
+          noiDung: finalCauHois[i].noiDung,
           thuTu: i + 1,
-          diemToiDa: cauHois[i].diemToiDa,
-          batBuoc: cauHois[i].batBuoc,
+          diemToiDa: finalCauHois[i].diemToiDa,
+          batBuoc: finalCauHois[i].batBuoc,
         });
       }
-
       notifications.show({
         title: "Thành công",
         message: isEditing ? "Cập nhật biểu mẫu thành công" : "Tạo biểu mẫu thành công",
@@ -339,6 +368,21 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
         <Paper withBorder shadow="sm" p="lg" radius="md">
           <Stack gap="md">
             <Group justify="space-between">
+              <Paper withBorder shadow="sm" p="lg" radius="md" mb="md">
+                <Stack gap="sm">
+                  <Title order={4}>ĐIỀU KIỆN BẮT BUỘC</Title>
+                  <Text size="sm" c="dimmed">(Không đạt 01 nội dung: không xét thi đua)</Text>
+                  <Group align="center" gap="md">
+                    <Switch
+                      label="Bao gồm 2 mục điều kiện bắt buộc"
+                      checked={form.values.includeMandatoryConditions}
+                      onChange={(e) =>
+                        form.setFieldValue("includeMandatoryConditions", e.currentTarget.checked)
+                      }
+                    />
+                  </Group>
+                </Stack>
+              </Paper>
               <Title order={4}>Danh sách câu hỏi ({cauHois.length})</Title>
               <Button leftSection={<IconPlus size={16} />} onClick={handleAddCauHoi} size="sm">
                 Thêm câu hỏi
@@ -429,11 +473,11 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
         </Paper>
 
         {showPreview && (
-          <Paper 
-            withBorder 
-            shadow="sm" 
-            p="lg" 
-            radius="md" 
+          <Paper
+            withBorder
+            shadow="sm"
+            p="lg"
+            radius="md"
             bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
           >
             <Stack gap="md">
@@ -452,6 +496,23 @@ export function BieuMauFormBuilder({ bieuMauId }: BieuMauFormBuilderProps) {
               </div>
 
               <Stack gap="lg">
+                {form.values.includeMandatoryConditions &&
+                  mandatoryConditions.map((mc, idx) => (
+                    <div key={mc.id}>
+                      <Text fw={500} mb="xs">
+                        {idx + 1}. {mc.noiDung}
+                        {mc.batBuoc && (
+                          <Text component="span" c="red">
+                            {" "}*
+                          </Text>
+                        )}
+                      </Text>
+                      <Group mb="sm">
+                        <Checkbox label="Có" disabled />
+                        <Checkbox label="Không" disabled />
+                      </Group>
+                    </div>
+                  ))}
                 {cauHois.map((cauHoi, index) => (
                   <div key={cauHoi.id}>
                     <Text fw={500} mb="xs">

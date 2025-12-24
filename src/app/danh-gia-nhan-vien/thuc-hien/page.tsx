@@ -55,8 +55,16 @@ function EvaluationFormContent() {
       const errors: Record<string, string> = {};
 
       cauHois.forEach((cauHoi) => {
-        if (cauHoi.batBuoc && !values.answers[cauHoi.id]) {
-          errors[`answers.${cauHoi.id}`] = "Vui lòng chọn điểm";
+        if (cauHoi.diemToiDa === 0) {
+          // 0-point (Có/Không) luôn bắt buộc
+          if (values.answers[cauHoi.id] === undefined) {
+            errors[`answers.${cauHoi.id}`] = "Vui lòng chọn Có hoặc Không";
+          }
+        } else {
+          // câu có điểm (>0) chỉ bắt buộc khi không bị khóa bởi 'khongXetThiDua'
+          if (!khongXetThiDua && values.answers[cauHoi.id] === undefined) {
+            errors[`answers.${cauHoi.id}`] = "Vui lòng chọn điểm";
+          }
         }
       });
 
@@ -68,6 +76,8 @@ function EvaluationFormContent() {
       return errors;
     },
   });
+
+  const [khongXetThiDua, setKhongXetThiDua] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -131,7 +141,33 @@ function EvaluationFormContent() {
 
         setNguoiDuocDanhGia(nguoiDuocDanhGiaData);
         setBieuMau(bieuMauData);
-        setCauHois(cauHoiData.sort((a, b) => a.thuTu - b.thuTu));
+        const existing = cauHoiData.slice(); // original from DB
+
+        // Define the mandatory question names here
+        const mandatoryNames = [
+          "Vi phạm Nội quy lao động, kỷ luật",
+          "Vi phạm quy định về an toàn lao động – PCCN",
+        ];
+
+        // If a mandatory item is missing, prepend it as a 0-point required question
+        for (let i = mandatoryNames.length - 1; i >= 0; i--) {
+          const name = mandatoryNames[i];
+          if (!existing.some((ch) => ch.noiDung === name)) {
+            existing.unshift({
+              id: `m_${i}_${Date.now()}`,
+              bieuMauId: bieuMauId || "",
+              noiDung: name,
+              thuTu: 0,
+              diemToiDa: 0,
+              batBuoc: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as CauHoi);
+          }
+        }
+
+        // Keep order by thuTu (0 mandatory items will appear first)
+        setCauHois(existing.sort((a, b) => a.thuTu - b.thuTu));
 
         // Check if already evaluated
         if (currentUser) {
@@ -168,6 +204,31 @@ function EvaluationFormContent() {
     }
   }, [currentUser, authLoading, router, nguoiDuocDanhGiaId, bieuMauId, kyDanhGiaId]);
 
+  useEffect(() => {
+    const hasViolation = cauHois.some(
+      (ch) => ch.diemToiDa === 0 && form.values.answers[ch.id] === 1
+    );
+
+    if (hasViolation !== khongXetThiDua) {
+      setKhongXetThiDua(hasViolation);
+    }
+
+    if (hasViolation) {
+      const newAnswers = { ...form.values.answers };
+      let changed = false;
+      for (const ch of cauHois) {
+        if (ch.diemToiDa > 0 && Object.prototype.hasOwnProperty.call(newAnswers, ch.id)) {
+          delete newAnswers[ch.id];
+          changed = true;
+        }
+      }
+      if (changed) {
+        form.setValues({ ...form.values, answers: newAnswers });
+      }
+    }
+  }, [JSON.stringify(form.values.answers), cauHois, khongXetThiDua]);
+
+
   const handleSubmit = async (values: EvaluationFormValues) => {
     if (!currentUser || !nguoiDuocDanhGia || !bieuMau || !kyDanhGiaId) {
       notifications.show({
@@ -180,11 +241,28 @@ function EvaluationFormContent() {
 
     setIsSubmitting(true);
     try {
-      const answers = cauHois.map((cauHoi) => ({
-        cauHoiId: cauHoi.id,
-        diem: values.answers[cauHoi.id],
-        nhanXet: "",
-      }));
+      const answers = cauHois.map((cauHoi) => {
+        // mandatory 0-point questions: keep 1 (Có) / 0 (Không) as-is (or default 0)
+        if (cauHoi.diemToiDa === 0) {
+          return {
+            cauHoiId: cauHoi.id,
+            diem: 0,
+            nhanXet: "",
+          };
+        }
+
+        // scoring questions: if any mandatory violation -> set score = 0
+        if (khongXetThiDua) {
+          return { cauHoiId: cauHoi.id, diem: 0, nhanXet: "" };
+        }
+
+        // normal behavior
+        return {
+          cauHoiId: cauHoi.id,
+          diem: values.answers[cauHoi.id] !== undefined ? values.answers[cauHoi.id] : 0,
+          nhanXet: "",
+        };
+      });
 
       await mockService.danhGias.submitEvaluation(
         currentUser.id,
@@ -235,9 +313,8 @@ function EvaluationFormContent() {
       console.error("Failed to submit evaluation:", error);
       notifications.show({
         title: "Lỗi",
-        message: `Không thể gửi đánh giá: ${
-          error instanceof Error ? error.message : "Lỗi không xác định"
-        }`,
+        message: `Không thể gửi đánh giá: ${error instanceof Error ? error.message : "Lỗi không xác định"
+          }`,
         color: "red",
       });
     } finally {
@@ -270,7 +347,31 @@ function EvaluationFormContent() {
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <Stack>
         <Title order={2}>Đánh giá Đồng nghiệp</Title>
-
+        <Paper withBorder shadow="sm" p="sm" radius="md" mb="md">
+          <Title order={5}>Thang chấm điểm</Title>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "6px 8px" }}>Nội dung</th>
+                <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất kém</th>
+                <th style={{ textAlign: "center", padding: "6px 8px" }}>Kém</th>
+                <th style={{ textAlign: "center", padding: "6px 8px" }}>Trung bình</th>
+                <th style={{ textAlign: "center", padding: "6px 8px" }}>Tốt</th>
+                <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất tốt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: "6px 8px" }}>Số điểm đánh giá</td>
+                <td style={{ textAlign: "center", padding: "6px 8px" }}>1</td>
+                <td style={{ textAlign: "center", padding: "6px 8px" }}>2</td>
+                <td style={{ textAlign: "center", padding: "6px 8px" }}>3</td>
+                <td style={{ textAlign: "center", padding: "6px 8px" }}>4</td>
+                <td style={{ textAlign: "center", padding: "6px 8px" }}>5</td>
+              </tr>
+            </tbody>
+          </table>
+        </Paper>
         <Paper withBorder shadow="sm" p="lg" radius="md">
           <Group mb="md">
             <Avatar color="blue" radius="xl" size="lg">
@@ -315,28 +416,35 @@ function EvaluationFormContent() {
                     </Text>
                   )}
                 </Text>
-                <Radio.Group
-                  value={
-                    form.values.answers[cauHoi.id]
-                      ? String(form.values.answers[cauHoi.id])
-                      : ""
-                  }
-                  onChange={(value) =>
-                    form.setFieldValue(`answers.${cauHoi.id}`, Number(value))
-                  }
-                  name={`question-${cauHoi.id}`}
-                  error={form.errors[`answers.${cauHoi.id}`]}
-                >
-                  <Group mt="xs" gap="md">
-                    {Array.from({ length: cauHoi.diemToiDa }, (_, i) => (
-                      <Radio
-                        key={i + 1}
-                        value={String(i + 1)}
-                        label={String(i + 1)}
-                      />
-                    ))}
-                  </Group>
-                </Radio.Group>
+
+                {cauHoi.diemToiDa && cauHoi.diemToiDa > 0 ? (
+                  <Radio.Group
+                    value={form.values.answers[cauHoi.id] !== undefined ? String(form.values.answers[cauHoi.id]) : ""}
+                    onChange={(value) => form.setFieldValue(`answers.${cauHoi.id}`, Number(value))}
+                    name={`question-${cauHoi.id}`}
+                    error={form.errors[`answers.${cauHoi.id}`]}
+                  >
+                    <Group mt="xs" gap="md">
+                      {Array.from({ length: cauHoi.diemToiDa }, (_, i) => (
+                        <Radio key={i + 1} value={String(i + 1)} label={String(i + 1)} disabled={khongXetThiDua} />
+                      ))}
+                    </Group>
+                  </Radio.Group>
+                ) : (
+                  // Câu hỏi điều kiện bắt buộc -> hiển thị lựa chọn Có / Không (1 = Có (vi phạm), 0 = Không)
+                  <Radio.Group
+                    value={form.values.answers[cauHoi.id] !== undefined ? String(form.values.answers[cauHoi.id]) : ""}
+                    onChange={(value) => form.setFieldValue(`answers.${cauHoi.id}`, Number(value))}
+                    name={`question-${cauHoi.id}`}
+                    error={form.errors[`answers.${cauHoi.id}`]}
+                  >
+                    <Group mt="xs" gap="md">
+                      <Radio value="1" label="Có" />
+                      <Radio value="0" label="Không" />
+                    </Group>
+                  </Radio.Group>
+                )}
+
                 {index < cauHois.length - 1 && <Divider mt="md" />}
               </div>
             ))}

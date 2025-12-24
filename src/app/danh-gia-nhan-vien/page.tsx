@@ -23,6 +23,8 @@ import { LoaiDanhGia, Role, type KyDanhGia, type User, type BieuMau } from "@/ty
 import { Tabs, Table } from "@mantine/core";
 import dayjs from "dayjs";
 import React from "react";
+import * as XLSX from "xlsx";
+import { usePathname } from "next/navigation";
 
 export default function DanhGiaNhanVienPage() {
   const router = useRouter();
@@ -35,13 +37,19 @@ export default function DanhGiaNhanVienPage() {
   const [departmentEvals, setDepartmentEvals] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedNhanVienId, setSelectedNhanVienId] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
       router.push("/login");
     }
   }, [currentUser, authLoading, router]);
-
+  useEffect(() => {
+    if (currentUser) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
   // Listen for evaluation completion broadcasts to update UI optimistically
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -53,6 +61,7 @@ export default function DanhGiaNhanVienPage() {
         if (!id) return;
         setDongNghieps((prev) => prev.filter((u) => u.id !== id));
         setDanhGiaStatus((prev) => ({ ...prev, [id]: true }));
+        console.log(danhGiaStatus)
       };
       bc.addEventListener("message", handler);
       return () => {
@@ -114,9 +123,11 @@ export default function DanhGiaNhanVienPage() {
                 bieuMauId: bieuMaus[0].id,
                 kyDanhGiaId: activeKys[0].id,
                 nguoiDuocDanhGiaIds: colleagues.map((c: any) => c.id),
+                phongBanId: currentUser.phongBanId,
               }),
             });
             const checkData = await checkRes.json();
+            console.log("CHECK STATUS DATA:", checkData);
             const statusMap: Record<string, boolean> = checkData.statuses || {};
             setDanhGiaStatus(statusMap);
           }
@@ -147,17 +158,15 @@ export default function DanhGiaNhanVienPage() {
         e.daHoanThanh ? "Có" : "Chưa",
         e.submittedAt
           ? dayjs(e.submittedAt).format("DD/MM/YYYY HH:mm:ss")
-          : "-"
-      ])
+          : "-",
+      ]),
     ];
-    const csvContent = "\uFEFF" + rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "danh_gia.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DanhGia");
+
+    XLSX.writeFile(workbook, "danh_gia.xlsx");
   };
 
   const getInitials = (name?: string) => {
@@ -292,7 +301,7 @@ export default function DanhGiaNhanVienPage() {
           <Text mb="md">Tất cả thông tin đánh giá giữa các nhân viên và lãnh đạo.</Text>
           {/* Nút xuất file, ví dụ xuất CSV */}
           <Button mb="md" onClick={handleExportDanhGia}>
-            Xuất file CSV
+            Xuất file Excel
           </Button>
           <Table highlightOnHover withColumnBorders>
             <thead>

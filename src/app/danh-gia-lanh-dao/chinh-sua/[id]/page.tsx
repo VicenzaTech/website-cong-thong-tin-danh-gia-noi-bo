@@ -61,7 +61,7 @@ function EditEvaluationFormContent() {
       const errors: Record<string, string> = {};
 
       cauHois.forEach((cauHoi) => {
-        if (cauHoi.batBuoc && !values.answers[cauHoi.id]) {
+        if (cauHoi.batBuoc && values.answers[cauHoi.id] === undefined) {
           errors[`answers.${cauHoi.id}`] = "Vui lòng chọn điểm";
         }
       });
@@ -211,9 +211,8 @@ function EditEvaluationFormContent() {
       console.error("Failed to update evaluation:", error);
       notifications.show({
         title: "Lỗi",
-        message: `Không thể cập nhật đánh giá: ${
-          error instanceof Error ? error.message : "Lỗi không xác định"
-        }`,
+        message: `Không thể cập nhật đánh giá: ${error instanceof Error ? error.message : "Lỗi không xác định"
+          }`,
         color: "red",
       });
     } finally {
@@ -247,6 +246,31 @@ function EditEvaluationFormContent() {
       <Stack>
         <Group justify="space-between">
           <Title order={2}>Chỉnh sửa Đánh giá Lãnh đạo</Title>
+          <Paper withBorder shadow="sm" p="sm" radius="md" mb="md">
+            <Title order={5}>Thang chấm điểm</Title>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "6px 8px" }}>Nội dung</th>
+                  <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất kém</th>
+                  <th style={{ textAlign: "center", padding: "6px 8px" }}>Kém</th>
+                  <th style={{ textAlign: "center", padding: "6px 8px" }}>Trung bình</th>
+                  <th style={{ textAlign: "center", padding: "6px 8px" }}>Tốt</th>
+                  <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất tốt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "6px 8px" }}>Số điểm đánh giá</td>
+                  <td style={{ textAlign: "center", padding: "6px 8px" }}>1</td>
+                  <td style={{ textAlign: "center", padding: "6px 8px" }}>2</td>
+                  <td style={{ textAlign: "center", padding: "6px 8px" }}>3</td>
+                  <td style={{ textAlign: "center", padding: "6px 8px" }}>4</td>
+                  <td style={{ textAlign: "center", padding: "6px 8px" }}>5</td>
+                </tr>
+              </tbody>
+            </table>
+          </Paper>
           <Badge color="orange" size="lg">
             Đang chỉnh sửa
           </Badge>

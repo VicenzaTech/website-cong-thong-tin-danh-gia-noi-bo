@@ -45,18 +45,19 @@ const menuItems: MenuItem[] = [
     icon: <IconUserCheck size={20} />,
     allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
   },
-  {
-    label: "Lịch sử đánh giá",
-    href: "/lich-su-danh-gia",
-    icon: <IconHistory size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  },
+  // {
+  //   label: "Lịch sử đánh giá",
+  //   href: "/lich-su-danh-gia",
+  //   icon: <IconHistory size={20} />,
+  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+  // },
   {
     label: "Xem đánh giá",
     href: "/xem-danh-gia",
     icon: <IconEye size={20} />,
     allowedRoles: [Role.admin, Role.truong_phong],
   },
+
   // {
   //   label: "Báo cáo & Thống kê",
   //   href: "/bao-cao",

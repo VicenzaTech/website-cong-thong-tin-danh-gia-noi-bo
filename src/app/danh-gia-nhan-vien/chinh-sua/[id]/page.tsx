@@ -60,11 +60,11 @@ function EditPeerEvaluationFormContent() {
     validate: (values) => {
       const errors: Record<string, string> = {};
 
-      cauHois.forEach((cauHoi) => {
-        if (cauHoi.batBuoc && !values.answers[cauHoi.id]) {
-          errors[`answers.${cauHoi.id}`] = "Vui lòng chọn điểm";
-        }
-      });
+     cauHois.forEach((cauHoi) => {
+  if (cauHoi.batBuoc && values.answers[cauHoi.id] === undefined) {
+    errors[`answers.${cauHoi.id}`] = "Vui lòng chọn điểm";
+  }
+});
 
       if (!values.nhanXetChung || values.nhanXetChung.trim().length < 10) {
         errors.nhanXetChung =

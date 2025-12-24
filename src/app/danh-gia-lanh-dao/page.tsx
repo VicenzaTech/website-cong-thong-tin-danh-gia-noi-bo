@@ -122,7 +122,31 @@ export default function DanhGiaLanhDaoPage() {
   return (
     <Stack gap="lg">
       <Title order={2}>Đánh giá Năng lực Lãnh đạo</Title>
-
+      <Paper withBorder shadow="sm" p="sm" radius="md" mb="md">
+        <Title order={5}>Thang chấm điểm</Title>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: "6px 8px" }}>Nội dung</th>
+              <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất kém</th>
+              <th style={{ textAlign: "center", padding: "6px 8px" }}>Kém</th>
+              <th style={{ textAlign: "center", padding: "6px 8px" }}>Trung bình</th>
+              <th style={{ textAlign: "center", padding: "6px 8px" }}>Tốt</th>
+              <th style={{ textAlign: "center", padding: "6px 8px" }}>Rất tốt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: "6px 8px" }}>Số điểm đánh giá</td>
+              <td style={{ textAlign: "center", padding: "6px 8px" }}>1</td>
+              <td style={{ textAlign: "center", padding: "6px 8px" }}>2</td>
+              <td style={{ textAlign: "center", padding: "6px 8px" }}>3</td>
+              <td style={{ textAlign: "center", padding: "6px 8px" }}>4</td>
+              <td style={{ textAlign: "center", padding: "6px 8px" }}>5</td>
+            </tr>
+          </tbody>
+        </table>
+      </Paper>
       {kyDanhGias.length === 0 ? (
         <Paper withBorder shadow="sm" p="xl" radius="md">
           <Center>

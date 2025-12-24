@@ -94,7 +94,7 @@ export interface DanhGia {
   createdAt: Date;
   updatedAt: Date;
   chiTietTieuChi: ChiTietTieuChi[];
-
+  khongXetThiDua?: boolean;
 }
 
 export interface CauTraLoi {

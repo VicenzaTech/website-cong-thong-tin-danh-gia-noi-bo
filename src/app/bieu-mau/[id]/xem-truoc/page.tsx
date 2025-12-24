@@ -105,13 +105,24 @@ export default function XemTruocBieuMauPage({ params }: { params: Promise<{ id: 
                       </Text>
                     )}
                   </Text>
-                  <Group>
-                    {Array.from({ length: cauHoi.diemToiDa }, (_, i) => (
-                      <Button key={i} variant="outline" size="sm" disabled>
-                        {i + 1}
+                  {cauHoi.diemToiDa && cauHoi.diemToiDa > 0 ? (
+                    <Group>
+                      {Array.from({ length: cauHoi.diemToiDa }, (_, i) => (
+                        <Button key={i} variant="outline" size="sm" disabled>
+                          {i + 1}
+                        </Button>
+                      ))}
+                    </Group>
+                  ) : (
+                    <Group>
+                      <Button variant="outline" size="sm" disabled>
+                        Có
                       </Button>
-                    ))}
-                  </Group>
+                      <Button variant="outline" size="sm" disabled>
+                        Không
+                      </Button>
+                    </Group>
+                  )}
                 </div>
               ))
             )}
