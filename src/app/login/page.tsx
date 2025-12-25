@@ -150,6 +150,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -275,4 +276,3 @@ export default function LoginPage() {
     </Box>
   );
 }
-

@@ -253,9 +253,19 @@ export const authService = {
       return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
     }
 
+    // Kiem tra mat khau moi khong trung voi mat khau cu da luu
+    if (user.mat_khau_cu) {
+      const isSameAsOldPassword = await bcrypt.compare(newPassword, user.mat_khau_cu);
+      if (isSameAsOldPassword) {
+        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau truoc do" };
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
+    // Luu mat khau hien tai vao mat_khau_cu truoc khi cap nhat
     authService.updateUser(userId, {
+      matKhauCu: user.mat_khau,
       matKhau: hashedPassword,
       daDoiMatKhau: true,
     });
