@@ -79,36 +79,25 @@ export default function DoiMatKhauBatBuocPage() {
     setError(null);
 
     try {
-      const currentUser = await mockService.users.getById(pendingUser.id);
-      if (!currentUser) {
-        setError("Không tìm thấy thông tin người dùng");
-        setIsLoading(false);
-        return;
-      }
-
-      if (currentUser.matKhau !== values.matKhauHienTai) {
-        setError("Mật khẩu hiện tại không chính xác");
-        setIsLoading(false);
-        return;
-      }
-
-      if (values.matKhauMoi === values.matKhauHienTai) {
-        setError("Mật khẩu mới không được trùng với mật khẩu cũ");
-        setIsLoading(false);
-        return;
-      }
-
-      const updatedUser = await mockService.users.update(pendingUser.id, {
-        matKhau: values.matKhauMoi,
-        matKhauCu: currentUser.matKhau,
-        daDoiMatKhau: true,
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: pendingUser.id,
+          currentPassword: values.matKhauHienTai,
+          newPassword: values.matKhauMoi,
+        }),
       });
 
-      if (!updatedUser) {
-        setError("Không thể cập nhật mật khẩu. Vui lòng thử lại");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Không thể đổi mật khẩu");
         setIsLoading(false);
         return;
       }
+
+      const updatedUser = data.user;
 
       localStorage.removeItem("force_password_change");
       updateUser({ 

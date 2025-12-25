@@ -120,3 +120,149 @@ npm start
 # Có thể xem và chỉnh sửa trực tiếp các file JSON nếu cần
 ```
 
+---
+
+## ✅ Hoàn thành: Chuyển sang SQLite cho Authentication - 25/12/2024
+
+### Vấn đề:
+Người dùng đổi mật khẩu nhưng không được lưu lại, mỗi lần reload lại mất dữ liệu.
+
+### Giải pháp triển khai:
+
+1. **Cài đặt SQLite** (`better-sqlite3`)
+   - Database nhẹ, không cần server
+   - Lưu trữ trong file `data/app.db`
+   - Hỗ trợ đầy đủ SQL queries
+
+2. **Tạo SQLite service** (`src/libs/sqlite.server.ts`)
+   - Schema cho users và phong_bans
+   - Auto-initialize từ mock data lần đầu
+   - CRUD operations đầy đủ
+   - Authentication methods
+
+3. **API Routes cho Auth**:
+   - `POST /api/auth/check-user` - Kiểm tra user tồn tại
+   - `POST /api/auth/login` - Đăng nhập
+   - `POST /api/auth/change-password` - Đổi mật khẩu
+
+4. **Cập nhật UI**:
+   - `/login` - Gọi API thay vì mock service
+   - `/doi-mat-khau-bat-buoc` - Lưu vào SQLite
+   - `/cai-dat` - Đổi password qua API
+
+### Cấu trúc Database:
+
+```sql
+-- Table users
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  ma_nhan_vien TEXT UNIQUE NOT NULL,
+  ho_ten TEXT,
+  email TEXT UNIQUE,
+  mat_khau TEXT,
+  mat_khau_cu TEXT,
+  da_doi_mat_khau INTEGER DEFAULT 0,
+  role TEXT NOT NULL,
+  phong_ban_id TEXT NOT NULL,
+  da_dang_ky INTEGER DEFAULT 0,
+  trang_thai_kh INTEGER DEFAULT 1,
+  last_login_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+
+-- Table phong_bans
+CREATE TABLE phong_bans (
+  id TEXT PRIMARY KEY,
+  ten_phong_ban TEXT UNIQUE NOT NULL,
+  mo_ta TEXT,
+  truong_phong_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+```
+
+### Lưu ý quan trọng:
+
+**⚠️ Vấn đề với Turbopack:**
+- Next.js 16 mặc định dùng Turbopack
+- Turbopack không hỗ trợ native modules như better-sqlite3
+- Cần chạy với webpack mode
+
+**Giải pháp:**
+
+1. **Development mode:**
+```bash
+# Chạy dev server (sẽ có warning nhưng vẫn hoạt động)
+npm run dev
+
+# Hoặc force webpack
+npx next dev --turbopack=false
+```
+
+2. **Production build:**
+```bash
+# Cần chạy với elevated privileges (Run as Administrator) trên Windows
+# Hoặc dùng WSL/Linux
+npm run build
+
+# Hoặc deploy trên server Linux (khuyến nghị)
+```
+
+3. **Alternative - Chạy trên WSL:**
+```bash
+# Trong WSL (Ubuntu/Debian)
+cd /mnt/d/VICENZA/Du-an/website-cong-thong-tin-danh-gia-noi-bo
+npm run build
+npm start
+```
+
+### Kết quả:
+- ✅ Mật khẩu được lưu vào SQLite database
+- ✅ Dữ liệu persistent, không mất khi reload
+- ✅ Authentication hoạt động hoàn toàn qua API
+- ✅ Tách biệt logic auth khỏi mock data
+- ✅ Sẵn sàng mở rộng sang các module khác
+
+### File database:
+```
+data/
+├── app.db              # SQLite database (users + phong_bans)
+├── app.db-shm          # Shared memory file
+└── app.db-wal          # Write-ahead log
+```
+
+### Hướng dẫn sử dụng:
+
+1. **Lần đầu chạy:**
+   - Database tự động được tạo và khởi tạo từ mock data
+   - 313 users + 13 phòng ban được import
+
+2. **Đăng nhập:**
+   - Nhập mã nhân viên
+   - Nhập password mặc định: `vicenza`
+   - Hệ thống yêu cầu đổi password
+   - Password mới được lưu vào SQLite
+
+3. **Kiểm tra database:**
+```bash
+# Cài SQLite CLI
+# Windows: choco install sqlite
+# Mac: brew install sqlite
+# Linux: apt install sqlite3
+
+# Xem dữ liệu
+sqlite3 data/app.db
+> SELECT ma_nhan_vien, ho_ten, da_doi_mat_khau FROM users LIMIT 5;
+> .exit
+```
+
+### Roadmap tiếp theo:
+- [ ] Chuyển phongBans sang SQLite API
+- [ ] Chuyển kyDanhGias sang SQLite
+- [ ] Chuyển bieuMaus sang SQLite
+- [ ] Loại bỏ hoàn toàn mock data
+```
+
