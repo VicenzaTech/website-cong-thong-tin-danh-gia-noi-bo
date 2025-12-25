@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "cross-env NEXT_PRIVATE_SKIP_TURBO=1 next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

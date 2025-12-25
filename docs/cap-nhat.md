@@ -193,14 +193,27 @@ CREATE TABLE phong_bans (
 
 **Giải pháp:**
 
-1. **Development mode:**
-```bash
-# Chạy dev server (sẽ có warning nhưng vẫn hoạt động)
-npm run dev
+1. **Development mode - CẦN QUYỀN ADMINISTRATOR:**
 
-# Hoặc force webpack
-npx next dev --turbopack=false
+**Cách 1: Run PowerShell as Administrator (Khuyến nghị)**
+```powershell
+# Nhấn Windows + X → chọn "Terminal (Admin)"
+cd D:\VICENZA\Du-an\website-cong-thong-tin-danh-gia-noi-bo
+npm run dev
 ```
+
+**Cách 2: Dùng WSL (Ubuntu)**
+```bash
+wsl
+cd /mnt/d/VICENZA/Du-an/website-cong-thong-tin-danh-gia-noi-bo
+npm run dev
+```
+
+**Cách 3: Enable Developer Mode trên Windows**
+- Settings → Update & Security → For Developers
+- Bật "Developer Mode"
+- Restart máy
+- Chạy `npm run dev` bình thường (không cần Admin)
 
 2. **Production build:**
 ```bash
@@ -236,9 +249,14 @@ data/
 
 ### Hướng dẫn sử dụng:
 
-1. **Lần đầu chạy:**
-   - Database tự động được tạo và khởi tạo từ mock data
-   - 313 users + 13 phòng ban được import
+1. **Khởi tạo database (lần đầu):**
+```bash
+npm run init-db
+```
+
+2. **Lần đầu chạy:**
+   - Database được tạo với 3 users mẫu + 13 phòng ban
+   - Có thể import thêm 313 users từ mock data sau
 
 2. **Đăng nhập:**
    - Nhập mã nhân viên
