@@ -58,8 +58,7 @@ export default function RegisterPage() {
         return null;
       },
       email: (value) => {
-        if (!value) return "Vui lòng nhập email";
-        if (!/^\S+@\S+$/.test(value)) return "Email không hợp lệ";
+        if (value && !/^\S+@\S+$/.test(value)) return "Email khong hop le";
         return null;
       },
       matKhau: (value) => {
@@ -146,17 +145,22 @@ export default function RegisterPage() {
       </Text>
 
       <Paper withBorder shadow="md" p={30} radius="md">
-        <Alert color="blue" title="Thông tin tài khoản" mb="lg">
+        <Alert color="blue" title="Thong tin tai khoan" mb="lg">
           <Text size="sm">
-            <strong>Mã nhân viên:</strong> {pendingUser.maNhanVien}
+            <strong>Ma nhan vien:</strong> {pendingUser.maNhanVien}
           </Text>
+          {pendingUser.phongBanName && (
+            <Text size="sm">
+              <strong>Phong ban:</strong> {pendingUser.phongBanName}
+            </Text>
+          )}
           <Text size="sm">
-            <strong>Vai trò:</strong>{" "}
+            <strong>Vai tro:</strong>{" "}
             {pendingUser.role === "admin"
-              ? "Quản trị viên"
+              ? "Quan tri vien"
               : pendingUser.role === "truong_phong"
-                ? "Trưởng phòng"
-                : "Nhân viên"}
+                ? "Truong phong"
+                : "Nhan vien"}
           </Text>
         </Alert>
 
@@ -177,9 +181,8 @@ export default function RegisterPage() {
 
             <TextInput
               label="Email"
-              placeholder="example@company.com"
+              placeholder="example@company.com (khong bat buoc)"
               type="email"
-              required
               {...form.getInputProps("email")}
             />
 

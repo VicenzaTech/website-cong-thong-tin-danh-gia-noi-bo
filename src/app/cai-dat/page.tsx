@@ -77,11 +77,8 @@ export default function CaiDatPage() {
         return;
       }
 
-      const updatedUser = data.user;
-
       updateUser({ 
-        matKhau: updatedUser.matKhau,
-        matKhauCu: updatedUser.matKhauCu 
+        daDoiMatKhau: true
       });
 
       form.reset();

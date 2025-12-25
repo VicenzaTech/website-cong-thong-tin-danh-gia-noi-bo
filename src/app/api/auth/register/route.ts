@@ -4,12 +4,12 @@ import { users as mockUsers, phongBans as mockPhongBans } from "@/_mock/db";
 
 export async function POST(request: Request) {
   try {
-    authService.initializeFromMockData(mockUsers, mockPhongBans);
+    await authService.initializeFromMockData(mockUsers, mockPhongBans);
     
     const body = await request.json();
     const { userId, hoTen, email, matKhau } = body;
 
-    if (!userId || !hoTen || !email || !matKhau) {
+    if (!userId || !hoTen || !matKhau) {
       return NextResponse.json(
         { error: "Vui long nhap day du thong tin" },
         { status: 400 }
@@ -31,10 +31,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const hashedPassword = await authService.hashPassword(matKhau);
+
     authService.updateUser(userId, {
       hoTen,
-      email,
-      matKhau,
+      email: email || undefined,
+      matKhau: hashedPassword,
       daDangKy: true,
       daDoiMatKhau: true,
     });
@@ -60,7 +62,6 @@ export async function POST(request: Request) {
       daDangKy: updatedUser.da_dang_ky === 1,
       trangThaiKH: updatedUser.trang_thai_kh === 1,
       daDoiMatKhau: updatedUser.da_doi_mat_khau === 1,
-      matKhau: updatedUser.mat_khau,
       createdAt: updatedUser.created_at,
       updatedAt: updatedUser.updated_at,
     };

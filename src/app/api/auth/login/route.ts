@@ -4,30 +4,30 @@ import { users as mockUsers, phongBans as mockPhongBans } from "@/_mock/db";
 
 export async function POST(request: Request) {
   try {
-    authService.initializeFromMockData(mockUsers, mockPhongBans);
+    await authService.initializeFromMockData(mockUsers, mockPhongBans);
     
     const body = await request.json();
     const { maNhanVien, matKhau } = body;
 
     if (!maNhanVien || !matKhau) {
       return NextResponse.json(
-        { error: "Vui lòng nhập đầy đủ thông tin" },
+        { error: "Vui long nhap day du thong tin" },
         { status: 400 }
       );
     }
 
-    const user = authService.verifyPassword(maNhanVien, matKhau);
+    const user = await authService.verifyPassword(maNhanVien, matKhau);
     
     if (!user) {
       return NextResponse.json(
-        { error: "Mã nhân viên hoặc mật khẩu không chính xác" },
+        { error: "Ma nhan vien hoac mat khau khong chinh xac" },
         { status: 401 }
       );
     }
 
     if (!user.trang_thai_kh) {
       return NextResponse.json(
-        { error: "Tài khoản của bạn đã bị vô hiệu hóa" },
+        { error: "Tai khoan cua ban da bi vo hieu hoa" },
         { status: 403 }
       );
     }
@@ -49,8 +49,6 @@ export async function POST(request: Request) {
       daDangKy: user.da_dang_ky === 1,
       trangThaiKH: user.trang_thai_kh === 1,
       daDoiMatKhau: user.da_doi_mat_khau === 1,
-      matKhau: user.mat_khau,
-      matKhauCu: user.mat_khau_cu,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -59,7 +57,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Đã xảy ra lỗi khi đăng nhập" },
+      { error: "Da xay ra loi khi dang nhap" },
       { status: 500 }
     );
   }

@@ -8,12 +8,11 @@ export interface AuthUser {
   email?: string;
   role: string;
   phongBanId: string;
+  phongBanName?: string;
   daDangKy: boolean;
   trangThaiKH: boolean;
   daDoiMatKhau: boolean;
   hasPassword?: boolean;
-  matKhau?: string;
-  matKhauCu?: string;
   createdAt: string;
   updatedAt: string;
 }

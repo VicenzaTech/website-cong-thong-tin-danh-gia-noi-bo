@@ -4,14 +4,14 @@ import { users as mockUsers, phongBans as mockPhongBans } from "@/_mock/db";
 
 export async function POST(request: Request) {
   try {
-    authService.initializeFromMockData(mockUsers, mockPhongBans);
+    await authService.initializeFromMockData(mockUsers, mockPhongBans);
     
     const body = await request.json();
     const { maNhanVien } = body;
 
     if (!maNhanVien) {
       return NextResponse.json(
-        { error: "Vui lòng nhập mã nhân viên" },
+        { error: "Vui long nhap ma nhan vien" },
         { status: 400 }
       );
     }
@@ -20,14 +20,14 @@ export async function POST(request: Request) {
     
     if (!user) {
       return NextResponse.json(
-        { error: "Không tìm thấy mã nhân viên này" },
+        { error: "Khong tim thay ma nhan vien nay" },
         { status: 404 }
       );
     }
 
     if (!user.trang_thai_kh) {
       return NextResponse.json(
-        { error: "Tài khoản của bạn đã bị vô hiệu hóa" },
+        { error: "Tai khoan cua ban da bi vo hieu hoa" },
         { status: 403 }
       );
     }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Check user error:", error);
     return NextResponse.json(
-      { error: "Đã xảy ra lỗi" },
+      { error: "Da xay ra loi" },
       { status: 500 }
     );
   }

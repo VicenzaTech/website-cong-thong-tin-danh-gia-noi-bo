@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcryptjs";
 
 const DB_PATH = path.join(process.cwd(), "data", "app.db");
 
@@ -224,46 +225,49 @@ export const authService = {
     stmt.run(...values);
   },
 
-  verifyPassword: (maNhanVien: string, password: string): SqliteUser | null => {
+  verifyPassword: async (maNhanVien: string, password: string): Promise<SqliteUser | null> => {
     const user = authService.getUserByMaNhanVien(maNhanVien);
     if (!user || !user.mat_khau) return null;
-    if (user.mat_khau !== password) return null;
+    
+    const isValid = await bcrypt.compare(password, user.mat_khau);
+    if (!isValid) return null;
     return user;
   },
 
-  changePassword: (userId: string, currentPassword: string, newPassword: string): { success: boolean; error?: string } => {
+  changePassword: async (userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     const user = authService.getUserById(userId);
     if (!user) {
-      return { success: false, error: "Không tìm thấy người dùng" };
+      return { success: false, error: "Khong tim thay nguoi dung" };
     }
 
-    if (user.mat_khau !== currentPassword) {
-      return { success: false, error: "Mật khẩu hiện tại không chính xác" };
+    if (!user.mat_khau) {
+      return { success: false, error: "Nguoi dung chua co mat khau" };
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.mat_khau);
+    if (!isCurrentValid) {
+      return { success: false, error: "Mat khau hien tai khong chinh xac" };
     }
 
     if (newPassword === currentPassword) {
-      return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu cũ" };
+      return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
     }
 
-    if (user.mat_khau_cu && newPassword === user.mat_khau_cu) {
-      return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu đã sử dụng trước đó" };
-    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     authService.updateUser(userId, {
-      matKhau: newPassword,
-      matKhauCu: currentPassword,
+      matKhau: hashedPassword,
       daDoiMatKhau: true,
     });
 
     return { success: true };
   },
 
-  initializeFromMockData: (mockUsers: any[], mockPhongBans: any[]): void => {
+  initializeFromMockData: async (mockUsers: any[], mockPhongBans: any[]): Promise<void> => {
     const db = getDatabase();
     
     const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
     if (userCount.count > 0) {
-      console.log("Database already initialized, skipping...");
       return;
     }
 
@@ -294,13 +298,18 @@ export const authService = {
     `);
 
     for (const user of mockUsers) {
+      let hashedPassword: string | null = null;
+      if (user.matKhau) {
+        hashedPassword = await bcrypt.hash(user.matKhau, 10);
+      }
+      
       userStmt.run(
         user.id,
         user.maNhanVien,
         user.hoTen || null,
         user.email || null,
-        user.matKhau || null,
-        user.matKhauCu || null,
+        hashedPassword,
+        null,
         user.daDoiMatKhau ? 1 : 0,
         user.role,
         user.phongBanId,
@@ -312,6 +321,10 @@ export const authService = {
     }
 
     console.log(`Initialized ${mockPhongBans.length} phong bans and ${mockUsers.length} users`);
+  },
+
+  hashPassword: async (password: string): Promise<string> => {
+    return bcrypt.hash(password, 10);
   },
 };
 
