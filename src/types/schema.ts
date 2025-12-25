@@ -40,6 +40,7 @@ export interface User {
   daDoiMatKhau?: boolean;
   role: Role;
   phongBanId: string;
+  phongBanName?: string;
   daDangKy: boolean;
   trangThaiKH: boolean;
   lastLoginAt?: Date;

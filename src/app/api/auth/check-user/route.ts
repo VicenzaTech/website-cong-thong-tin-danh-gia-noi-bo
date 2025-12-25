@@ -32,6 +32,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const phongBan = authService.getPhongBanById(user.phong_ban_id);
+
     const userData = {
       id: user.id,
       maNhanVien: user.ma_nhan_vien,
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
       email: user.email,
       role: user.role,
       phongBanId: user.phong_ban_id,
+      phongBanName: phongBan?.ten_phong_ban || "N/A",
       daDangKy: user.da_dang_ky === 1,
       trangThaiKH: user.trang_thai_kh === 1,
       hasPassword: !!user.mat_khau,

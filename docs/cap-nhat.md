@@ -1,6 +1,60 @@
-# Cập nhật hệ thống - 25/12/2024
+# Cap nhat he thong
 
-## ✅ Hoàn thành: Luồng đăng nhập với đổi mật khẩu bắt buộc
+## [X] Hoan thanh: Chuyen doi authentication sang SQLite - 25/12/2024
+
+### Tong quan:
+Chuyen doi he thong dang nhap tu mock data sang SQLite database de dam bao du lieu duoc luu tru persistent.
+
+### Cac thay doi:
+
+1. **API Routes cho Authentication**
+   - `/api/auth/check-user`: Kiem tra user theo ma nhan vien
+   - `/api/auth/login`: Dang nhap va xac thuc mat khau
+   - `/api/auth/change-password`: Doi mat khau
+   - `/api/auth/register`: Dang ky thong tin lan dau (user chua co password)
+
+2. **SQLite Service** (`src/libs/sqlite.server.ts`)
+   - Su dung better-sqlite3 de luu tru du lieu
+   - Database file: `data/app.db`
+   - Tu dong khoi tao tu mock data lan dau chay
+   - Ho tro CRUD cho users va phong_bans
+
+3. **Cap nhat cac trang**
+   - `/login`: Chuyen sang goi API thay vi mockService
+   - `/register`: Chuyen sang goi API thay vi mockService
+   - `/doi-mat-khau-bat-buoc`: Chuyen sang goi API thay vi mockService
+   - `/cai-dat`: Da su dung API tu truoc
+
+4. **Build Configuration**
+   - Cap nhat `package.json`: `"build": "next build --webpack"` de ho tro Next.js 16
+
+5. **User Schema**
+   - Them `phongBanName` vao User interface de hien thi ten phong ban
+
+### Luong dang nhap:
+1. Nhap ma nhan vien -> He thong kiem tra user
+2. Neu user chua co password -> Redirect `/register`
+3. Neu user co password -> Hien thi field nhap password
+4. Nhap password mac dinh "vicenza" -> Login
+5. Neu `daDoiMatKhau = false` -> Redirect `/doi-mat-khau-bat-buoc`
+6. Doi mat khau thanh cong -> Vao he thong binh thuong
+
+### Tuan thu quy tac:
+- [X] Code don gian, de hieu (KISS)
+- [X] Khong su dung emoji trong code
+- [X] Xu ly day du cac trang thai loi
+- [X] Validate dau vao day du
+- [X] Build thanh cong khong co loi
+
+### Kiem tra:
+```bash
+npm run build
+```
+Build thanh cong voi 31 routes, khong co loi TypeScript hay linting.
+
+---
+
+## [X] Hoan thanh: Luong dang nhap voi doi mat khau bat buoc
 
 ### Các thay đổi đã thực hiện:
 

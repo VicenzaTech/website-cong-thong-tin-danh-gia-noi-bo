@@ -20,7 +20,6 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
 import type { User } from "@/types/schema";
 
 export default function LoginPage() {

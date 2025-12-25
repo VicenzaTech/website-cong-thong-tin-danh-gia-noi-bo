@@ -18,12 +18,11 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
 import type { User } from "@/types/schema";
 
 export default function DoiMatKhauBatBuocPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, updateUser } = useAuth();
+  const { user, isLoading: authLoading, login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingUser, setPendingUser] = useState<User | null>(null);
@@ -97,14 +96,10 @@ export default function DoiMatKhauBatBuocPage() {
         return;
       }
 
-      const updatedUser = data.user;
+      const updatedUser = data.user as User;
 
       localStorage.removeItem("force_password_change");
-      updateUser({ 
-        matKhau: updatedUser.matKhau,
-        matKhauCu: updatedUser.matKhauCu,
-        daDoiMatKhau: true 
-      });
+      login(updatedUser);
 
       notifications.show({
         title: "Thành công",

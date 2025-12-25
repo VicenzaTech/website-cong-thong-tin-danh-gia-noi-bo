@@ -93,6 +93,16 @@ export interface SqliteUser {
   deleted_at?: string;
 }
 
+export interface SqlitePhongBan {
+  id: string;
+  ten_phong_ban: string;
+  mo_ta?: string;
+  truong_phong_id?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+}
+
 export const authService = {
   getUserByMaNhanVien: (maNhanVien: string): SqliteUser | undefined => {
     const db = getDatabase();
@@ -110,6 +120,15 @@ export const authService = {
       WHERE id = ? AND deleted_at IS NULL
     `);
     return stmt.get(id) as SqliteUser | undefined;
+  },
+
+  getPhongBanById: (id: string): SqlitePhongBan | undefined => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT * FROM phong_bans 
+      WHERE id = ? AND deleted_at IS NULL
+    `);
+    return stmt.get(id) as SqlitePhongBan | undefined;
   },
 
   createUser: (user: {

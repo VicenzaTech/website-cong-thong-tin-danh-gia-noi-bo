@@ -32,10 +32,12 @@ export async function POST(request: Request) {
     const user = authService.getUserById(userId);
     if (!user) {
       return NextResponse.json(
-        { error: "Không tìm thấy người dùng" },
+        { error: "Khong tim thay nguoi dung" },
         { status: 404 }
       );
     }
+
+    const phongBan = authService.getPhongBanById(user.phong_ban_id);
 
     const userData = {
       id: user.id,
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
       email: user.email,
       role: user.role,
       phongBanId: user.phong_ban_id,
+      phongBanName: phongBan?.ten_phong_ban || "N/A",
       daDangKy: user.da_dang_ky === 1,
       trangThaiKH: user.trang_thai_kh === 1,
       daDoiMatKhau: user.da_doi_mat_khau === 1,
