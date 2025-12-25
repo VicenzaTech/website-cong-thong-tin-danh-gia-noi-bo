@@ -36,6 +36,8 @@ export interface User {
   hoTen?: string;
   email?: string;
   matKhau?: string;
+  matKhauCu?: string;
+  daDoiMatKhau?: boolean;
   role: Role;
   phongBanId: string;
   daDangKy: boolean;

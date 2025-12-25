@@ -117,6 +117,17 @@ export default function LoginPage() {
         return;
       }
 
+      if (!foundUser.daDoiMatKhau) {
+        localStorage.setItem("force_password_change", JSON.stringify(foundUser));
+        notifications.show({
+          title: "Yêu cầu đổi mật khẩu",
+          message: "Bạn cần đổi mật khẩu mặc định trước khi tiếp tục",
+          color: "yellow",
+        });
+        router.push("/doi-mat-khau-bat-buoc");
+        return;
+      }
+
       login(foundUser);
       notifications.show({
         title: "Đăng nhập thành công",

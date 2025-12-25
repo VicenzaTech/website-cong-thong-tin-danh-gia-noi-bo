@@ -73,8 +73,21 @@ export default function CaiDatPage() {
         return;
       }
 
+      if (values.matKhauMoi === values.matKhauHienTai) {
+        setError("Mật khẩu mới không được trùng với mật khẩu cũ");
+        setIsLoading(false);
+        return;
+      }
+
+      if (currentUser.matKhauCu && values.matKhauMoi === currentUser.matKhauCu) {
+        setError("Mật khẩu mới không được trùng với mật khẩu đã sử dụng trước đó");
+        setIsLoading(false);
+        return;
+      }
+
       const updatedUser = await mockService.users.update(user.id, {
         matKhau: values.matKhauMoi,
+        matKhauCu: currentUser.matKhau,
       });
 
       if (!updatedUser) {
@@ -83,7 +96,10 @@ export default function CaiDatPage() {
         return;
       }
 
-      updateUser({ matKhau: updatedUser.matKhau });
+      updateUser({ 
+        matKhau: updatedUser.matKhau,
+        matKhauCu: updatedUser.matKhauCu 
+      });
 
       form.reset();
       notifications.show({
