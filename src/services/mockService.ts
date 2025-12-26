@@ -1,11 +1,11 @@
 import {
-  users,
-  phongBans,
-  kyDanhGias,
-  bieuMaus,
-  cauHois,
-  danhGias,
-  cauTraLois,
+  users as mockUsers,
+  phongBans as mockPhongBans,
+  kyDanhGias as mockKyDanhGias,
+  bieuMaus as mockBieuMaus,
+  cauHois as mockCauHois,
+  danhGias as mockDanhGias,
+  cauTraLois as mockCauTraLois,
 } from "@/_mock/db";
 import type {
   User,
@@ -16,6 +16,7 @@ import type {
   DanhGia,
   CauTraLoi,
 } from "@/types/schema";
+
 
 export const fakeDelay = (ms: number = 500): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,22 +32,22 @@ export const mockService = {
   users: {
     getAll: async (): Promise<User[]> => {
       await fakeDelay();
-      return users.filter((u) => !u.deletedAt);
+      return mockUsers.filter((u) => !u.deletedAt);
     },
 
     getById: async (id: string): Promise<User | undefined> => {
       await fakeDelay();
-      return users.find((u) => u.id === id && !u.deletedAt);
+      return mockUsers.find((u) => u.id === id && !u.deletedAt);
     },
 
     getByMaNhanVien: async (maNhanVien: string): Promise<User | undefined> => {
       await fakeDelay();
-      return users.find((u) => u.maNhanVien === maNhanVien && !u.deletedAt);
+      return mockUsers.find((u) => u.maNhanVien === maNhanVien && !u.deletedAt);
     },
 
     getByPhongBan: async (phongBanId: string): Promise<User[]> => {
       await fakeDelay();
-      return users.filter((u) => u.phongBanId === phongBanId && !u.deletedAt);
+      return mockUsers.filter((u) => u.phongBanId === phongBanId && !u.deletedAt);
     },
 
     create: async (data: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> => {
@@ -57,30 +58,31 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      users.push(newUser);
+      
+      mockUsers.push(newUser);
       return newUser;
     },
 
     update: async (id: string, data: Partial<User>): Promise<User | undefined> => {
       await fakeDelay();
-      const index = users.findIndex((u) => u.id === id);
+      const index = mockUsers.findIndex((u) => u.id === id);
       if (index === -1) return undefined;
 
-      users[index] = {
-        ...users[index],
+      mockUsers[index] = {
+        ...mockUsers[index],
         ...data,
         updatedAt: new Date(),
       };
-      return users[index];
+      return mockUsers[index];
     },
 
     delete: async (id: string): Promise<boolean> => {
       await fakeDelay();
-      const index = users.findIndex((u) => u.id === id);
+      const index = mockUsers.findIndex((u) => u.id === id);
       if (index === -1) return false;
 
-      users[index].deletedAt = new Date();
-      users[index].updatedAt = new Date();
+      mockUsers[index].deletedAt = new Date();
+      mockUsers[index].updatedAt = new Date();
       return true;
     },
   },
@@ -88,12 +90,12 @@ export const mockService = {
   phongBans: {
     getAll: async (): Promise<PhongBan[]> => {
       await fakeDelay();
-      return phongBans.filter((pb) => !pb.deletedAt);
+      return mockPhongBans.filter((pb) => !pb.deletedAt);
     },
 
     getById: async (id: string): Promise<PhongBan | undefined> => {
       await fakeDelay();
-      return phongBans.find((pb) => pb.id === id && !pb.deletedAt);
+      return mockPhongBans.find((pb) => pb.id === id && !pb.deletedAt);
     },
 
     create: async (
@@ -106,30 +108,31 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      phongBans.push(newPhongBan);
+      
+      mockPhongBans.push(newPhongBan);
       return newPhongBan;
     },
 
     update: async (id: string, data: Partial<PhongBan>): Promise<PhongBan | undefined> => {
       await fakeDelay();
-      const index = phongBans.findIndex((pb) => pb.id === id);
+      const index = mockPhongBans.findIndex((pb) => pb.id === id);
       if (index === -1) return undefined;
 
-      phongBans[index] = {
-        ...phongBans[index],
+      mockPhongBans[index] = {
+        ...mockPhongBans[index],
         ...data,
         updatedAt: new Date(),
       };
-      return phongBans[index];
+      return mockPhongBans[index];
     },
 
     delete: async (id: string): Promise<boolean> => {
       await fakeDelay();
-      const index = phongBans.findIndex((pb) => pb.id === id);
+      const index = mockPhongBans.findIndex((pb) => pb.id === id);
       if (index === -1) return false;
 
-      phongBans[index].deletedAt = new Date();
-      phongBans[index].updatedAt = new Date();
+      mockPhongBans[index].deletedAt = new Date();
+      mockPhongBans[index].updatedAt = new Date();
       return true;
     },
   },
@@ -137,17 +140,17 @@ export const mockService = {
   kyDanhGias: {
     getAll: async (): Promise<KyDanhGia[]> => {
       await fakeDelay();
-      return kyDanhGias;
+      return mockKyDanhGias;
     },
 
     getActive: async (): Promise<KyDanhGia[]> => {
       await fakeDelay();
-      return kyDanhGias.filter((ky) => ky.dangMo);
+      return mockKyDanhGias.filter((ky) => ky.dangMo);
     },
 
     getById: async (id: string): Promise<KyDanhGia | undefined> => {
       await fakeDelay();
-      return kyDanhGias.find((ky) => ky.id === id);
+      return mockKyDanhGias.find((ky) => ky.id === id);
     },
 
     create: async (
@@ -160,43 +163,44 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      kyDanhGias.push(newKy);
+      
+      mockKyDanhGias.push(newKy);
       return newKy;
     },
 
     update: async (id: string, data: Partial<KyDanhGia>): Promise<KyDanhGia | undefined> => {
       await fakeDelay();
-      const index = kyDanhGias.findIndex((ky) => ky.id === id);
+      const index = mockKyDanhGias.findIndex((ky) => ky.id === id);
       if (index === -1) return undefined;
 
-      kyDanhGias[index] = {
-        ...kyDanhGias[index],
+      mockKyDanhGias[index] = {
+        ...mockKyDanhGias[index],
         ...data,
         updatedAt: new Date(),
       };
-      return kyDanhGias[index];
+      return mockKyDanhGias[index];
     },
   },
 
   bieuMaus: {
     getAll: async (): Promise<BieuMau[]> => {
       await fakeDelay();
-      return bieuMaus.filter((bm) => !bm.deletedAt);
+      return mockBieuMaus.filter((bm) => !bm.deletedAt);
     },
 
     getActive: async (): Promise<BieuMau[]> => {
       await fakeDelay();
-      return bieuMaus.filter((bm) => bm.trangThai === "KICH_HOAT" && !bm.deletedAt);
+      return mockBieuMaus.filter((bm) => bm.trangThai === "KICH_HOAT" && !bm.deletedAt);
     },
 
     getById: async (id: string): Promise<BieuMau | undefined> => {
       await fakeDelay();
-      return bieuMaus.find((bm) => bm.id === id && !bm.deletedAt);
+      return mockBieuMaus.find((bm) => bm.id === id && !bm.deletedAt);
     },
 
     getByLoai: async (loaiDanhGia: string): Promise<BieuMau[]> => {
       await fakeDelay();
-      return bieuMaus.filter(
+      return mockBieuMaus.filter(
         (bm) => bm.loaiDanhGia === loaiDanhGia && bm.trangThai === "KICH_HOAT" && !bm.deletedAt
       );
     },
@@ -209,30 +213,31 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      bieuMaus.push(newBieuMau);
+      
+      mockBieuMaus.push(newBieuMau);
       return newBieuMau;
     },
 
     update: async (id: string, data: Partial<BieuMau>): Promise<BieuMau | undefined> => {
       await fakeDelay();
-      const index = bieuMaus.findIndex((bm) => bm.id === id);
+      const index = mockBieuMaus.findIndex((bm) => bm.id === id);
       if (index === -1) return undefined;
 
-      bieuMaus[index] = {
-        ...bieuMaus[index],
+      mockBieuMaus[index] = {
+        ...mockBieuMaus[index],
         ...data,
         updatedAt: new Date(),
       };
-      return bieuMaus[index];
+      return mockBieuMaus[index];
     },
 
     delete: async (id: string): Promise<boolean> => {
       await fakeDelay();
-      const index = bieuMaus.findIndex((bm) => bm.id === id);
+      const index = mockBieuMaus.findIndex((bm) => bm.id === id);
       if (index === -1) return false;
 
-      bieuMaus[index].deletedAt = new Date();
-      bieuMaus[index].updatedAt = new Date();
+      mockBieuMaus[index].deletedAt = new Date();
+      mockBieuMaus[index].updatedAt = new Date();
       return true;
     },
   },
@@ -240,12 +245,12 @@ export const mockService = {
   cauHois: {
     getByBieuMau: async (bieuMauId: string): Promise<CauHoi[]> => {
       await fakeDelay();
-      return cauHois.filter((ch) => ch.bieuMauId === bieuMauId).sort((a, b) => a.thuTu - b.thuTu);
+      return mockCauHois.filter((ch) => ch.bieuMauId === bieuMauId).sort((a, b) => a.thuTu - b.thuTu);
     },
 
     getById: async (id: string): Promise<CauHoi | undefined> => {
       await fakeDelay();
-      return cauHois.find((ch) => ch.id === id);
+      return mockCauHois.find((ch) => ch.id === id);
     },
 
     create: async (data: Omit<CauHoi, "id" | "createdAt" | "updatedAt">): Promise<CauHoi> => {
@@ -256,58 +261,60 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      cauHois.push(newCauHoi);
+      
+      mockCauHois.push(newCauHoi);
       return newCauHoi;
     },
 
     update: async (id: string, data: Partial<CauHoi>): Promise<CauHoi | undefined> => {
       await fakeDelay();
-      const index = cauHois.findIndex((ch) => ch.id === id);
+      const index = mockCauHois.findIndex((ch) => ch.id === id);
       if (index === -1) return undefined;
 
-      cauHois[index] = {
-        ...cauHois[index],
+      mockCauHois[index] = {
+        ...mockCauHois[index],
         ...data,
         updatedAt: new Date(),
       };
-      return cauHois[index];
+      return mockCauHois[index];
     },
 
     delete: async (id: string): Promise<boolean> => {
       await fakeDelay();
-      const index = cauHois.findIndex((ch) => ch.id === id);
+      const index = mockCauHois.findIndex((ch) => ch.id === id);
       if (index === -1) return false;
 
-      cauHois.splice(index, 1);
+      mockCauHois.splice(index, 1);
       return true;
     },
   },
+  
   cauTraLois: {
     getByDanhGia: async (danhGiaId: string): Promise<CauTraLoi[]> => {
       await fakeDelay();
-      return cauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
+      return mockCauTraLois.filter((ctl) => ctl.danhGiaId === danhGiaId);
     },
   },
+  
   danhGias: {
-
     getAll: async (): Promise<DanhGia[]> => {
       await fakeDelay();
-      return danhGias;
+      return mockDanhGias;
     },
 
     getById: async (id: string): Promise<DanhGia | undefined> => {
       await fakeDelay();
-      return danhGias.find((dg) => dg.id === id);
+      return mockDanhGias.find((dg) => dg.id === id);
     },
 
     getByNguoiDanhGia: async (nguoiDanhGiaId: string): Promise<DanhGia[]> => {
       await fakeDelay();
-      return danhGias.filter((dg) => dg.nguoiDanhGiaId === nguoiDanhGiaId);
+      return mockDanhGias.filter((dg) => dg.nguoiDanhGiaId === nguoiDanhGiaId);
     },
 
     getByNguoiDuocDanhGia: async (nguoiDuocDanhGiaId: string): Promise<DanhGia[]> => {
       await fakeDelay();
-      return danhGias.filter((dg) => dg.nguoiDuocDanhGiaId === nguoiDuocDanhGiaId);
+      return mockDanhGias.filter((dg) => dg.nguoiDuocDanhGiaId === nguoiDuocDanhGiaId);
     },
 
     checkExisting: async (
@@ -317,7 +324,7 @@ export const mockService = {
       kyDanhGiaId: string
     ): Promise<DanhGia | undefined> => {
       await fakeDelay();
-      return danhGias.find(
+      return mockDanhGias.find(
         (dg) =>
           dg.nguoiDanhGiaId === nguoiDanhGiaId &&
           dg.nguoiDuocDanhGiaId === nguoiDuocDanhGiaId &&
@@ -328,14 +335,12 @@ export const mockService = {
 
     canEdit: async (danhGiaId: string): Promise<boolean> => {
       await fakeDelay();
-      const danhGia = danhGias.find((dg) => dg.id === danhGiaId);
+      const danhGia = mockDanhGias.find((dg) => dg.id === danhGiaId);
       if (!danhGia) return false;
 
-      // Get the evaluation period
-      const kyDanhGia = kyDanhGias.find((ky) => ky.id === danhGia.kyDanhGiaId);
+      const kyDanhGia = mockKyDanhGias.find((ky) => ky.id === danhGia.kyDanhGiaId);
       if (!kyDanhGia) return false;
 
-      // Can edit if the period is still active (before end date)
       const now = new Date();
       const endDate = new Date(kyDanhGia.ngayKetThuc);
       return now <= endDate;
@@ -349,21 +354,22 @@ export const mockService = {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      danhGias.push(newDanhGia);
+      
+      mockDanhGias.push(newDanhGia);
       return newDanhGia;
     },
 
     update: async (id: string, data: Partial<DanhGia>): Promise<DanhGia | undefined> => {
       await fakeDelay();
-      const index = danhGias.findIndex((dg) => dg.id === id);
+      const index = mockDanhGias.findIndex((dg) => dg.id === id);
       if (index === -1) return undefined;
 
-      danhGias[index] = {
-        ...danhGias[index],
+      mockDanhGias[index] = {
+        ...mockDanhGias[index],
         ...data,
         updatedAt: new Date(),
       };
-      return danhGias[index];
+      return mockDanhGias[index];
     },
 
     submitEvaluation: async (
@@ -387,15 +393,13 @@ export const mockService = {
         throw new Error("Bạn đã hoàn thành đánh giá này rồi");
       }
 
-      // Lấy danh sách câu hỏi theo biểu mẫu
-      const cauHoiList = cauHois.filter((ch) => ch.bieuMauId === bieuMauId);
+      const cauHoiList = mockCauHois.filter((ch) => ch.bieuMauId === bieuMauId);
 
-      // Lọc các câu hỏi có điểm (bỏ qua các câu bắt buộc với diemToiDa === 0) để tính điểm
-      const scoringQuestions = cauHois.filter((ch) => ch.diemToiDa > 0);
+      const scoringQuestions = cauHoiList.filter((ch) => ch.diemToiDa > 0);
       const scoringAnswers = answers.filter((a) =>
         scoringQuestions.some((ch) => ch.id === a.cauHoiId)
       );
-      console.log("SCORING ANSWERS:", scoringAnswers);
+      
       const totalScore = scoringAnswers.reduce((sum, a) => sum + (a.diem || 0), 0);
       const diemTrungBinh =
         scoringQuestions.length > 0
@@ -403,14 +407,11 @@ export const mockService = {
           : 0;
 
       const tongDiem = scoringAnswers.reduce((sum, ans) => sum + (ans.diem ?? 0), 0);
-      // const diemTrungBinh = scoringAnswers.length > 0 ? tongDiem / scoringAnswers.length : 0;
 
-      // Kiểm tra vi phạm các mục bắt buộc: nếu có câu hỏi có diemToiDa === 0 mà người đánh giá chọn "Có" (mã 1)
       const khongXetThiDua = cauHoiList.some(
         (ch) => ch.diemToiDa === 0 && answers.find((a) => a.cauHoiId === ch.id && a.diem === 1)
       );
 
-      // Tạo chi tiết tiêu chí từ danh sách câu hỏi và câu trả lời
       const chiTietTieuChi: ChiTietTieuChi[] = cauHoiList.map((ch) => {
         const answer = answers.find((a) => a.cauHoiId === ch.id);
         return {
@@ -438,14 +439,14 @@ export const mockService = {
       };
 
       if (existing) {
-        const index = danhGias.findIndex((dg) => dg.id === existing.id);
-        danhGias[index] = danhGia;
+        const index = mockDanhGias.findIndex((dg) => dg.id === existing.id);
+        mockDanhGias[index] = danhGia;
       } else {
-        danhGias.push(danhGia);
+        mockDanhGias.push(danhGia);
       }
 
       for (const answer of answers) {
-        const existingAnswer = cauTraLois.find(
+        const existingAnswer = mockCauTraLois.find(
           (ctl) => ctl.danhGiaId === danhGia.id && ctl.cauHoiId === answer.cauHoiId
         );
 
@@ -461,10 +462,10 @@ export const mockService = {
         };
 
         if (existingAnswer) {
-          const index = cauTraLois.findIndex((ctl) => ctl.id === existingAnswer.id);
-          cauTraLois[index] = cauTraLoi;
+          const index = mockCauTraLois.findIndex((ctl) => ctl.id === existingAnswer.id);
+          mockCauTraLois[index] = cauTraLoi;
         } else {
-          cauTraLois.push(cauTraLoi);
+          mockCauTraLois.push(cauTraLoi);
         }
       }
 
@@ -472,3 +473,4 @@ export const mockService = {
     },
   },
 };
+

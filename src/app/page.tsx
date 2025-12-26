@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users } from "@/_mock/db";
-import type { DanhGia, KyDanhGia } from "@/types/schema";
+import { Role, type DanhGia, type KyDanhGia } from "@/types/schema";
 
 interface DashboardStats {
   totalEvaluations: number;
@@ -89,20 +89,46 @@ export default function Home() {
       // Calculate personal progress
       let personalProgress = 0;
       if (currentKy) {
-        // Count expected evaluations for current period
-        const colleagues = users.filter(
-          (u) =>
-            u.phongBanId === user.phongBanId &&
-            u.id !== user.id &&
-            !u.deletedAt &&
-            u.trangThaiKH
-        );
+        let expectedEvaluations = 0;
         
-        // Get department manager
-        const phongBan = await mockService.phongBans.getById(user.phongBanId);
-        const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
-        
-        const expectedEvaluations = colleagues.length + (hasManager ? 1 : 0);
+        if (user.role === Role.nhan_vien) {
+          // For nhan_vien: colleagues in same boPhan + all truong_phong in department
+          // This matches the logic in danh-gia-nhan-vien/page.tsx
+          const sameBoPhanColleagues = users.filter(
+            (u) =>
+              u.phongBanId === user.phongBanId &&
+              u.boPhan === user.boPhan &&
+              u.role === Role.nhan_vien &&
+              u.id !== user.id &&
+              !u.deletedAt &&
+              u.trangThaiKH
+          );
+          
+          // Count all truong_phong in the department (not just 1)
+          const truongPhongInDepartment = users.filter(
+            (u) =>
+              u.phongBanId === user.phongBanId &&
+              u.role === Role.truong_phong &&
+              !u.deletedAt &&
+              u.trangThaiKH
+          );
+          
+          expectedEvaluations = sameBoPhanColleagues.length + truongPhongInDepartment.length;
+        } else {
+          // For truong_phong: all colleagues in department
+          const colleagues = users.filter(
+            (u) =>
+              u.phongBanId === user.phongBanId &&
+              u.id !== user.id &&
+              !u.deletedAt &&
+              u.trangThaiKH
+          );
+          
+          const phongBan = await mockService.phongBans.getById(user.phongBanId);
+          const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
+          
+          expectedEvaluations = colleagues.length + (hasManager ? 1 : 0);
+        }
         
         // Count completed evaluations for current period
         const completedInPeriod = myEvaluations.filter(

@@ -23,7 +23,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
 import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan } from "@/types/schema";
-import { Role } from "@/types/schema";
+import { Role, LoaiDanhGia } from "@/types/schema";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
@@ -101,6 +101,13 @@ export default function XemDanhGiaPage() {
             dg.daHoanThanh &&
             (departmentUserIds.includes(dg.nguoiDanhGiaId) || departmentUserIds.includes(dg.nguoiDuocDanhGiaId))
         );
+      } else if (currentUser.role === Role.nhan_vien) {
+        // nhan_vien can view evaluations where they are either the evaluator or the evaluated person
+        filteredEvaluations = allDanhGias.filter(
+          (dg) => 
+            dg.daHoanThanh && 
+            (dg.nguoiDanhGiaId === currentUser.id || dg.nguoiDuocDanhGiaId === currentUser.id)
+        );
       }
 
       const danhGiasWithDetails = await Promise.all(
@@ -137,7 +144,15 @@ export default function XemDanhGiaPage() {
         return dateB - dateA;
       });
 
-      setDanhGias(danhGiasWithDetails);
+      // Filter for truong_phong: only show NHAN_VIEN evaluations (not LANH_DAO)
+      let finalDanhGias = danhGiasWithDetails;
+      if (currentUser.role === Role.truong_phong) {
+        finalDanhGias = danhGiasWithDetails.filter(
+          (dg) => dg.bieuMau?.loaiDanhGia === LoaiDanhGia.NHAN_VIEN
+        );
+      }
+
+      setDanhGias(finalDanhGias);
     } catch (error) {
       console.error("Failed to load evaluations:", error);
     } finally {

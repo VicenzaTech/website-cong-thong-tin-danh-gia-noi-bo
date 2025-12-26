@@ -20,7 +20,6 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
 import type { User } from "@/types/schema";
 
 export default function LoginPage() {
@@ -59,27 +58,26 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const user = await mockService.users.getByMaNhanVien(maNhanVien);
+      const response = await fetch("/api/auth/check-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maNhanVien }),
+      });
 
-      if (!user) {
-        setError("Không tìm thấy mã nhân viên này");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Đã xảy ra lỗi");
         setFoundUser(null);
         setShowPassword(false);
         setIsCheckingUser(false);
         return;
       }
 
-      if (!user.trangThaiKH) {
-        setError("Tài khoản của bạn đã bị vô hiệu hóa");
-        setFoundUser(null);
-        setShowPassword(false);
-        setIsCheckingUser(false);
-        return;
-      }
-
+      const user = data.user;
       setFoundUser(user);
 
-      if (!user.matKhau || user.matKhau.trim() === "") {
+      if (!user.hasPassword) {
         localStorage.setItem("pending_user", JSON.stringify(user));
         notifications.show({
           title: "Chào mừng!",
@@ -111,16 +109,40 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (foundUser.matKhau !== values.matKhau) {
-        setError("Mật khẩu không chính xác");
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maNhanVien: values.maNhanVien,
+          matKhau: values.matKhau,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Đăng nhập thất bại");
         setIsLoading(false);
         return;
       }
 
-      login(foundUser);
+      const user = data.user;
+
+      if (!user.daDoiMatKhau) {
+        localStorage.setItem("force_password_change", JSON.stringify(user));
+        notifications.show({
+          title: "Yêu cầu đổi mật khẩu",
+          message: "Bạn cần đổi mật khẩu mặc định trước khi tiếp tục",
+          color: "yellow",
+        });
+        router.push("/doi-mat-khau-bat-buoc");
+        return;
+      }
+
+      login(user);
       notifications.show({
         title: "Đăng nhập thành công",
-        message: `Chào mừng ${foundUser.hoTen || foundUser.maNhanVien}!`,
+        message: `Chào mừng ${user.hoTen || user.maNhanVien}!`,
         color: "green",
       });
 
@@ -128,6 +150,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -253,4 +276,3 @@ export default function LoginPage() {
     </Box>
   );
 }
-

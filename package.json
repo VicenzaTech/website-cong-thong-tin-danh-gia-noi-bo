@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "init-db": "tsx scripts/init-db.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -17,8 +18,13 @@
     "@mantine/hooks": "^7.17.8",
     "@mantine/notifications": "^7.17.8",
     "@tabler/icons-react": "^3.36.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/nprogress": "^0.2.3",
     "@types/xlsx": "^0.0.35",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.5.0",
+    "cross-env": "^10.1.0",
     "dayjs": "^1.11.19",
     "next": "16.1.0",
     "nprogress": "^0.2.0",
@@ -37,6 +43,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.7.4",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -88,9 +88,10 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
         canAccess =
           departmentUserIds.includes(danhGiaData.nguoiDanhGiaId) ||
           departmentUserIds.includes(danhGiaData.nguoiDuocDanhGiaId);
-      } else {
-        canAccess =
-          danhGiaData.nguoiDanhGiaId === currentUser.id ||
+      } else if (currentUser.role === Role.nhan_vien) {
+        // nhan_vien can view evaluations where they are either the evaluator or the evaluated person
+        canAccess = 
+          danhGiaData.nguoiDanhGiaId === currentUser.id || 
           danhGiaData.nguoiDuocDanhGiaId === currentUser.id;
       }
 

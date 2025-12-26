@@ -36,8 +36,12 @@ export interface User {
   hoTen?: string;
   email?: string;
   matKhau?: string;
+  matKhauCu?: string;
+  daDoiMatKhau?: boolean;
   role: Role;
   phongBanId: string;
+  phongBanName?: string;
+  boPhan?: string;
   daDangKy: boolean;
   trangThaiKH: boolean;
   lastLoginAt?: Date;

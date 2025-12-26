@@ -103,16 +103,54 @@ export default function DanhGiaNhanVienPage() {
       setKyDanhGias(activeKys);
 
       if (currentUser) {
-        const usersRes = await fetch(
-          `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
-        );
-        const usersData = await usersRes.json();
-        const colleagues = usersData.items || [];
-        // Filter colleagues to only those in the same `boPhan` as current user
-        console.log("CURRENT USER BOPHAN:", currentUser.boPhan);
-        console.log(colleagues)
-        const filtered = colleagues.filter((c: any) => c.boPhan === currentUser.boPhan);
-        setDongNghieps(filtered);
+        let colleagues: any[] = [];
+
+        if (currentUser.role === Role.nhan_vien) {
+          if (!currentUser.boPhan) {
+            console.warn("Nhân viên không có bộ phận:", currentUser);
+          }
+
+          // For nhan_vien: can evaluate colleagues in same boPhan + all truong_phong in department
+          const requests: Promise<Response>[] = [];
+
+          // Request 1: Get colleagues in same boPhan (only if boPhan exists)
+          if (currentUser.boPhan) {
+            requests.push(
+              fetch(
+                `/api/users?phongBanId=${currentUser.phongBanId}&boPhan=${encodeURIComponent(currentUser.boPhan)}&role=${Role.nhan_vien}&excludeId=${currentUser.id}&perPage=200`
+              )
+            );
+          }
+
+          // Request 2: Get all truong_phong in department
+          requests.push(
+            fetch(
+              `/api/users?phongBanId=${currentUser.phongBanId}&role=${Role.truong_phong}&perPage=200`
+            )
+          );
+
+          const responses = await Promise.all(requests);
+          const dataResults = await Promise.all(responses.map(r => r.json()));
+
+          // Merge results: if boPhan exists, dataResults[0] is same boPhan colleagues, dataResults[1] is truong_phong
+          // If boPhan doesn't exist, dataResults[0] is truong_phong
+          if (currentUser.boPhan) {
+            colleagues = [
+              ...(dataResults[0].items || []),
+              ...(dataResults[1].items || []),
+            ];
+          } else {
+            colleagues = dataResults[0].items || [];
+          }
+        } else {
+          const usersRes = await fetch(
+            `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
+          );
+          const usersData = await usersRes.json();
+          colleagues = usersData.items || [];
+        }
+
+        setDongNghieps(colleagues);
 
         const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.NHAN_VIEN);
         if (bieuMaus.length > 0) {

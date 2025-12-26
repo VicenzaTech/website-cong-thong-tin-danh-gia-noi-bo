@@ -19,7 +19,6 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
 import type { User } from "@/types/schema";
 
 export default function RegisterPage() {
@@ -59,8 +58,7 @@ export default function RegisterPage() {
         return null;
       },
       email: (value) => {
-        if (!value) return "Vui lòng nhập email";
-        if (!/^\S+@\S+$/.test(value)) return "Email không hợp lệ";
+        if (value && !/^\S+@\S+$/.test(value)) return "Email khong hop le";
         return null;
       },
       matKhau: (value) => {
@@ -86,22 +84,28 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const updatedUser = await mockService.users.update(pendingUser.id, {
-        hoTen: values.hoTen,
-        email: values.email,
-        matKhau: values.matKhau,
-        daDangKy: true,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: pendingUser.id,
+          hoTen: values.hoTen,
+          email: values.email,
+          matKhau: values.matKhau,
+        }),
       });
 
-      if (!updatedUser) {
-        setError("Không thể cập nhật thông tin. Vui lòng thử lại");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Khong the cap nhat thong tin. Vui long thu lai");
         setIsLoading(false);
         return;
       }
 
       localStorage.removeItem("pending_user");
 
-      login(updatedUser);
+      login(data.user as User);
 
       notifications.show({
         title: "Đăng ký thành công",
@@ -141,17 +145,22 @@ export default function RegisterPage() {
       </Text>
 
       <Paper withBorder shadow="md" p={30} radius="md">
-        <Alert color="blue" title="Thông tin tài khoản" mb="lg">
+        <Alert color="blue" title="Thong tin tai khoan" mb="lg">
           <Text size="sm">
-            <strong>Mã nhân viên:</strong> {pendingUser.maNhanVien}
+            <strong>Ma nhan vien:</strong> {pendingUser.maNhanVien}
           </Text>
+          {pendingUser.phongBanName && (
+            <Text size="sm">
+              <strong>Phong ban:</strong> {pendingUser.phongBanName}
+            </Text>
+          )}
           <Text size="sm">
-            <strong>Vai trò:</strong>{" "}
+            <strong>Vai tro:</strong>{" "}
             {pendingUser.role === "admin"
-              ? "Quản trị viên"
+              ? "Quan tri vien"
               : pendingUser.role === "truong_phong"
-                ? "Trưởng phòng"
-                : "Nhân viên"}
+                ? "Truong phong"
+                : "Nhan vien"}
           </Text>
         </Alert>
 
@@ -172,9 +181,8 @@ export default function RegisterPage() {
 
             <TextInput
               label="Email"
-              placeholder="example@company.com"
+              placeholder="example@company.com (khong bat buoc)"
               type="email"
-              required
               {...form.getInputProps("email")}
             />
 
