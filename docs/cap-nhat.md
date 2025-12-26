@@ -32,3 +32,38 @@
 - [x] Build project thành công (không có lỗi)
 - [x] Cập nhật tài liệu
 
+---
+
+## Cải thiện responsive cho trang đăng nhập
+
+### Yêu cầu
+- Sửa lại giao diện responsive cho trang đăng nhập và đăng ký để hiển thị tốt trên thiết bị di động
+- Kích thước các thành phần phải hợp lý khi người dùng truy cập bằng điện thoại
+
+### Các file đã sửa
+
+1. **src/app/login/page.tsx**
+   - Thêm responsive padding cho Container: `px={{ base: 16, sm: 20 }}`
+   - Thêm responsive margin: `my={{ base: 20, sm: 40 }}`
+   - Thêm responsive padding cho Paper: `p={{ base: 20, sm: 30 }}`
+   - Giảm kích thước logo trên mobile: `maxWidth: "100px", maxHeight: "100px"`
+   - Thêm padding cho Box container: `padding: "16px"`
+   - Sử dụng clamp() cho font size của Title để tự động điều chỉnh
+   - Giảm font size của text hướng dẫn trên mobile: `size="xs"` và thêm padding ngang
+
+2. **src/app/register/page.tsx**
+   - Thêm responsive padding cho Container: `px={{ base: 16, sm: 20 }}`
+   - Thêm responsive margin: `my={{ base: 20, sm: 40 }}`
+   - Thêm responsive padding cho Paper: `p={{ base: 20, sm: 30 }}`
+   - Giảm kích thước logo trên mobile: `maxWidth: "100px", maxHeight: "100px"`
+   - Sử dụng clamp() cho font size của Title
+   - Thêm responsive cho Group buttons: `gap="sm"` và `wrap="nowrap"` với `flex={1}` để buttons chia đều không gian
+
+### Trạng thái
+✅ **Hoàn thành**
+
+- [x] Sửa login/page.tsx với responsive design
+- [x] Sửa register/page.tsx với responsive design
+- [x] Build project thành công (không có lỗi)
+- [x] Cập nhật tài liệu
+

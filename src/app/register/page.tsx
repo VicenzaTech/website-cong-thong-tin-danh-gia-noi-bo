@@ -126,25 +126,35 @@ export default function RegisterPage() {
   }
 
   return (
-    <Container size={500} my={40}>
-      <Center mb="xl">
+    <Container 
+      size={500} 
+      my={{ base: 20, sm: 40 }}
+      px={{ base: 16, sm: 20 }}
+    >
+      <Center mb={{ base: "md", sm: "xl" }}>
         <Image
           src="/logo-vicenza.png"
           alt="Vicenza Logo"
           width={120}
           height={120}
           priority
+          style={{
+            width: "auto",
+            height: "auto",
+            maxWidth: "100px",
+            maxHeight: "100px",
+          }}
         />
       </Center>
       
-      <Title ta="center" mb="md">
+      <Title ta="center" mb="md" order={2} style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)" }}>
         Hoàn tất thông tin đăng ký
       </Title>
       <Text c="dimmed" size="sm" ta="center" mb="xl">
         Vui lòng cập nhật thông tin cá nhân để hoàn tất đăng ký
       </Text>
 
-      <Paper withBorder shadow="md" p={30} radius="md">
+      <Paper withBorder shadow="md" p={{ base: 20, sm: 30 }} radius="md">
         <Alert color="blue" title="Thong tin tai khoan" mb="lg">
           <Text size="sm">
             <strong>Ma nhan vien:</strong> {pendingUser.maNhanVien}
@@ -200,7 +210,7 @@ export default function RegisterPage() {
               {...form.getInputProps("xacNhanMatKhau")}
             />
 
-            <Group justify="space-between" mt="md">
+            <Group justify="space-between" mt="md" gap="sm" wrap="nowrap">
               <Button
                 variant="subtle"
                 onClick={() => {
@@ -208,10 +218,11 @@ export default function RegisterPage() {
                   router.push("/login");
                 }}
                 disabled={isLoading}
+                flex={1}
               >
                 Quay lại
               </Button>
-              <Button type="submit" loading={isLoading}>
+              <Button type="submit" loading={isLoading} flex={1}>
                 Hoàn tất đăng ký
               </Button>
             </Group>
