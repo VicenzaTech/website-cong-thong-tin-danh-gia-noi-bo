@@ -23,6 +23,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users } from "@/_mock/db";
 import type { DanhGia, User, CauTraLoi, CauHoi, KyDanhGia, PhongBan } from "@/types/schema";
+import { LoaiDanhGia } from "@/types/schema";
 
 interface ScoreDistribution {
   score: string;
@@ -115,6 +116,7 @@ export default function BaoCaoPage() {
     setIsLoading(true);
     try {
       let allDanhGias: DanhGia[] = [];
+      const allBieuMaus = await mockService.bieuMaus.getAll();
 
       // Load evaluations based on role and department filter
       if (currentUser.role === "admin") {
@@ -134,14 +136,18 @@ export default function BaoCaoPage() {
           allDanhGias = allEvals;
         }
       } else if (currentUser.role === "truong_phong") {
-        // Manager sees only their department evaluations
+        // Manager sees only their department evaluations, and only NHAN_VIEN type (not LANH_DAO)
         const allEvals = await mockService.danhGias.getAll();
         const departmentUserIds = users
           .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt)
           .map((u) => u.id);
-        allDanhGias = allEvals.filter((dg) =>
-          departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
-        );
+        allDanhGias = allEvals.filter((dg) => {
+          const bieuMau = allBieuMaus.find((bm) => bm.id === dg.bieuMauId);
+          return (
+            departmentUserIds.includes(dg.nguoiDuocDanhGiaId) &&
+            bieuMau?.loaiDanhGia === LoaiDanhGia.NHAN_VIEN
+          );
+        });
       } else {
         // Regular users see their own evaluations
         allDanhGias = await mockService.danhGias.getByNguoiDanhGia(currentUser.id);

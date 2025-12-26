@@ -328,7 +328,11 @@ export const database = {
     },
   },
   
-  initialize: (mockData: {
+  initialize: (): void => {
+    ensureDbDir();
+  },
+
+  seed: (mockData: {
     users: User[];
     phongBans: PhongBan[];
     kyDanhGias: KyDanhGia[];

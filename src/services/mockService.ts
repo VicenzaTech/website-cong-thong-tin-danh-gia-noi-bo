@@ -30,15 +30,7 @@ async function getDatabase() {
     database = dbModule.database;
     
     if (!isInitialized) {
-      database.initialize({
-        users: mockUsers,
-        phongBans: mockPhongBans,
-        kyDanhGias: mockKyDanhGias,
-        bieuMaus: mockBieuMaus,
-        cauHois: mockCauHois,
-        danhGias: mockDanhGias,
-        cauTraLois: mockCauTraLois,
-      });
+      database.initialize();
       isInitialized = true;
     }
   }

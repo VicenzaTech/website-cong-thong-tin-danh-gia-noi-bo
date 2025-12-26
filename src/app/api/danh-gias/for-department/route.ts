@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { users, bieuMaus, danhGias } from "@/_mock/db";
 import { readEvaluationsForDepartment } from "@/libs/evalStorage";
+import { LoaiDanhGia } from "@/types/schema";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -14,27 +15,33 @@ export async function GET(request: Request) {
       const files = await readEvaluationsForDepartment(phongBanId);
       if (files && files.length > 0) {
         // files are objects like { danhGia, answers, meta }
-        const items = files.map((f: any) => {
-          const dg = f.danhGia;
-          const rater = users.find((u) => u.id === dg.nguoiDanhGiaId);
-          const ratee = users.find((u) => u.id === dg.nguoiDuocDanhGiaId);
-          const bieu = bieuMaus.find((b) => b.id === dg.bieuMauId);
-          return {
-            id: dg.id,
-            nguoiDanhGiaId: dg.nguoiDanhGiaId,
-            nguoiDanhGiaName: rater?.hoTen || dg.nguoiDanhGiaId,
-            nguoiDuocDanhGiaId: dg.nguoiDuocDanhGiaId,
-            nguoiDuocDanhGiaName: ratee?.hoTen || dg.nguoiDuocDanhGiaId,
-            bieuMauId: dg.bieuMauId,
-            bieuMauName: bieu?.tenBieuMau || "",
-            kyDanhGiaId: dg.kyDanhGiaId,
-            daHoanThanh: !!dg.daHoanThanh,
-            tongDiem: dg.tongDiem,
-            diemTrungBinh: dg.diemTrungBinh,
-            submittedAt: dg.submittedAt,
-            chiTietTieuChi: f.answers || [],
-          };
-        });
+        // Filter: only NHAN_VIEN evaluations (not LANH_DAO)
+        const items = files
+          .filter((f: any) => {
+            const bieu = bieuMaus.find((b) => b.id === f.danhGia.bieuMauId);
+            return bieu?.loaiDanhGia === LoaiDanhGia.NHAN_VIEN;
+          })
+          .map((f: any) => {
+            const dg = f.danhGia;
+            const rater = users.find((u) => u.id === dg.nguoiDanhGiaId);
+            const ratee = users.find((u) => u.id === dg.nguoiDuocDanhGiaId);
+            const bieu = bieuMaus.find((b) => b.id === dg.bieuMauId);
+            return {
+              id: dg.id,
+              nguoiDanhGiaId: dg.nguoiDanhGiaId,
+              nguoiDanhGiaName: rater?.hoTen || dg.nguoiDanhGiaId,
+              nguoiDuocDanhGiaId: dg.nguoiDuocDanhGiaId,
+              nguoiDuocDanhGiaName: ratee?.hoTen || dg.nguoiDuocDanhGiaId,
+              bieuMauId: dg.bieuMauId,
+              bieuMauName: bieu?.tenBieuMau || "",
+              kyDanhGiaId: dg.kyDanhGiaId,
+              daHoanThanh: !!dg.daHoanThanh,
+              tongDiem: dg.tongDiem,
+              diemTrungBinh: dg.diemTrungBinh,
+              submittedAt: dg.submittedAt,
+              chiTietTieuChi: f.answers || [],
+            };
+          });
         return NextResponse.json({ items });
       }
     } catch (err) {
@@ -43,9 +50,13 @@ export async function GET(request: Request) {
     }
 
     // Fallback: original in-memory behavior (keeps compatibility)
+    // Filter: only NHAN_VIEN evaluations (not LANH_DAO)
     const userIds = users.filter((u) => u.phongBanId === phongBanId && !u.deletedAt).map((u) => u.id);
     const items = danhGias
-      .filter((dg) => userIds.includes(dg.nguoiDuocDanhGiaId))
+      .filter((dg) => {
+        const bieu = bieuMaus.find((b) => b.id === dg.bieuMauId);
+        return userIds.includes(dg.nguoiDuocDanhGiaId) && bieu?.loaiDanhGia === LoaiDanhGia.NHAN_VIEN;
+      })
       .map((dg) => {
         const rater = users.find((u) => u.id === dg.nguoiDanhGiaId);
         const ratee = users.find((u) => u.id === dg.nguoiDuocDanhGiaId);
