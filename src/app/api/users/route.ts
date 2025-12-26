@@ -12,7 +12,11 @@ export async function GET(request: Request) {
 
   let result = users.filter((u) => !u.deletedAt && u.trangThaiKH);
   if (phongBanId) result = result.filter((u) => u.phongBanId === phongBanId);
-  if (boPhan) result = result.filter((u) => u.boPhan === boPhan);
+  // Only filter by boPhan if parameter is provided and not empty
+  // This ensures we don't filter when boPhan is null, undefined, or empty string
+  if (boPhan && boPhan.trim() !== "") {
+    result = result.filter((u) => u.boPhan === boPhan);
+  }
   if (role) result = result.filter((u) => u.role === role);
   if (excludeId) result = result.filter((u) => u.id !== excludeId);
 

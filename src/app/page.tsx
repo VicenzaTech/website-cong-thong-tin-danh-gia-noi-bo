@@ -92,7 +92,8 @@ export default function Home() {
         let expectedEvaluations = 0;
         
         if (user.role === Role.nhan_vien) {
-          // For nhan_vien: colleagues in same boPhan + 1 truong_phong
+          // For nhan_vien: colleagues in same boPhan + all truong_phong in department
+          // This matches the logic in danh-gia-nhan-vien/page.tsx
           const sameBoPhanColleagues = users.filter(
             (u) =>
               u.phongBanId === user.phongBanId &&
@@ -103,10 +104,16 @@ export default function Home() {
               u.trangThaiKH
           );
           
-          const phongBan = await mockService.phongBans.getById(user.phongBanId);
-          const hasManager = phongBan?.truongPhongId && phongBan.truongPhongId !== user.id;
+          // Count all truong_phong in the department (not just 1)
+          const truongPhongInDepartment = users.filter(
+            (u) =>
+              u.phongBanId === user.phongBanId &&
+              u.role === Role.truong_phong &&
+              !u.deletedAt &&
+              u.trangThaiKH
+          );
           
-          expectedEvaluations = sameBoPhanColleagues.length + (hasManager ? 1 : 0);
+          expectedEvaluations = sameBoPhanColleagues.length + truongPhongInDepartment.length;
         } else {
           // For truong_phong: all colleagues in department
           const colleagues = users.filter(

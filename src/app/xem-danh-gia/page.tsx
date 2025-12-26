@@ -102,8 +102,11 @@ export default function XemDanhGiaPage() {
             (departmentUserIds.includes(dg.nguoiDanhGiaId) || departmentUserIds.includes(dg.nguoiDuocDanhGiaId))
         );
       } else if (currentUser.role === Role.nhan_vien) {
+        // nhan_vien can view evaluations where they are either the evaluator or the evaluated person
         filteredEvaluations = allDanhGias.filter(
-          (dg) => dg.daHoanThanh && dg.nguoiDanhGiaId === currentUser.id
+          (dg) => 
+            dg.daHoanThanh && 
+            (dg.nguoiDanhGiaId === currentUser.id || dg.nguoiDuocDanhGiaId === currentUser.id)
         );
       }
 

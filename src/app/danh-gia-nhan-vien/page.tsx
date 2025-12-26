@@ -110,23 +110,30 @@ export default function DanhGiaNhanVienPage() {
             console.warn("Nhân viên không có bộ phận:", currentUser);
           }
 
-          const requests = [
-            fetch(
-              `/api/users?phongBanId=${currentUser.phongBanId}&role=${Role.truong_phong}&perPage=200`
-            ),
-          ];
+          // For nhan_vien: can evaluate colleagues in same boPhan + all truong_phong in department
+          const requests: Promise<Response>[] = [];
 
+          // Request 1: Get colleagues in same boPhan (only if boPhan exists)
           if (currentUser.boPhan) {
-            requests.unshift(
+            requests.push(
               fetch(
                 `/api/users?phongBanId=${currentUser.phongBanId}&boPhan=${encodeURIComponent(currentUser.boPhan)}&role=${Role.nhan_vien}&excludeId=${currentUser.id}&perPage=200`
               )
             );
           }
 
+          // Request 2: Get all truong_phong in department
+          requests.push(
+            fetch(
+              `/api/users?phongBanId=${currentUser.phongBanId}&role=${Role.truong_phong}&perPage=200`
+            )
+          );
+
           const responses = await Promise.all(requests);
           const dataResults = await Promise.all(responses.map(r => r.json()));
 
+          // Merge results: if boPhan exists, dataResults[0] is same boPhan colleagues, dataResults[1] is truong_phong
+          // If boPhan doesn't exist, dataResults[0] is truong_phong
           if (currentUser.boPhan) {
             colleagues = [
               ...(dataResults[0].items || []),
