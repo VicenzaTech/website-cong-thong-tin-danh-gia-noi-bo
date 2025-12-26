@@ -19,7 +19,7 @@ import {
 import { IconUserStar, IconCalendar, IconCheck } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
-import { users, phongBans } from "@/_mock/db";
+import { phongBans } from "@/_mock/db";
 import { LoaiDanhGia, type KyDanhGia, type User, type BieuMau } from "@/types/schema";
 import dayjs from "dayjs";
 
@@ -27,10 +27,10 @@ export default function DanhGiaLanhDaoPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
-  const [truongPhong, setTruongPhong] = useState<User | null>(null);
+  const [leaders, setLeaders] = useState<User[]>([]);
   const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [daDanhGia, setDaDanhGia] = useState(false);
+  const [danhGiaStatuses, setDanhGiaStatuses] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -51,26 +51,28 @@ export default function DanhGiaLanhDaoPage() {
       setKyDanhGias(activeKys);
 
       if (currentUser) {
-        const phongBan = phongBans.find((pb) => pb.id === currentUser.phongBanId);
-        if (phongBan?.truongPhongId) {
-          const tp = users.find((u) => u.id === phongBan.truongPhongId);
-          if (tp) {
-            setTruongPhong(tp);
+        // Fetch leaders with boPhan === "Bộ phận lãnh đạo" and same phongBanId
+        const leadersRes = await fetch(`/api/users?boPhan=${encodeURIComponent("Bộ phận lãnh đạo")}&phongBanId=${currentUser.phongBanId}&perPage=200`);
+        const leadersData = await leadersRes.json();
+        const leadersList = leadersData.items || [];
+        setLeaders(leadersList);
 
-            const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.LANH_DAO);
-            if (bieuMaus.length > 0) {
-              setBieuMau(bieuMaus[0]);
+        const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.LANH_DAO);
+        if (bieuMaus.length > 0) {
+          setBieuMau(bieuMaus[0]);
 
-              if (activeKys.length > 0) {
-                const existing = await mockService.danhGias.checkExisting(
-                  currentUser.id,
-                  tp.id,
-                  bieuMaus[0].id,
-                  activeKys[0].id
-                );
-                setDaDanhGia(!!existing && existing.daHoanThanh);
-              }
+          if (activeKys.length > 0) {
+            const statusMap: Record<string, boolean> = {};
+            for (const leader of leadersList) {
+              const existing = await mockService.danhGias.checkExisting(
+                currentUser.id,
+                leader.id,
+                bieuMaus[0].id,
+                activeKys[0].id
+              );
+              statusMap[leader.id] = !!existing && existing.daHoanThanh;
             }
+            setDanhGiaStatuses(statusMap);
           }
         }
       }
@@ -81,10 +83,10 @@ export default function DanhGiaLanhDaoPage() {
     }
   };
 
-  const handleStartEvaluation = () => {
-    if (truongPhong && bieuMau && kyDanhGias[0]) {
+  const handleStartEvaluation = (leaderId: string) => {
+    if (bieuMau && kyDanhGias[0]) {
       router.push(
-        `/danh-gia-lanh-dao/thuc-hien?nguoiDuocDanhGiaId=${truongPhong.id}&bieuMauId=${bieuMau.id}&kyDanhGiaId=${kyDanhGias[0].id}`
+        `/danh-gia-lanh-dao/thuc-hien?nguoiDuocDanhGiaId=${leaderId}&bieuMauId=${bieuMau.id}&kyDanhGiaId=${kyDanhGias[0].id}`
       );
     }
   };
@@ -181,21 +183,7 @@ export default function DanhGiaLanhDaoPage() {
             </Group>
           </Card>
 
-          {!truongPhong ? (
-            <Paper withBorder shadow="sm" p="xl" radius="md">
-              <Center>
-                <Stack align="center" gap="md">
-                  <IconUserStar size={48} color="gray" />
-                  <Text c="dimmed" size="lg">
-                    Phòng ban của bạn chưa có Trưởng phòng
-                  </Text>
-                  <Text c="dimmed" size="sm">
-                    Vui lòng liên hệ quản trị viên để được hỗ trợ
-                  </Text>
-                </Stack>
-              </Center>
-            </Paper>
-          ) : !bieuMau ? (
+          {!bieuMau ? (
             <Paper withBorder shadow="sm" p="xl" radius="md">
               <Center>
                 <Stack align="center" gap="md">
@@ -209,65 +197,83 @@ export default function DanhGiaLanhDaoPage() {
                 </Stack>
               </Center>
             </Paper>
-          ) : (
-            <Card withBorder shadow="sm" padding="lg" radius="md">
-              <Stack gap="md">
-                <Group>
-                  <IconUserStar size={24} color="var(--mantine-color-blue-6)" />
-                  <Text fw={600} size="lg">
-                    Đánh giá Trưởng phòng
+          ) : leaders.length === 0 ? (
+            <Paper withBorder shadow="sm" p="xl" radius="md">
+              <Center>
+                <Stack align="center" gap="md">
+                  <IconUserStar size={48} color="gray" />
+                  <Text c="dimmed" size="lg">
+                    Không có lãnh đạo nào để đánh giá
                   </Text>
-                </Group>
+                  <Text c="dimmed" size="sm">
+                    Vui lòng liên hệ quản trị viên để được hỗ trợ
+                  </Text>
+                </Stack>
+              </Center>
+            </Paper>
+          ) : (
+            <Stack gap="md">
+              <Group>
+                <IconUserStar size={24} color="var(--mantine-color-blue-6)" />
+                <Text fw={600} size="lg">
+                  Danh sách Lãnh đạo cần đánh giá
+                </Text>
+              </Group>
+              {leaders.map((leader) => {
+                const daDanhGia = danhGiaStatuses[leader.id];
+                return (
+                  <Card key={leader.id} withBorder shadow="sm" padding="lg" radius="md">
+                    <Stack gap="md">
+                      <Group>
+                        <Avatar color="blue" radius="xl" size="lg">
+                          {getInitials(leader.hoTen)}
+                        </Avatar>
+                        <div style={{ flex: 1 }}>
+                          <Text fw={600} size="lg">
+                            {leader.hoTen}
+                          </Text>
+                          <Text size="sm" c="dimmed">
+                            {leader.maNhanVien} • {getPhongBanName(leader.phongBanId)}
+                          </Text>
+                          <Text size="sm" c="dimmed">
+                            {leader.email}
+                          </Text>
+                        </div>
+                      </Group>
 
-                <Divider />
+                      <Divider />
 
-                <Group>
-                  <Avatar color="blue" radius="xl" size="lg">
-                    {getInitials(truongPhong.hoTen)}
-                  </Avatar>
-                  <div style={{ flex: 1 }}>
-                    <Text fw={600} size="lg">
-                      {truongPhong.hoTen}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {truongPhong.maNhanVien} • {getPhongBanName(truongPhong.phongBanId)}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {truongPhong.email}
-                    </Text>
-                  </div>
-                </Group>
+                      <Group justify="space-between">
+                        <div>
+                          <Text size="sm" c="dimmed">
+                            Biểu mẫu
+                          </Text>
+                          <Text fw={500}>{bieuMau.tenBieuMau}</Text>
+                        </div>
+                        {daDanhGia ? (
+                          <Badge color="green" size="lg" leftSection={<IconCheck size={16} />}>
+                            Đã hoàn thành
+                          </Badge>
+                        ) : (
+                          <Badge color="orange" size="lg">
+                            Chưa đánh giá
+                          </Badge>
+                        )}
+                      </Group>
 
-                <Divider />
-
-                <Group justify="space-between">
-                  <div>
-                    <Text size="sm" c="dimmed">
-                      Biểu mẫu
-                    </Text>
-                    <Text fw={500}>{bieuMau.tenBieuMau}</Text>
-                  </div>
-                  {daDanhGia ? (
-                    <Badge color="green" size="lg" leftSection={<IconCheck size={16} />}>
-                      Đã hoàn thành
-                    </Badge>
-                  ) : (
-                    <Badge color="orange" size="lg">
-                      Chưa đánh giá
-                    </Badge>
-                  )}
-                </Group>
-
-                <Button
-                  size="md"
-                  onClick={handleStartEvaluation}
-                  disabled={daDanhGia}
-                  fullWidth
-                >
-                  {daDanhGia ? "Bạn đã hoàn thành đánh giá" : "Bắt đầu đánh giá"}
-                </Button>
-              </Stack>
-            </Card>
+                      <Button
+                        size="md"
+                        onClick={() => handleStartEvaluation(leader.id)}
+                        disabled={daDanhGia}
+                        fullWidth
+                      >
+                        {daDanhGia ? "Đã hoàn thành đánh giá" : "Bắt đầu đánh giá"}
+                      </Button>
+                    </Stack>
+                  </Card>
+                );
+              })}
+            </Stack>
           )}
         </Stack>
       )}

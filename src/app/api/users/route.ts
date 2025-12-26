@@ -9,16 +9,35 @@ export async function GET(request: Request) {
   const page = Number(url.searchParams.get("page") || "1");
   const perPage = Number(url.searchParams.get("perPage") || "50");
   const excludeId = url.searchParams.get("excludeId");
-
+  const currentUserId = url.searchParams.get("currentUserId");
   let result = users.filter((u) => !u.deletedAt && u.trangThaiKH);
-  if (phongBanId) result = result.filter((u) => u.phongBanId === phongBanId);
-  // Only filter by boPhan if parameter is provided and not empty
-  // This ensures we don't filter when boPhan is null, undefined, or empty string
-  if (boPhan && boPhan.trim() !== "") {
-    result = result.filter((u) => u.boPhan === boPhan);
+
+  // Nếu có currentUserId, lấy thông tin user đó và lọc những người cùng phòng ban và bộ phận (nếu có)
+  if (currentUserId) {
+    const currentUser = users.find((u) => u.id === currentUserId);
+    if (currentUser) {
+      let filterConditions = (u: any) => u.phongBanId === currentUser.phongBanId && u.id !== currentUserId;
+      if (currentUser.boPhan && currentUser.boPhan.trim() !== "") {
+        filterConditions = (u: any) => u.phongBanId === currentUser.phongBanId && u.boPhan === currentUser.boPhan && u.id !== currentUserId;
+      }
+      result = result.filter(filterConditions);
+    } else {
+      // Nếu không tìm thấy user, trả về empty
+      result = [];
+    }
+  } else {
+    // Logic cũ nếu không có currentUserId
+    if (phongBanId) {
+      result = result.filter((u) => u.phongBanId === phongBanId);
+    }
+    // Only filter by boPhan if parameter is provided and not empty
+    // This ensures we don't filter when boPhan is null, undefined, or empty string
+    if (boPhan && boPhan.trim() !== "") {
+      result = result.filter((u) => u.boPhan === boPhan);
+    }
+    if (role) result = result.filter((u) => u.role === role);
+    if (excludeId) result = result.filter((u) => u.id !== excludeId);
   }
-  if (role) result = result.filter((u) => u.role === role);
-  if (excludeId) result = result.filter((u) => u.id !== excludeId);
 
   const total = result.length;
   const start = (page - 1) * perPage;
