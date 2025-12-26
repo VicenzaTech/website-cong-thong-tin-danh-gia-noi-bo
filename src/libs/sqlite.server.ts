@@ -234,23 +234,32 @@ export const authService = {
     return user;
   },
 
-  changePassword: async (userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+  changePassword: async (userId: string, currentPassword: string, newPassword: string, forceChange: boolean = false): Promise<{ success: boolean; error?: string }> => {
     const user = authService.getUserById(userId);
     if (!user) {
       return { success: false, error: "Khong tim thay nguoi dung" };
     }
 
-    if (!user.mat_khau) {
-      return { success: false, error: "Nguoi dung chua co mat khau" };
-    }
+    if (!forceChange) {
+      if (!user.mat_khau) {
+        return { success: false, error: "Nguoi dung chua co mat khau" };
+      }
 
-    const isCurrentValid = await bcrypt.compare(currentPassword, user.mat_khau);
-    if (!isCurrentValid) {
-      return { success: false, error: "Mat khau hien tai khong chinh xac" };
-    }
+      const isCurrentValid = await bcrypt.compare(currentPassword, user.mat_khau);
+      if (!isCurrentValid) {
+        return { success: false, error: "Mat khau hien tai khong chinh xac" };
+      }
 
-    if (newPassword === currentPassword) {
-      return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
+      if (newPassword === currentPassword) {
+        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
+      }
+    } else {
+      if (user.mat_khau) {
+        const isSameAsCurrent = await bcrypt.compare(newPassword, user.mat_khau);
+        if (isSameAsCurrent) {
+          return { success: false, error: "Mat khau moi khong duoc trung voi mat khau mac dinh" };
+        }
+      }
     }
 
     // Kiem tra mat khau moi khong trung voi mat khau cu da luu

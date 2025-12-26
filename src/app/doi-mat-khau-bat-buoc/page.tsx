@@ -49,12 +49,10 @@ export default function DoiMatKhauBatBuocPage() {
 
   const form = useForm({
     initialValues: {
-      matKhauHienTai: "",
       matKhauMoi: "",
       xacNhanMatKhauMoi: "",
     },
     validate: {
-      matKhauHienTai: (value) => (!value ? "Vui lòng nhập mật khẩu hiện tại" : null),
       matKhauMoi: (value) => {
         if (!value) return "Vui lòng nhập mật khẩu mới";
         if (value.length < 6) return "Mật khẩu mới phải có ít nhất 6 ký tự";
@@ -83,8 +81,8 @@ export default function DoiMatKhauBatBuocPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: pendingUser.id,
-          currentPassword: values.matKhauHienTai,
           newPassword: values.matKhauMoi,
+          forceChange: true,
         }),
       });
 
@@ -181,13 +179,6 @@ export default function DoiMatKhauBatBuocPage() {
                     {error}
                   </Alert>
                 )}
-
-                <PasswordInput
-                  label="Mật khẩu hiện tại"
-                  placeholder="Nhập mật khẩu hiện tại"
-                  required
-                  {...form.getInputProps("matKhauHienTai")}
-                />
 
                 <PasswordInput
                   label="Mật khẩu mới"

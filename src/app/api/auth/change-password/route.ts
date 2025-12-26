@@ -4,11 +4,18 @@ import { authService } from "@/libs/sqlite.server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, currentPassword, newPassword } = body;
+    const { userId, currentPassword, newPassword, forceChange } = body;
 
-    if (!userId || !currentPassword || !newPassword) {
+    if (!userId || !newPassword) {
       return NextResponse.json(
         { error: "Vui long nhap day du thong tin" },
+        { status: 400 }
+      );
+    }
+
+    if (!forceChange && !currentPassword) {
+      return NextResponse.json(
+        { error: "Vui long nhap mat khau hien tai" },
         { status: 400 }
       );
     }
@@ -20,7 +27,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await authService.changePassword(userId, currentPassword, newPassword);
+    const result = await authService.changePassword(userId, currentPassword || "", newPassword, forceChange || false);
 
     if (!result.success) {
       return NextResponse.json(
