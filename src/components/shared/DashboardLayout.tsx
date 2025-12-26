@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <Box>
+    <Box style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
       <Sidebar />
       <Header />
       <BottomNavigationBar />
@@ -49,9 +49,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           display: "flex",
           flexDirection: "column",
           paddingBottom: isMobile ? 65 : 0,
+          width: isMobile ? "100%" : "calc(100% - 280px)",
+          maxWidth: "100%",
+          overflowX: "hidden",
         }}
       >
-        <Box p="md" style={{ flex: 1 }}>
+        <Box p="md" style={{ flex: 1, width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
           {children}
         </Box>
         <Footer />

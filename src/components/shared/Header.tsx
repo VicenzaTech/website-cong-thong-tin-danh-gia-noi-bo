@@ -72,15 +72,17 @@ export function Header() {
     >
       <Group h="100%" px={isMobile ? "sm" : "md"} justify="space-between" gap="xs">
         <Group gap="xs">
-          <Text 
-            size={isMobile ? "md" : "lg"} 
-            fw={700} 
-            style={{ 
-              color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
-            }}
-          >
-            VICENZA IAS
-          </Text>
+          {isMobile && (
+            <Text 
+              size="md" 
+              fw={700} 
+              style={{ 
+                color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
+              }}
+            >
+              VICENZA IAS
+            </Text>
+          )}
           {!isMobile && (
             <Text size="lg" fw={500}>
               Hệ thống Đánh giá Nội bộ

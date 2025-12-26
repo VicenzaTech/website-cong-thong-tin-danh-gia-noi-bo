@@ -21,6 +21,12 @@ export const metadata: Metadata = {
     shortcut: "/logo-vicenza.ico",
     apple: "/logo-vicenza.png",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -29,11 +35,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
       <head>
         <ColorSchemeScript />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
-      <body className={inter.variable}>
+      <body className={inter.variable} style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
         <Providers>
           <DashboardLayout>{children}</DashboardLayout>
         </Providers>
