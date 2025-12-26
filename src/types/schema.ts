@@ -46,6 +46,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
+  boPhan: string;
 }
 
 export interface BieuMau {

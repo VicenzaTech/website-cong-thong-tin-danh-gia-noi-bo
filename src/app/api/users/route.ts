@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     hoTen: u.hoTen,
     maNhanVien: u.maNhanVien,
     phongBanId: u.phongBanId,
+    boPhan: u.boPhan,
   }));
 
   return NextResponse.json(
