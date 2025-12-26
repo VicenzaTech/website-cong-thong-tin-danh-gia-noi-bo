@@ -9,7 +9,7 @@ import {
 } from "../src/_mock/db";
 import { database } from "../src/libs/database.server";
 
-console.log("🌱 Starting database seed...");
+console.log("Starting database seed...");
 
 try {
   database.seed({
@@ -22,7 +22,7 @@ try {
     cauTraLois: mockCauTraLois,
   });
 
-  console.log("✅ Database seeded successfully!");
+  console.log("Database seeded successfully!");
   console.log(`   - Users: ${mockUsers.length}`);
   console.log(`   - Phong Bans: ${mockPhongBans.length}`);
   console.log(`   - Ky Danh Gias: ${mockKyDanhGias.length}`);
@@ -31,7 +31,7 @@ try {
   console.log(`   - Danh Gias: ${mockDanhGias.length}`);
   console.log(`   - Cau Tra Lois: ${mockCauTraLois.length}`);
 } catch (error) {
-  console.error("❌ Error seeding database:", error);
+  console.error("Error seeding database:", error);
   process.exit(1);
 }
 
