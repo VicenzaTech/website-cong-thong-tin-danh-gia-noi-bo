@@ -43,8 +43,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <Box
         style={{
           marginLeft: isMobile ? 0 : 280,
-          marginTop: 60,
-          minHeight: "calc(100vh - 60px)",
+          marginTop: isMobile ? 56 : 60,
+          minHeight: isMobile ? "calc(100vh - 56px)" : "calc(100vh - 60px)",
           backgroundColor: "var(--mantine-color-body)",
           display: "flex",
           flexDirection: "column",

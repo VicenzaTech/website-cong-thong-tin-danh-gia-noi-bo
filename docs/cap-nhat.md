@@ -152,3 +152,48 @@
 - [x] Build project thành công (không có lỗi)
 - [x] Cập nhật tài liệu
 
+---
+
+## Cải thiện Header (navbar) cho mobile
+
+### Yêu cầu
+- Ẩn text "Hệ thống Đánh giá Nội bộ" trên mobile
+- Avatar, tên, email nằm bên trái
+- Toggle giao diện sáng/tối bên phải
+- Không dùng background trong suốt
+- Kích thước hợp lý
+
+### Các file đã sửa
+
+1. **src/components/shared/Header.tsx**
+   - Ẩn text "Hệ thống Đánh giá Nội bộ" trên mobile bằng điều kiện `!isMobile`
+   - Sắp xếp lại layout cho mobile:
+     - Avatar + thông tin người dùng (tên, email) nằm bên trái trong Menu
+     - Toggle sáng/tối nằm bên phải
+   - Thay đổi background từ `var(--mantine-color-body)` sang màu rõ ràng hơn:
+     - Dark mode: `var(--mantine-color-dark-7)`
+     - Light mode: `var(--mantine-color-gray-0)`
+   - Giảm chiều cao từ 60px xuống 56px trên mobile
+   - Giảm kích thước Avatar từ mặc định xuống `sm` trên mobile
+   - Giảm font size text: tên `xs`, email `10px` trên mobile
+   - Thêm `truncate` cho text để tránh tràn
+   - Giảm padding từ `md` xuống `sm` trên mobile
+   - Giảm gap giữa các elements trên mobile
+   - Giảm kích thước ActionIcon và icon trên mobile
+   - Đảm bảo layout responsive với `flex: 1` cho Group chứa user info
+
+2. **src/components/shared/DashboardLayout.tsx**
+   - Cập nhật `marginTop` từ 60px xuống 56px trên mobile
+   - Cập nhật `minHeight` để phù hợp với chiều cao header mới
+
+### Trạng thái
+✅ **Hoàn thành**
+
+- [x] Ẩn text "Hệ thống Đánh giá Nội bộ" trên mobile
+- [x] Sắp xếp lại layout: Avatar + info bên trái, toggle bên phải
+- [x] Thay đổi background không trong suốt
+- [x] Tối ưu kích thước cho mobile
+- [x] Cập nhật DashboardLayout
+- [x] Build project thành công (không có lỗi)
+- [x] Cập nhật tài liệu
+
