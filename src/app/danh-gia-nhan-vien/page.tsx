@@ -103,11 +103,33 @@ export default function DanhGiaNhanVienPage() {
       setKyDanhGias(activeKys);
 
       if (currentUser) {
-        const usersRes = await fetch(
-          `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
-        );
-        const usersData = await usersRes.json();
-        const colleagues = usersData.items || [];
+        let colleagues: any[] = [];
+
+        if (currentUser.role === Role.nhan_vien) {
+          const [sameBoPhanRes, truongPhongRes] = await Promise.all([
+            fetch(
+              `/api/users?phongBanId=${currentUser.phongBanId}&boPhan=${encodeURIComponent(currentUser.boPhan || "")}&role=${Role.nhan_vien}&excludeId=${currentUser.id}&perPage=200`
+            ),
+            fetch(
+              `/api/users?phongBanId=${currentUser.phongBanId}&role=${Role.truong_phong}&perPage=200`
+            ),
+          ]);
+
+          const sameBoPhanData = await sameBoPhanRes.json();
+          const truongPhongData = await truongPhongRes.json();
+
+          colleagues = [
+            ...(sameBoPhanData.items || []),
+            ...(truongPhongData.items || []),
+          ];
+        } else {
+          const usersRes = await fetch(
+            `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
+          );
+          const usersData = await usersRes.json();
+          colleagues = usersData.items || [];
+        }
+
         setDongNghieps(colleagues);
 
         const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.NHAN_VIEN);

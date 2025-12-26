@@ -101,6 +101,10 @@ export default function XemDanhGiaPage() {
             dg.daHoanThanh &&
             (departmentUserIds.includes(dg.nguoiDanhGiaId) || departmentUserIds.includes(dg.nguoiDuocDanhGiaId))
         );
+      } else if (currentUser.role === Role.nhan_vien) {
+        filteredEvaluations = allDanhGias.filter(
+          (dg) => dg.daHoanThanh && dg.nguoiDanhGiaId === currentUser.id
+        );
       }
 
       const danhGiasWithDetails = await Promise.all(

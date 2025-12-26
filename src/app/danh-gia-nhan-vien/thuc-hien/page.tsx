@@ -20,7 +20,7 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
-import type { User, BieuMau, CauHoi, DanhGia, CauTraLoi } from "@/types/schema";
+import { Role, type User, type BieuMau, type CauHoi, type DanhGia, type CauTraLoi } from "@/types/schema";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
@@ -137,6 +137,22 @@ function EvaluationFormContent() {
           });
           router.push("/danh-gia-nhan-vien");
           return;
+        }
+
+        // Additional check for nhan_vien role
+        if (currentUser && currentUser.role === Role.nhan_vien) {
+          const isSameBoPhan = nguoiDuocDanhGiaData.boPhan === currentUser.boPhan;
+          const isTruongPhong = nguoiDuocDanhGiaData.role === Role.truong_phong;
+
+          if (!isSameBoPhan && !isTruongPhong) {
+            notifications.show({
+              title: "Lỗi",
+              message: "Bạn chỉ có thể đánh giá đồng nghiệp cùng bộ phận hoặc trưởng phòng.",
+              color: "red",
+            });
+            router.push("/danh-gia-nhan-vien");
+            return;
+          }
         }
 
         setNguoiDuocDanhGia(nguoiDuocDanhGiaData);
