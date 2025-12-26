@@ -160,11 +160,11 @@ export default function DanhGiaNhanVienPage() {
             const checkRes = await fetch(`/api/danh-gias/check-status`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+                body: JSON.stringify({
                 nguoiDanhGiaId: currentUser.id,
                 bieuMauId: bieuMaus[0].id,
                 kyDanhGiaId: activeKys[0].id,
-                nguoiDuocDanhGiaIds: colleagues.map((c: any) => c.id),
+                nguoiDuocDanhGiaIds: filtered.map((c: any) => c.id),
                 phongBanId: currentUser.phongBanId,
               }),
             });

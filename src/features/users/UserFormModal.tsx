@@ -27,6 +27,7 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
       phongBanId: "",
       role: Role.nhan_vien,
       trangThaiKH: true,
+      boPhan: "",
     },
     validate: {
       maNhanVien: (value) => {
@@ -46,6 +47,7 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
       },
       phongBanId: (value) => (!value ? "Vui lòng chọn phòng ban" : null),
       role: (value) => (!value ? "Vui lòng chọn vai trò" : null),
+      boPhan: (value) => (!value ? "Vui lòng chọn bộ phận" : null),
     },
   });
 
@@ -59,6 +61,7 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           phongBanId: user.phongBanId,
           role: user.role,
           trangThaiKH: user.trangThaiKH,
+          boPhan: user.boPhan || "",
         });
       } else {
         form.reset();
@@ -76,6 +79,7 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           phongBanId: values.phongBanId,
           role: values.role,
           trangThaiKH: values.trangThaiKH,
+          boPhan: values.boPhan
         });
 
         notifications.show({
@@ -100,6 +104,7 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           trangThaiKH: values.trangThaiKH,
           daDangKy: false,
           matKhau: "$2a$10$DefaultPasswordHash",
+          boPhan: values.boPhan,
         });
 
         notifications.show({
@@ -182,6 +187,18 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
             data={roleOptions}
             required
             {...form.getInputProps("role")}
+          />
+
+          <Select 
+            label="Bộ phận"
+            placeholder="Chọn bộ phận"
+            data={[
+              { value: "Bộ phận lãnh đạo", label: "Bộ phận lãnh đạo" },
+              { value: "Bộ phận nghiệp vụ", label: "Bộ phận nghiệp vụ" },
+              { value: "Tổ xe con", label: "Tổ xe con" },
+            ]}
+            required
+            {...form.getInputProps("boPhan")}
           />
 
           <Switch
