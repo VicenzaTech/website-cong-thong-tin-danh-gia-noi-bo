@@ -70,26 +70,14 @@ if (userCount.count > 0) {
 
 console.log('Importing sample data...');
 
-// Import phong bans
+// Import phong ban (only one needed for admin user's foreign key)
 const phongBanStmt = db.prepare(`
   INSERT INTO phong_bans (id, ten_phong_ban, mo_ta, truong_phong_id, created_at, updated_at)
   VALUES (?, ?, ?, ?, ?, ?)
 `);
 
 const phongBans = [
-  { id: 'pb1', tenPhongBan: 'Ban kinh doanh', moTa: 'Ban kinh doanh', truongPhongId: 'upb1_1' },
-  { id: 'pb2', tenPhongBan: 'Ban kiểm soát', moTa: 'Ban kiểm soát', truongPhongId: 'upb2_1' },
-  { id: 'pb3', tenPhongBan: 'Ban tổng giám đốc', moTa: 'Ban tổng giám đốc', truongPhongId: 'upb3_2' },
-  { id: 'pb4', tenPhongBan: 'Ban đầu tư', moTa: 'Ban đầu tư', truongPhongId: 'upb4_2' },
-  { id: 'pb5', tenPhongBan: 'Dự án cát nhân tạo', moTa: 'Dự án cát nhân tạo', truongPhongId: 'upb5_2' },
-  { id: 'pb6', tenPhongBan: 'Hội đồng Quản trị', moTa: 'Hội đồng Quản trị', truongPhongId: 'upb6_1' },
-  { id: 'pb7', tenPhongBan: 'Hội đồng cổ đông', moTa: 'Hội đồng cổ đông', truongPhongId: 'upb7_1' },
-  { id: 'pb8', tenPhongBan: 'Phòng Kế toán', moTa: 'Phòng Kế toán', truongPhongId: 'upb8_1' },
-  { id: 'pb9', tenPhongBan: 'Phòng Tổ chức - Hành chính', moTa: 'Phòng Tổ chức - Hành chính', truongPhongId: 'upb9_1' },
-  { id: 'pb10', tenPhongBan: 'Phòng khai thác', moTa: 'Phòng khai thác', truongPhongId: 'upb10_1' },
-  { id: 'pb11', tenPhongBan: 'Thanh tra sản xuất - KCS', moTa: 'Thanh tra sản xuất - KCS', truongPhongId: 'upb11_7' },
-  { id: 'pb12', tenPhongBan: 'Thuê ngoài', moTa: 'Thuê ngoài', truongPhongId: null },
-  { id: 'pb13', tenPhongBan: 'Văn phòng Chủ tịch', moTa: 'Văn phòng Chủ tịch', truongPhongId: 'upb13_4' },
+  { id: 'pb1', tenPhongBan: 'Ban kinh doanh', moTa: 'Ban kinh doanh', truongPhongId: null },
 ];
 
 const now = new Date().toISOString();
@@ -105,9 +93,9 @@ for (const pb of phongBans) {
   );
 }
 
-console.log(`Imported ${phongBans.length} phong bans`);
+console.log(`Imported ${phongBans.length} phong ban`);
 
-// Import sample users (admin + a few test users)
+// Import admin user only
 const userStmt = db.prepare(`
   INSERT INTO users (
     id, ma_nhan_vien, ho_ten, email, mat_khau, mat_khau_cu,
@@ -116,60 +104,36 @@ const userStmt = db.prepare(`
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
-const sampleUsers = [
-  {
-    id: 'admin1',
-    maNhanVien: 'ADMIN001',
-    hoTen: 'Quản trị viên',
-    email: 'admin@company.com',
-    matKhau: 'vicenza',
-    role: 'admin',
-    phongBanId: 'pb1',
-  },
-  {
-    id: 'upb1_1',
-    maNhanVien: 'NV0041',
-    hoTen: 'Nguyễn Thị Bích Hường',
-    email: 'nv0041@company.com',
-    matKhau: 'vicenza',
-    role: 'truong_phong',
-    phongBanId: 'pb1',
-  },
-  {
-    id: 'upb1_2',
-    maNhanVien: 'NV3214',
-    hoTen: 'Nguyễn Mạnh Uyên',
-    email: 'nv3214@company.com',
-    matKhau: 'vicenza',
-    role: 'nhan_vien',
-    phongBanId: 'pb1',
-  },
-];
+const adminUser = {
+  id: 'admin1',
+  maNhanVien: 'ADMIN001',
+  hoTen: 'Quản trị viên',
+  email: 'admin@company.com',
+  matKhau: 'vicenza',
+  role: 'admin',
+  phongBanId: 'pb1',
+};
 
-for (const user of sampleUsers) {
-  userStmt.run(
-    user.id,
-    user.maNhanVien,
-    user.hoTen,
-    user.email || null,
-    user.matKhau,
-    null,
-    0,
-    user.role,
-    user.phongBanId,
-    1,
-    1,
-    now,
-    now
-  );
-}
+userStmt.run(
+  adminUser.id,
+  adminUser.maNhanVien,
+  adminUser.hoTen,
+  adminUser.email || null,
+  adminUser.matKhau,
+  null,
+  0,
+  adminUser.role,
+  adminUser.phongBanId,
+  1,
+  1,
+  now,
+  now
+);
 
-console.log(`Imported ${sampleUsers.length} sample users`);
+console.log(`Imported admin user`);
 console.log('\n✅ Database initialized successfully!');
-console.log('\nTest accounts:');
+console.log('\nAdmin account:');
 console.log('  Admin: ADMIN001 / vicenza');
-console.log('  Trưởng phòng: NV0041 / vicenza');
-console.log('  Nhân viên: NV3214 / vicenza');
 console.log('\nDatabase file:', DB_PATH);
 
 db.close();
