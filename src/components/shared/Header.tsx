@@ -10,7 +10,9 @@ import {
   ActionIcon,
   useMantineColorScheme,
   Box,
+  useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconLogout,
   IconSettings,
@@ -25,6 +27,8 @@ export function Header() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   if (!user) return null;
 
@@ -59,7 +63,7 @@ export function Header() {
         backgroundColor: "var(--mantine-color-body)",
         position: "fixed",
         top: 0,
-        left: 280,
+        left: isMobile ? 0 : 280,
         right: 0,
         zIndex: 100,
       }}

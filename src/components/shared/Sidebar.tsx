@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Stack, NavLink, Text, Box, Center, useMantineColorScheme } from "@mantine/core";
+import { Stack, NavLink, Text, Box, Center, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconHome,
   IconUsers,
@@ -94,8 +95,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, checkPermission } = useAuth();
   const { colorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   if (!user) return null;
+  
+  if (isMobile) return null;
 
   const filteredMenuItems = menuItems.filter((item) => checkPermission(item.allowedRoles));
 

@@ -67,3 +67,49 @@
 - [x] Build project thành công (không có lỗi)
 - [x] Cập nhật tài liệu
 
+---
+
+## Thêm bottom navigation bar cho mobile
+
+### Yêu cầu
+- Trên giao diện điện thoại, ẩn sidebar và hiển thị bottom navigation bar
+- Bottom navigation bar cố định ở dưới cùng màn hình
+- Nội dung có thể scroll, bottom bar luôn hiển thị
+- Thứ tự các mục: Xem đánh giá | Đánh giá lãnh đạo | Logo công ty (trang chủ) | Đánh giá nhân viên | Tài khoản (đăng xuất)
+
+### Các file đã sửa
+
+1. **src/components/shared/BottomNavigationBar.tsx** (mới)
+   - Tạo component bottom navigation bar mới
+   - Hiển thị 5 mục: Xem đánh giá (nếu có quyền), Đánh giá lãnh đạo, Logo (trang chủ), Đánh giá nhân viên, Tài khoản
+   - Sử dụng `useMediaQuery` để chỉ hiển thị trên mobile (< sm breakpoint)
+   - Cố định ở dưới cùng với `position: fixed` và `zIndex: 1000`
+   - Highlight mục đang active
+   - Xử lý logout khi click vào Tài khoản
+
+2. **src/components/shared/DashboardLayout.tsx**
+   - Thêm `BottomNavigationBar` component
+   - Điều chỉnh layout: thêm `paddingBottom: 70` trên mobile để tránh nội dung bị che bởi bottom bar
+   - Sử dụng `useMediaQuery` để điều chỉnh `marginLeft` và `paddingBottom` theo breakpoint
+   - Trên mobile: `marginLeft: 0`, `paddingBottom: 70`
+   - Trên desktop: `marginLeft: 280`, `paddingBottom: 0`
+
+3. **src/components/shared/Sidebar.tsx**
+   - Ẩn sidebar trên mobile bằng `useMediaQuery`
+   - Chỉ hiển thị khi `isMobile === false` (tức là màn hình >= sm breakpoint)
+
+4. **src/components/shared/Header.tsx**
+   - Điều chỉnh `left` position theo breakpoint
+   - Trên mobile: `left: 0` (full width)
+   - Trên desktop: `left: 280` (có sidebar)
+
+### Trạng thái
+✅ **Hoàn thành**
+
+- [x] Tạo BottomNavigationBar component
+- [x] Cập nhật DashboardLayout để responsive
+- [x] Ẩn Sidebar trên mobile
+- [x] Điều chỉnh Header responsive
+- [x] Build project thành công (không có lỗi)
+- [x] Cập nhật tài liệu
+
