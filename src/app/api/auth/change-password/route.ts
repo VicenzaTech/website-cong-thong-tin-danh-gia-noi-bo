@@ -27,7 +27,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await authService.changePassword(userId, currentPassword || "", newPassword, forceChange || false);
+    const result = await authService.changePassword(
+      userId, 
+      forceChange ? "" : (currentPassword || ""), 
+      newPassword, 
+      forceChange || false
+    );
 
     if (!result.success) {
       return NextResponse.json(

@@ -253,6 +253,11 @@ export const authService = {
       if (newPassword === currentPassword) {
         return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
       }
+
+      const isSameAsStored = await bcrypt.compare(newPassword, user.mat_khau);
+      if (isSameAsStored) {
+        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau hien tai" };
+      }
     } else {
       if (user.mat_khau) {
         const isSameAsCurrent = await bcrypt.compare(newPassword, user.mat_khau);
