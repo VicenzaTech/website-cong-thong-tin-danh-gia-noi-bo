@@ -107,15 +107,20 @@ export default function DanhGiaNhanVienPage() {
 
         if (currentUser.role === Role.nhan_vien) {
           // For nhan_vien: can evaluate colleagues in same department and boPhan (if exists)
-          const usersRes = await fetch(`/api/users?currentUserId=${currentUser.id}&perPage=200`);
-          const usersData = await usersRes.json();
-          colleagues = usersData.items || [];
+          if (currentUser.boPhan) {
+            const usersRes = await fetch(`/api/users?currentUserId=${currentUser.id}&perPage=200`);
+            const usersData = await usersRes.json();
+            colleagues = (usersData.items || []).filter((u: any) => u.role !== Role.truong_phong);
+          } else {
+            colleagues = [];
+          }
         } else {
           const usersRes = await fetch(
             `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
           );
           const usersData = await usersRes.json();
-          colleagues = usersData.items || [];
+          console.log("CURRENT USER: ",currentUser)
+          colleagues = (usersData.items || []).filter((u: any) => u.role !== Role.truong_phong && (!currentUser.boPhan || u.boPhan === currentUser.boPhan));
         }
         console.log("DONG NGHIEP : ", colleagues)
         setDongNghieps(colleagues);
@@ -129,6 +134,7 @@ export default function DanhGiaNhanVienPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                role: currentUser.role,
                 nguoiDanhGiaId: currentUser.id,
                 bieuMauId: bieuMaus[0].id,
                 kyDanhGiaId: activeKys[0].id,

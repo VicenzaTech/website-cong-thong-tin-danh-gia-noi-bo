@@ -45,6 +45,7 @@ function EvaluationFormContent() {
   const [cauHois, setCauHois] = useState<CauHoi[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  console.log("action :",currentUser)
 
   const form = useForm<EvaluationFormValues>({
     initialValues: {
@@ -146,19 +147,21 @@ function EvaluationFormContent() {
         // If nhan_vien doesn't have boPhan, they can only evaluate truong_phong
         if (currentUser && currentUser.role === Role.nhan_vien) {
           const isTruongPhong = nguoiDuocDanhGiaData.role === Role.truong_phong;
-          
+          console.log("BO PHAN 123123123",currentUser.boPhan, nguoiDuocDanhGiaData.boPhan, isTruongPhong);
           // Check if both users have the same boPhan
           // Both must have boPhan and they must be equal
           const isSameBoPhan = 
             currentUser.boPhan && 
             nguoiDuocDanhGiaData.boPhan && 
             nguoiDuocDanhGiaData.boPhan === currentUser.boPhan;
+          
+          console.log("isSameBoPhan", isSameBoPhan);
 
           // Allow evaluation only if same boPhan OR target is truong_phong
           if (!isSameBoPhan && !isTruongPhong) {
             notifications.show({
               title: "Lỗi",
-              message: "Bạn chỉ có thể đánh giá đồng nghiệp cùng bộ phận hoặc trưởng phòng.",
+              message: "Bạn chỉ có thể đánh giá đồng nghiệp cùng bộ phận hoặc trưởng phòng.123123",
               color: "red",
             });
             router.push("/danh-gia-nhan-vien");
