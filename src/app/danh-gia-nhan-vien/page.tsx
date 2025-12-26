@@ -108,7 +108,11 @@ export default function DanhGiaNhanVienPage() {
         );
         const usersData = await usersRes.json();
         const colleagues = usersData.items || [];
-        setDongNghieps(colleagues);
+        // Filter colleagues to only those in the same `boPhan` as current user
+        console.log("CURRENT USER BOPHAN:", currentUser.boPhan);
+        console.log(colleagues)
+        const filtered = colleagues.filter((c: any) => c.boPhan === currentUser.boPhan);
+        setDongNghieps(filtered);
 
         const bieuMaus = await mockService.bieuMaus.getByLoai(LoaiDanhGia.NHAN_VIEN);
         if (bieuMaus.length > 0) {
@@ -118,11 +122,11 @@ export default function DanhGiaNhanVienPage() {
             const checkRes = await fetch(`/api/danh-gias/check-status`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+                body: JSON.stringify({
                 nguoiDanhGiaId: currentUser.id,
                 bieuMauId: bieuMaus[0].id,
                 kyDanhGiaId: activeKys[0].id,
-                nguoiDuocDanhGiaIds: colleagues.map((c: any) => c.id),
+                nguoiDuocDanhGiaIds: filtered.map((c: any) => c.id),
                 phongBanId: currentUser.phongBanId,
               }),
             });
