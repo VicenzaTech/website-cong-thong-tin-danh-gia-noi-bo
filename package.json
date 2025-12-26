@@ -7,8 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "init-db": "node scripts/init-db.js",
-    "seed": "tsx scripts/seed.ts"
+    "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
