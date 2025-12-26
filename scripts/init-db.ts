@@ -49,6 +49,7 @@ db.exec(`
     da_doi_mat_khau INTEGER DEFAULT 0,
     role TEXT NOT NULL DEFAULT 'nhan_vien',
     phong_ban_id TEXT NOT NULL,
+    bo_phan TEXT,
     da_dang_ky INTEGER DEFAULT 0,
     trang_thai_kh INTEGER DEFAULT 1,
     last_login_at TEXT,
@@ -148,9 +149,9 @@ async function importData() {
   const userStmt = db.prepare(`
     INSERT INTO users (
       id, ma_nhan_vien, ho_ten, email, mat_khau, mat_khau_cu,
-      da_doi_mat_khau, role, phong_ban_id, da_dang_ky, trang_thai_kh,
+      da_doi_mat_khau, role, phong_ban_id, bo_phan, da_dang_ky, trang_thai_kh,
       created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   let adminUser: typeof users[0] | undefined;
@@ -176,6 +177,7 @@ async function importData() {
       adminUser.daDoiMatKhau ? 1 : 0,
       adminUser.role,
       adminUser.phongBanId,
+      adminUser.boPhan || null,
       adminUser.daDangKy ? 1 : 0,
       adminUser.trangThaiKH ? 1 : 0,
       adminUser.createdAt.toISOString(),
@@ -200,6 +202,7 @@ async function importData() {
       user.daDoiMatKhau ? 1 : 0,
       user.role,
       user.phongBanId,
+      user.boPhan || null,
       user.daDangKy ? 1 : 0,
       user.trangThaiKH ? 1 : 0,
       user.createdAt.toISOString(),

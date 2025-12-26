@@ -141,8 +141,11 @@ function EvaluationFormContent() {
 
         // Additional check for nhan_vien role
         if (currentUser && currentUser.role === Role.nhan_vien) {
-          const isSameBoPhan = nguoiDuocDanhGiaData.boPhan === currentUser.boPhan;
           const isTruongPhong = nguoiDuocDanhGiaData.role === Role.truong_phong;
+          const isSameBoPhan = 
+            currentUser.boPhan && 
+            nguoiDuocDanhGiaData.boPhan && 
+            nguoiDuocDanhGiaData.boPhan === currentUser.boPhan;
 
           if (!isSameBoPhan && !isTruongPhong) {
             notifications.show({

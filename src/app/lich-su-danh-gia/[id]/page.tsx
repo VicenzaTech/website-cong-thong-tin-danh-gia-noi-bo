@@ -88,10 +88,8 @@ export default function ChiTietDanhGiaPage({ params }: { params: Promise<{ id: s
         canAccess =
           departmentUserIds.includes(danhGiaData.nguoiDanhGiaId) ||
           departmentUserIds.includes(danhGiaData.nguoiDuocDanhGiaId);
-      } else {
-        canAccess =
-          danhGiaData.nguoiDanhGiaId === currentUser.id ||
-          danhGiaData.nguoiDuocDanhGiaId === currentUser.id;
+      } else if (currentUser.role === Role.nhan_vien) {
+        canAccess = danhGiaData.nguoiDanhGiaId === currentUser.id;
       }
 
       if (!canAccess) {

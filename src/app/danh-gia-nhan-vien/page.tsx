@@ -106,22 +106,35 @@ export default function DanhGiaNhanVienPage() {
         let colleagues: any[] = [];
 
         if (currentUser.role === Role.nhan_vien) {
-          const [sameBoPhanRes, truongPhongRes] = await Promise.all([
-            fetch(
-              `/api/users?phongBanId=${currentUser.phongBanId}&boPhan=${encodeURIComponent(currentUser.boPhan || "")}&role=${Role.nhan_vien}&excludeId=${currentUser.id}&perPage=200`
-            ),
+          if (!currentUser.boPhan) {
+            console.warn("Nhân viên không có bộ phận:", currentUser);
+          }
+
+          const requests = [
             fetch(
               `/api/users?phongBanId=${currentUser.phongBanId}&role=${Role.truong_phong}&perPage=200`
             ),
-          ]);
-
-          const sameBoPhanData = await sameBoPhanRes.json();
-          const truongPhongData = await truongPhongRes.json();
-
-          colleagues = [
-            ...(sameBoPhanData.items || []),
-            ...(truongPhongData.items || []),
           ];
+
+          if (currentUser.boPhan) {
+            requests.unshift(
+              fetch(
+                `/api/users?phongBanId=${currentUser.phongBanId}&boPhan=${encodeURIComponent(currentUser.boPhan)}&role=${Role.nhan_vien}&excludeId=${currentUser.id}&perPage=200`
+              )
+            );
+          }
+
+          const responses = await Promise.all(requests);
+          const dataResults = await Promise.all(responses.map(r => r.json()));
+
+          if (currentUser.boPhan) {
+            colleagues = [
+              ...(dataResults[0].items || []),
+              ...(dataResults[1].items || []),
+            ];
+          } else {
+            colleagues = dataResults[0].items || [];
+          }
         } else {
           const usersRes = await fetch(
             `/api/users?phongBanId=${currentUser.phongBanId}&excludeId=${currentUser.id}&perPage=200`
