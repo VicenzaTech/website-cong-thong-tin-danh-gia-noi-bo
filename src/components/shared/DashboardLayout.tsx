@@ -48,7 +48,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           backgroundColor: "var(--mantine-color-body)",
           display: "flex",
           flexDirection: "column",
-          paddingBottom: isMobile ? 70 : 0,
+          paddingBottom: isMobile ? 65 : 0,
         }}
       >
         <Box p="md" style={{ flex: 1 }}>

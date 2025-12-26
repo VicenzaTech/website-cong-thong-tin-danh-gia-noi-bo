@@ -113,3 +113,42 @@
 - [x] Build project thành công (không có lỗi)
 - [x] Cập nhật tài liệu
 
+---
+
+## Cải thiện bottom navigation bar cho mobile
+
+### Yêu cầu
+- Fix navbar cho giao diện điện thoại sao cho hợp lý
+- Tối ưu kích thước, spacing và layout
+- Đảm bảo hiển thị tốt trên các kích thước màn hình khác nhau
+
+### Các file đã sửa
+
+1. **src/components/shared/BottomNavigationBar.tsx**
+   - Refactor code để sử dụng mảng `navItems` để dễ quản lý và đảm bảo layout đều
+   - Giảm chiều cao từ 70px xuống 65px để tối ưu không gian
+   - Giảm kích thước icon từ 24px xuống 22px
+   - Giảm kích thước logo từ 32px xuống 28px
+   - Giảm font size text từ `xs` xuống `10px` để phù hợp với màn hình nhỏ
+   - Rút ngắn label "Xem đánh giá" thành "Xem" để tiết kiệm không gian
+   - Giảm gap giữa icon và text từ 4px xuống 2px
+   - Giảm padding từ "8px 4px" xuống "6px 2px"
+   - Thêm `minWidth: 0` để đảm bảo text không bị tràn
+   - Thêm `textOverflow: "ellipsis"` và `whiteSpace: "nowrap"` để xử lý text dài
+   - Thêm `transition` cho background color để smooth hơn
+   - Thêm `paddingBottom: "env(safe-area-inset-bottom)"` để hỗ trợ safe area trên các thiết bị có notch
+   - Đảm bảo layout đều khi có/không có mục "Xem đánh giá" bằng cách sử dụng mảng động
+
+2. **src/components/shared/DashboardLayout.tsx**
+   - Cập nhật `paddingBottom` từ 70px xuống 65px để phù hợp với chiều cao mới của bottom bar
+
+### Trạng thái
+✅ **Hoàn thành**
+
+- [x] Cải thiện BottomNavigationBar với layout tối ưu
+- [x] Tối ưu kích thước và spacing
+- [x] Thêm safe area support
+- [x] Cập nhật DashboardLayout
+- [x] Build project thành công (không có lỗi)
+- [x] Cập nhật tài liệu
+

@@ -43,6 +43,51 @@ export function BottomNavigationBar() {
 
   const canViewEvaluations = checkPermission([Role.admin, Role.truong_phong]);
 
+  const navItems = [
+    ...(canViewEvaluations ? [{
+      href: "/xem-danh-gia",
+      icon: <IconEye size={22} />,
+      label: "Xem",
+      isActive: pathname === "/xem-danh-gia",
+    }] : []),
+    {
+      href: "/danh-gia-lanh-dao",
+      icon: <IconUserStar size={22} />,
+      label: "Lãnh đạo",
+      isActive: pathname === "/danh-gia-lanh-dao",
+    },
+    {
+      href: "/",
+      icon: (
+        <Image
+          src="/logo-vicenza.png"
+          alt="Vicenza Logo"
+          width={28}
+          height={28}
+          priority
+          style={{
+            objectFit: "contain",
+          }}
+        />
+      ),
+      label: "Trang chủ",
+      isActive: pathname === "/",
+    },
+    {
+      href: "/danh-gia-nhan-vien",
+      icon: <IconUserCheck size={22} />,
+      label: "Nhân viên",
+      isActive: pathname === "/danh-gia-nhan-vien",
+    },
+    {
+      href: null,
+      icon: <IconUser size={22} />,
+      label: "Tài khoản",
+      isActive: false,
+      onClick: handleLogout,
+    },
+  ];
+
   return (
     <Box
       style={{
@@ -50,134 +95,111 @@ export function BottomNavigationBar() {
         bottom: 0,
         left: 0,
         right: 0,
-        height: 70,
+        height: 65,
         borderTop: `1px solid ${borderColor}`,
         backgroundColor: "var(--mantine-color-body)",
         zIndex: 1000,
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <Group h="100%" px="xs" justify="space-around" gap={0}>
-        {canViewEvaluations && (
-          <UnstyledButton
-            component={Link}
-            href="/xem-danh-gia"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "8px 4px",
-              borderRadius: 8,
-              backgroundColor: pathname === "/xem-danh-gia" 
-                ? (colorScheme === "dark" ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-1)")
-                : "transparent",
-            }}
-          >
-            <IconEye size={24} color={pathname === "/xem-danh-gia" ? "var(--mantine-color-blue-6)" : undefined} />
-            <Text size="xs" fw={pathname === "/xem-danh-gia" ? 600 : 400}>
-              Xem đánh giá
-            </Text>
-          </UnstyledButton>
-        )}
+      <Group h="100%" px={4} justify="space-around" gap={0}>
+        {navItems.map((item, index) => {
+          const activeBg = colorScheme === "dark" 
+            ? "var(--mantine-color-dark-6)" 
+            : "var(--mantine-color-gray-1)";
+          const activeColor = "var(--mantine-color-blue-6)";
 
-        <UnstyledButton
-          component={Link}
-          href="/danh-gia-lanh-dao"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            padding: "8px 4px",
-            borderRadius: 8,
-            backgroundColor: pathname === "/danh-gia-lanh-dao" 
-              ? (colorScheme === "dark" ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-1)")
-              : "transparent",
-          }}
-        >
-          <IconUserStar size={24} color={pathname === "/danh-gia-lanh-dao" ? "var(--mantine-color-blue-6)" : undefined} />
-          <Text size="xs" fw={pathname === "/danh-gia-lanh-dao" ? 600 : 400}>
-            Lãnh đạo
-          </Text>
-        </UnstyledButton>
+          if (item.href) {
+            return (
+              <UnstyledButton
+                key={index}
+                component={Link}
+                href={item.href}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
+                  padding: "6px 2px",
+                  borderRadius: 8,
+                  minWidth: 0,
+                  backgroundColor: item.isActive ? activeBg : "transparent",
+                  transition: "background-color 0.2s ease",
+                }}
+              >
+                <Box
+                  style={{
+                    color: item.isActive ? activeColor : undefined,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {item.icon}
+                </Box>
+                <Text 
+                  size="10px" 
+                  fw={item.isActive ? 600 : 400}
+                  style={{
+                    lineHeight: 1.2,
+                    textAlign: "center",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: "100%",
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </UnstyledButton>
+            );
+          }
 
-        <UnstyledButton
-          component={Link}
-          href="/"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            padding: "8px 4px",
-            borderRadius: 8,
-            backgroundColor: pathname === "/" 
-              ? (colorScheme === "dark" ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-1)")
-              : "transparent",
-          }}
-        >
-          <Image
-            src="/logo-vicenza.png"
-            alt="Vicenza Logo"
-            width={32}
-            height={32}
-            priority
-            style={{
-              objectFit: "contain",
-            }}
-          />
-          <Text size="xs" fw={pathname === "/" ? 600 : 400}>
-            Trang chủ
-          </Text>
-        </UnstyledButton>
-
-        <UnstyledButton
-          component={Link}
-          href="/danh-gia-nhan-vien"
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            padding: "8px 4px",
-            borderRadius: 8,
-            backgroundColor: pathname === "/danh-gia-nhan-vien" 
-              ? (colorScheme === "dark" ? "var(--mantine-color-dark-6)" : "var(--mantine-color-gray-1)")
-              : "transparent",
-          }}
-        >
-          <IconUserCheck size={24} color={pathname === "/danh-gia-nhan-vien" ? "var(--mantine-color-blue-6)" : undefined} />
-          <Text size="xs" fw={pathname === "/danh-gia-nhan-vien" ? 600 : 400}>
-            Nhân viên
-          </Text>
-        </UnstyledButton>
-
-        <UnstyledButton
-          onClick={handleLogout}
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            padding: "8px 4px",
-            borderRadius: 8,
-          }}
-        >
-          <IconUser size={24} />
-          <Text size="xs" fw={400}>
-            Tài khoản
-          </Text>
-        </UnstyledButton>
+          return (
+            <UnstyledButton
+              key={index}
+              onClick={item.onClick}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+                padding: "6px 2px",
+                borderRadius: 8,
+                minWidth: 0,
+                transition: "background-color 0.2s ease",
+              }}
+            >
+              <Box
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {item.icon}
+              </Box>
+              <Text 
+                size="10px" 
+                fw={400}
+                style={{
+                  lineHeight: 1.2,
+                  textAlign: "center",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "100%",
+                }}
+              >
+                {item.label}
+              </Text>
+            </UnstyledButton>
+          );
+        })}
       </Group>
     </Box>
   );
