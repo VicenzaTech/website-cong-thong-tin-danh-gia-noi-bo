@@ -237,32 +237,32 @@ export const authService = {
   changePassword: async (userId: string, currentPassword: string, newPassword: string, forceChange: boolean = false): Promise<{ success: boolean; error?: string }> => {
     const user = authService.getUserById(userId);
     if (!user) {
-      return { success: false, error: "Khong tim thay nguoi dung" };
+      return { success: false, error: "Không tìm thấy người dùng" };
     }
 
     if (!forceChange) {
       if (!user.mat_khau) {
-        return { success: false, error: "Nguoi dung chua co mat khau" };
+        return { success: false, error: "Người dùng chưa có mật khẩu" };
       }
 
       const isCurrentValid = await bcrypt.compare(currentPassword, user.mat_khau);
       if (!isCurrentValid) {
-        return { success: false, error: "Mat khau hien tai khong chinh xac" };
+        return { success: false, error: "Mật khẩu hiện tại không chính xác" };
       }
 
       if (newPassword === currentPassword) {
-        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau cu" };
+        return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu cũ" };
       }
 
       const isSameAsStored = await bcrypt.compare(newPassword, user.mat_khau);
       if (isSameAsStored) {
-        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau hien tai" };
+        return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu hiện tại" };
       }
     } else {
       if (user.mat_khau) {
         const isSameAsCurrent = await bcrypt.compare(newPassword, user.mat_khau);
         if (isSameAsCurrent) {
-          return { success: false, error: "Mat khau moi khong duoc trung voi mat khau mac dinh" };
+          return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu mặc định" };
         }
       }
     }
@@ -271,7 +271,7 @@ export const authService = {
     if (user.mat_khau_cu) {
       const isSameAsOldPassword = await bcrypt.compare(newPassword, user.mat_khau_cu);
       if (isSameAsOldPassword) {
-        return { success: false, error: "Mat khau moi khong duoc trung voi mat khau truoc do" };
+        return { success: false, error: "Mật khẩu mới không được trùng với mật khẩu trước đó" };
       }
     }
 

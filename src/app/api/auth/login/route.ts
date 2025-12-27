@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     if (!maNhanVien || !matKhau) {
       return NextResponse.json(
-        { error: "Vui long nhap day du thong tin" },
+        { error: "Vui lòng nhập đầy đủ thông tin" },
         { status: 400 }
       );
     }
@@ -20,14 +20,14 @@ export async function POST(request: Request) {
     
     if (!user) {
       return NextResponse.json(
-        { error: "Ma nhan vien hoac mat khau khong chinh xac" },
+        { error: "Mã nhân viên hoặc mật khẩu không chính xác" },
         { status: 401 }
       );
     }
 
     if (!user.trang_thai_kh) {
       return NextResponse.json(
-        { error: "Tai khoan cua ban da bi vo hieu hoa" },
+        { error: "Tài khoản của bạn đã bị vô hiệu hóa" },
         { status: 403 }
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Da xay ra loi khi dang nhap" },
+      { error: "Đã xảy ra lỗi khi đăng nhập" },
       { status: 500 }
     );
   }

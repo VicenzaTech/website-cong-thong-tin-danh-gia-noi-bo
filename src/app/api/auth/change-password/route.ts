@@ -8,21 +8,21 @@ export async function POST(request: Request) {
 
     if (!userId || !newPassword) {
       return NextResponse.json(
-        { error: "Vui long nhap day du thong tin" },
+        { error: "Vui lòng nhập đầy đủ thông tin" },
         { status: 400 }
       );
     }
 
     if (!forceChange && !currentPassword) {
       return NextResponse.json(
-        { error: "Vui long nhap mat khau hien tai" },
+        { error: "Vui lòng nhập mật khẩu hiện tại" },
         { status: 400 }
       );
     }
 
     if (newPassword.length < 6) {
       return NextResponse.json(
-        { error: "Mat khau moi phai co it nhat 6 ky tu" },
+        { error: "Mật khẩu mới phải có ít nhất 6 ký tự" },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const user = authService.getUserById(userId);
     if (!user) {
       return NextResponse.json(
-        { error: "Khong tim thay nguoi dung" },
+        { error: "Không tìm thấy người dùng" },
         { status: 404 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Change password error:", error);
     return NextResponse.json(
-      { error: "Da xay ra loi khi doi mat khau" },
+      { error: "Đã xảy ra lỗi khi đổi mật khẩu" },
       { status: 500 }
     );
   }
