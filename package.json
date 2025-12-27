@@ -7,7 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "init-db": "tsx scripts/init-db.ts"
+    "init-db": "tsx scripts/init-db.ts",
+    "generate-fake-evaluations": "tsx script/generate-fake-evaluations.ts"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
