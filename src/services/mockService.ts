@@ -287,6 +287,10 @@ export const mockService = {
       mockCauHois.splice(index, 1);
       return true;
     },
+    getAll: async (): Promise<CauHoi[]> => {
+      await fakeDelay();
+      return mockCauHois;
+    },
   },
   
   cauTraLois: {
@@ -436,6 +440,7 @@ export const mockService = {
         updatedAt: new Date(),
         khongXetThiDua,
         chiTietTieuChi,
+        // answers: null as any,
       };
 
       if (existing) {

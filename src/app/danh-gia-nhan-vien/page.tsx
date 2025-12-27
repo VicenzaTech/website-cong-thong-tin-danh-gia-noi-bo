@@ -28,7 +28,7 @@ import { usePathname } from "next/navigation";
 
 export default function DanhGiaNhanVienPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
+  const { user: currentUser, isLoading: authLoading, canPerformEvaluation } = useAuth();
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [dongNghieps, setDongNghieps] = useState<User[]>([]);
   const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
@@ -42,8 +42,10 @@ export default function DanhGiaNhanVienPage() {
   useEffect(() => {
     if (!authLoading && !currentUser) {
       router.push("/login");
+    } else if (!authLoading && currentUser && !canPerformEvaluation) {
+      router.push("/xem-danh-gia");
     }
-  }, [currentUser, authLoading, router]);
+  }, [currentUser, authLoading, canPerformEvaluation, router]);
   useEffect(() => {
     if (currentUser) {
       loadData();
@@ -111,6 +113,7 @@ export default function DanhGiaNhanVienPage() {
             const usersRes = await fetch(`/api/users?currentUserId=${currentUser.id}&perPage=200`);
             const usersData = await usersRes.json();
             colleagues = (usersData.items || []).filter((u: any) => u.role !== Role.truong_phong);
+            console.log("CURRENT USER WITH BOPHAN: ",currentUser)
           } else {
             colleagues = [];
           }
@@ -219,7 +222,6 @@ export default function DanhGiaNhanVienPage() {
         <Tabs value={activeTab} onChange={(v) => setActiveTab(v || "list")}>
           <Tabs.List>
             <Tabs.Tab value="list">Danh sách đồng nghiệp</Tabs.Tab>
-            <Tabs.Tab value="summary">Tổng hợp đánh giá</Tabs.Tab>
             <Tabs.Tab value="export">Xuất file đánh giá</Tabs.Tab>
           </Tabs.List>
         </Tabs>

@@ -184,7 +184,7 @@ function EvaluationFormContent() {
           const name = mandatoryNames[i];
           if (!existing.some((ch) => ch.noiDung === name)) {
             existing.unshift({
-              id: `m_${i}_${Date.now()}`,
+              id: `ch_mandatory_${i + 1}`,
               bieuMauId: bieuMauId || "",
               noiDung: name,
               thuTu: 0,

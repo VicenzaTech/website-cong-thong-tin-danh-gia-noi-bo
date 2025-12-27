@@ -92,12 +92,22 @@ const menuItems: MenuItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, checkPermission } = useAuth();
+  const { user, checkPermission, canPerformEvaluation } = useAuth();
   const { colorScheme } = useMantineColorScheme();
 
   if (!user) return null;
 
-  const filteredMenuItems = menuItems.filter((item) => checkPermission(item.allowedRoles));
+  const filteredMenuItems = menuItems.filter((item) => {
+    // Check role permission
+    if (!checkPermission(item.allowedRoles)) return false;
+    
+    // For evaluation pages, also check if user can perform evaluations
+    if ((item.href === "/danh-gia-lanh-dao" || item.href === "/danh-gia-nhan-vien") && !canPerformEvaluation) {
+      return false;
+    }
+    
+    return true;
+  });
 
   const borderColor = colorScheme === "dark" 
     ? "var(--mantine-color-dark-4)" 

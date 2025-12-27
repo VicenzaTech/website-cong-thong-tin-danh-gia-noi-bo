@@ -77,6 +77,7 @@ export const sqliteDb = {
 };
 
 export interface SqliteUser {
+  bo_phan: any;
   id: string;
   ma_nhan_vien: string;
   ho_ten?: string;
