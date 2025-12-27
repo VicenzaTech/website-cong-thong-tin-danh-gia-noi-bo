@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
+    <html lang="vi" suppressHydrationWarning style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
       <head>
         <ColorSchemeScript />
       </head>
