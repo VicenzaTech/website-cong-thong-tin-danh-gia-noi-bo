@@ -19,7 +19,9 @@ import {
   IconUser,
   IconSun,
   IconMoon,
+  IconPower,
 } from "@tabler/icons-react";
+import Image from "next/image";
 import { useAuth } from "@/features/auth/AuthContext";
 import { notifications } from "@mantine/notifications";
 
@@ -70,18 +72,30 @@ export function Header() {
         zIndex: 100,
       }}
     >
-      <Group h="100%" px={isMobile ? "sm" : "md"} justify="space-between" gap="xs">
+      <Group h="100%" px={isMobile ? "md" : "lg"} justify="space-between" gap="xs">
         <Group gap="xs">
           {isMobile && (
-            <Text 
-              size="md" 
-              fw={700} 
-              style={{ 
-                color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
-              }}
-            >
-              VICENZA IAS
-            </Text>
+            <>
+              <Image
+                src="/logo-vicenza.png"
+                alt="Vicenza Logo"
+                width={28}
+                height={28}
+                priority
+                style={{
+                  objectFit: "contain",
+                }}
+              />
+              <Text 
+                size="md" 
+                fw={700} 
+                style={{ 
+                  color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
+                }}
+              >
+                VICENZA IAS
+              </Text>
+            </>
           )}
           {!isMobile && (
             <Text size="lg" fw={500}>
@@ -134,7 +148,7 @@ export function Header() {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>Tài khoản</Menu.Label>
+              <Menu.Label>Đăng xuất</Menu.Label>
               <Menu.Item
                 leftSection={<IconUser size={16} />}
                 onClick={() => router.push("/profile")}

@@ -9,7 +9,7 @@ import {
   IconEye,
   IconUserStar,
   IconUserCheck,
-  IconUser,
+  IconPower,
 } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { notifications } from "@mantine/notifications";
@@ -81,8 +81,8 @@ export function BottomNavigationBar() {
     },
     {
       href: null,
-      icon: <IconUser size={22} />,
-      label: "Tài khoản",
+      icon: <IconPower size={22} />,
+      label: "Đăng xuất",
       isActive: false,
       onClick: handleLogout,
     },
