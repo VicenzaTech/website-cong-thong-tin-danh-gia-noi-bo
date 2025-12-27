@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Stack,
@@ -19,6 +19,7 @@ import {
   Flex,
   Divider,
   Collapse,
+  Pagination,
 } from "@mantine/core";
 import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -31,6 +32,8 @@ import dayjs from "dayjs";
 import * as XLSX from 'xlsx';
 
 dayjs.locale("vi");
+
+const ITEMS_PER_PAGE = 30;
 
 interface DanhGiaWithDetails extends DanhGia {
   answers: any[];
@@ -56,6 +59,7 @@ export default function XemDanhGiaPage() {
   const [selectedLoaiDanhGia, setSelectedLoaiDanhGia] = useState<string | null>(null);
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -77,6 +81,7 @@ export default function XemDanhGiaPage() {
 
   useEffect(() => {
     applyFilters();
+    setCurrentPage(1); // Reset to first page when filters change
   }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId]);
 
   const loadData = async () => {
@@ -194,6 +199,14 @@ export default function XemDanhGiaPage() {
 
     setFilteredDanhGias(filtered);
   };
+
+  const paginatedDanhGias = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredDanhGias.slice(startIndex, endIndex);
+  }, [filteredDanhGias, currentPage]);
+
+  const totalPages = Math.ceil(filteredDanhGias.length / ITEMS_PER_PAGE);
 
   const handleView = (danhGia: DanhGiaWithDetails) => {
     setExpandedId((prev) => (prev === danhGia.id ? null : danhGia.id));
@@ -372,7 +385,7 @@ export default function XemDanhGiaPage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {filteredDanhGias.map((danhGia) => (
+                {paginatedDanhGias.map((danhGia) => (
                   <>
                     <Table.Tr key={danhGia.id}>
                       <Table.Td>
@@ -501,6 +514,17 @@ export default function XemDanhGiaPage() {
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
+          
+          {totalPages > 1 && (
+            <Group justify="center" mt="md" mb="md">
+              <Pagination
+                total={totalPages}
+                value={currentPage}
+                onChange={setCurrentPage}
+                size="sm"
+              />
+            </Group>
+          )}
         </Paper>
       )}
 
