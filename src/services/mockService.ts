@@ -440,7 +440,7 @@ export const mockService = {
         updatedAt: new Date(),
         khongXetThiDua,
         chiTietTieuChi,
-        // answers: null as any,
+        answers: [] as any,
       };
 
       if (existing) {

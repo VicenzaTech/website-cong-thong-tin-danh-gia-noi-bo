@@ -26,8 +26,9 @@ import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
 import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan, CauHoi } from "@/types/schema";
 import { Role, LoaiDanhGia } from "@/types/schema";
-import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
 
 dayjs.locale("vi");
 
@@ -204,6 +205,33 @@ export default function XemDanhGiaPage() {
     setSelectedPhongBanId(null);
   };
 
+  const handleExportExcel = () => {
+    if (!currentUser) return;
+
+    const targetPhongBanId = currentUser.role === Role.admin && selectedPhongBanId ? selectedPhongBanId : currentUser.phongBanId;
+    if (!targetPhongBanId) return;
+
+    const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
+
+    const data = departmentUsers.map(user => {
+      const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
+      const avgScore = userEvaluations.length > 0
+        ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
+        : 0;
+      return {
+        'Tên': user.hoTen || '',
+        'Mã NV': user.maNhanVien,
+        'Điểm TB': parseFloat(avgScore.toFixed(2))
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Diem Trung Binh');
+    XLSX.writeFile(wb, `diem-trung-binh-${targetPhongBanId}.xlsx`);
+  };
+
+
   const getLoaiDanhGiaBadge = (loai?: string) => {
     switch (loai) {
       case "LANH_DAO":
@@ -299,6 +327,12 @@ export default function XemDanhGiaPage() {
             onClick={loadData}
           >
             Làm mới
+          </Button>
+          <Button
+            variant="light"
+            onClick={handleExportExcel}
+          >
+            Xuất Excel
           </Button>
         </Flex>
       </Paper>
