@@ -9,14 +9,25 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { maNhanVien, matKhau } = body;
 
-    if (!maNhanVien || !matKhau) {
+    // Validate input
+    if (!maNhanVien || typeof maNhanVien !== 'string') {
       return NextResponse.json(
-        { error: "Vui lòng nhập đầy đủ thông tin" },
+        { error: "Vui lòng nhập mã nhân viên hợp lệ" },
         { status: 400 }
       );
     }
 
-    const user = await authService.verifyPassword(maNhanVien, matKhau);
+    if (!matKhau || typeof matKhau !== 'string') {
+      return NextResponse.json(
+        { error: "Vui lòng nhập mật khẩu" },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize input - trim whitespace
+    const sanitizedMaNhanVien = maNhanVien.trim();
+
+    const user = await authService.verifyPassword(sanitizedMaNhanVien, matKhau);
     
     if (!user) {
       return NextResponse.json(
@@ -32,18 +43,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Update last login time
     authService.updateUser(user.id, {
       lastLoginAt: new Date(),
     });
 
     const phongBan = authService.getPhongBanById(user.phong_ban_id);
 
+    // Build user data response - ensure role is properly formatted
     const userData = {
       id: user.id,
       maNhanVien: user.ma_nhan_vien,
       hoTen: user.ho_ten,
       email: user.email,
-      role: user.role,
+      role: user.role, // This should be 'admin', 'truong_phong', or 'nhan_vien'
       phongBanId: user.phong_ban_id,
       phongBanName: phongBan?.ten_phong_ban || "N/A",
       daDangKy: user.da_dang_ky === 1,

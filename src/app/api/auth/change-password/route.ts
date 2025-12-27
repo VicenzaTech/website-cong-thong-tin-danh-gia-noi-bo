@@ -6,14 +6,23 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { userId, currentPassword, newPassword, forceChange } = body;
 
-    if (!userId || !newPassword) {
+    // Validate userId
+    if (!userId || typeof userId !== 'string') {
       return NextResponse.json(
-        { error: "Vui lòng nhập đầy đủ thông tin" },
+        { error: "ID người dùng không hợp lệ" },
         { status: 400 }
       );
     }
 
-    if (!forceChange && !currentPassword) {
+    // Validate newPassword
+    if (!newPassword || typeof newPassword !== 'string') {
+      return NextResponse.json(
+        { error: "Vui lòng nhập mật khẩu mới" },
+        { status: 400 }
+      );
+    }
+
+    if (!forceChange && (!currentPassword || typeof currentPassword !== 'string')) {
       return NextResponse.json(
         { error: "Vui lòng nhập mật khẩu hiện tại" },
         { status: 400 }
@@ -24,6 +33,23 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Mật khẩu mới phải có ít nhất 6 ký tự" },
         { status: 400 }
+      );
+    }
+
+    // Verify user exists before attempting password change
+    const existingUser = authService.getUserById(userId);
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: "Không tìm thấy người dùng" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user account is active
+    if (!existingUser.trang_thai_kh) {
+      return NextResponse.json(
+        { error: "Tài khoản của bạn đã bị vô hiệu hóa" },
+        { status: 403 }
       );
     }
 
@@ -62,6 +88,7 @@ export async function POST(request: Request) {
       daDangKy: user.da_dang_ky === 1,
       trangThaiKH: user.trang_thai_kh === 1,
       daDoiMatKhau: user.da_doi_mat_khau === 1,
+      boPhan: user.bo_phan,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };

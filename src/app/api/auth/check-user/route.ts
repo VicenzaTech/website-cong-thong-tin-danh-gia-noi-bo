@@ -9,14 +9,25 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { maNhanVien } = body;
 
-    if (!maNhanVien) {
+    // Validate input
+    if (!maNhanVien || typeof maNhanVien !== 'string') {
+      return NextResponse.json(
+        { error: "Vui lòng nhập mã nhân viên hợp lệ" },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize input - trim whitespace
+    const sanitizedMaNhanVien = maNhanVien.trim();
+    
+    if (!sanitizedMaNhanVien) {
       return NextResponse.json(
         { error: "Vui lòng nhập mã nhân viên" },
         { status: 400 }
       );
     }
 
-    const user = authService.getUserByMaNhanVien(maNhanVien);
+    const user = authService.getUserByMaNhanVien(sanitizedMaNhanVien);
     
     if (!user) {
       return NextResponse.json(
@@ -46,6 +57,7 @@ export async function POST(request: Request) {
       trangThaiKH: user.trang_thai_kh === 1,
       hasPassword: !!user.mat_khau,
       daDoiMatKhau: user.da_doi_mat_khau === 1,
+      boPhan: user.bo_phan,
     };
 
     return NextResponse.json({ user: userData });

@@ -9,9 +9,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { userId, hoTen, email, matKhau } = body;
 
-    if (!userId || !hoTen || !matKhau) {
+    // Validate required fields
+    if (!userId || typeof userId !== 'string') {
       return NextResponse.json(
-        { error: "Vui lòng nhập đầy đủ thông tin" },
+        { error: "ID người dùng không hợp lệ" },
+        { status: 400 }
+      );
+    }
+
+    if (!hoTen || typeof hoTen !== 'string' || hoTen.trim().length < 3) {
+      return NextResponse.json(
+        { error: "Họ tên phải có ít nhất 3 ký tự" },
+        { status: 400 }
+      );
+    }
+
+    if (!matKhau || typeof matKhau !== 'string') {
+      return NextResponse.json(
+        { error: "Vui lòng nhập mật khẩu" },
         { status: 400 }
       );
     }
@@ -23,6 +38,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitize input
+    const sanitizedHoTen = hoTen.trim();
+    const sanitizedEmail = email?.trim() || undefined;
+
     const user = authService.getUserById(userId);
     if (!user) {
       return NextResponse.json(
@@ -31,11 +50,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if user already registered
+    if (user.da_dang_ky === 1) {
+      return NextResponse.json(
+        { error: "Tài khoản này đã được đăng ký" },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await authService.hashPassword(matKhau);
 
     authService.updateUser(userId, {
-      hoTen,
-      email: email || undefined,
+      hoTen: sanitizedHoTen,
+      email: sanitizedEmail,
       matKhau: hashedPassword,
       daDangKy: true,
       daDoiMatKhau: true,

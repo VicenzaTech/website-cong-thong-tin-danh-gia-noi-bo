@@ -148,7 +148,7 @@ export function Header() {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>Đăng xuất</Menu.Label>
+              <Menu.Label>Tài khoản</Menu.Label>
               <Menu.Item
                 leftSection={<IconUser size={16} />}
                 onClick={() => router.push("/profile")}

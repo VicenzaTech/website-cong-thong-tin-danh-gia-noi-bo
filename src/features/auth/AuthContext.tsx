@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Role, type User } from "@/types/schema";
 
 interface AuthContextType {
@@ -20,6 +20,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "auth_user";
 
+// Helper function to normalize role string to Role enum
+const normalizeRole = (role: string | Role): Role => {
+  if (typeof role === 'string') {
+    switch (role) {
+      case 'admin':
+        return Role.admin;
+      case 'truong_phong':
+        return Role.truong_phong;
+      case 'nhan_vien':
+        return Role.nhan_vien;
+      default:
+        return Role.nhan_vien;
+    }
+  }
+  return role;
+};
+
+// Helper function to clear all auth-related storage
+const clearAllAuthStorage = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem("pending_user");
+  localStorage.removeItem("force_password_change");
+  // Clear any evaluation-related storage that might contain user info
+  sessionStorage.clear();
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,10 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        // Normalize role to ensure it's a proper Role enum value
+        parsedUser.role = normalizeRole(parsedUser.role);
         setUser(parsedUser);
       } catch (error) {
         console.error("Failed to parse stored user:", error);
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+        clearAllAuthStorage();
       }
     }
     setIsLoading(false);
@@ -45,7 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then(res => res.json())
         .then(data => {
           if (data.items && data.items.length > 0) {
-            const updatedUser = { ...user, ...data.items[0] };
+            const updatedUser = { 
+              ...user, 
+              ...data.items[0],
+              role: normalizeRole(data.items[0].role || user.role),
+            };
             setUser(updatedUser);
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
           }
@@ -56,23 +88,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
-  };
+  const login = useCallback((userData: User) => {
+    // Clear any pending auth data before setting new user
+    localStorage.removeItem("pending_user");
+    localStorage.removeItem("force_password_change");
+    
+    // Normalize role to ensure proper enum value
+    const normalizedUser = {
+      ...userData,
+      role: normalizeRole(userData.role),
+    };
+    setUser(normalizedUser);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizedUser));
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  };
+    clearAllAuthStorage();
+  }, []);
 
-  const updateUser = (userData: Partial<User>) => {
+  const updateUser = useCallback((userData: Partial<User>) => {
     if (!user) return;
 
-    const updatedUser = { ...user, ...userData };
+    const updatedUser = { 
+      ...user, 
+      ...userData,
+      role: userData.role ? normalizeRole(userData.role) : user.role,
+    };
     setUser(updatedUser);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
-  };
+  }, [user]);
 
   const checkPermission = (allowedRoles: Role[]): boolean => {
     if (!user) return false;
