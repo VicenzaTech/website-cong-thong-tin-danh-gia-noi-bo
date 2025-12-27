@@ -11,14 +11,14 @@ export async function POST(request: Request) {
 
     if (!userId || !hoTen || !matKhau) {
       return NextResponse.json(
-        { error: "Vui long nhap day du thong tin" },
+        { error: "Vui lòng nhập đầy đủ thông tin" },
         { status: 400 }
       );
     }
 
     if (matKhau.length < 6) {
       return NextResponse.json(
-        { error: "Mat khau phai co it nhat 6 ky tu" },
+        { error: "Mật khẩu phải có ít nhất 6 ký tự" },
         { status: 400 }
       );
     }
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const user = authService.getUserById(userId);
     if (!user) {
       return NextResponse.json(
-        { error: "Khong tim thay nguoi dung" },
+        { error: "Không tìm thấy người dùng" },
         { status: 404 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const updatedUser = authService.getUserById(userId);
     if (!updatedUser) {
       return NextResponse.json(
-        { error: "Khong the cap nhat thong tin" },
+        { error: "Không thể cập nhật thông tin" },
         { status: 500 }
       );
     }
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json(
-      { error: "Da xay ra loi khi dang ky" },
+      { error: "Đã xảy ra lỗi khi đăng ký" },
       { status: 500 }
     );
   }

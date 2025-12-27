@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Stack, NavLink, Text, Box, Center, useMantineColorScheme } from "@mantine/core";
+import { Stack, NavLink, Text, Box, Center, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconHome,
   IconUsers,
@@ -92,12 +93,26 @@ const menuItems: MenuItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, checkPermission } = useAuth();
+  const { user, checkPermission, canPerformEvaluation } = useAuth();
   const { colorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   if (!user) return null;
+  
+  if (isMobile) return null;
 
-  const filteredMenuItems = menuItems.filter((item) => checkPermission(item.allowedRoles));
+  const filteredMenuItems = menuItems.filter((item) => {
+    // Check role permission
+    if (!checkPermission(item.allowedRoles)) return false;
+    
+    // For evaluation pages, also check if user can perform evaluations
+    if ((item.href === "/danh-gia-lanh-dao" || item.href === "/danh-gia-nhan-vien") && !canPerformEvaluation) {
+      return false;
+    }
+    
+    return true;
+  });
 
   const borderColor = colorScheme === "dark" 
     ? "var(--mantine-color-dark-4)" 

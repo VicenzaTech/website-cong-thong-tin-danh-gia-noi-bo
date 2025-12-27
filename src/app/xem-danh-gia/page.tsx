@@ -17,19 +17,23 @@ import {
   Select,
   Button,
   Flex,
+  Divider,
+  Collapse,
 } from "@mantine/core";
 import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
-import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan } from "@/types/schema";
+import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan, CauHoi } from "@/types/schema";
 import { Role, LoaiDanhGia } from "@/types/schema";
-import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
 
 dayjs.locale("vi");
 
 interface DanhGiaWithDetails extends DanhGia {
+  answers: any[];
   nguoiDanhGia?: User;
   nguoiDuocDanhGia?: User;
   bieuMau?: BieuMau;
@@ -46,10 +50,12 @@ export default function XemDanhGiaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [phongBanList, setPhongBanList] = useState<PhongBan[]>([]);
-  
+  const [cauHois, setCauHois] = useState<CauHoi[]>([]);
+
   const [selectedKyId, setSelectedKyId] = useState<string | null>(null);
   const [selectedLoaiDanhGia, setSelectedLoaiDanhGia] = useState<string | null>(null);
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -78,35 +84,36 @@ export default function XemDanhGiaPage() {
 
     setIsLoading(true);
     try {
-      const [allDanhGias, allKyDanhGias, allPhongBans] = await Promise.all([
-        mockService.danhGias.getAll(),
+      // load evaluations from local data folder via API route
+      const [allDanhGias, allKyDanhGias, allPhongBans, allCauHois] = await Promise.all([
+        fetch(`/api/evaluations/phongban=${currentUser.phongBanId}`).then((r) => r.json()),
         mockService.kyDanhGias.getAll(),
         mockService.phongBans.getAll(),
+        mockService.cauHois.getAll(),
       ]);
-
+      console.log("ALL DG :", allDanhGias)
       setKyDanhGias(allKyDanhGias);
       setPhongBanList(allPhongBans);
-
+      setCauHois(allCauHois);
       let filteredEvaluations: DanhGia[] = [];
 
       if (currentUser.role === Role.admin) {
-        filteredEvaluations = allDanhGias.filter((dg) => dg.daHoanThanh);
+        // API returns objects from files, ensure we filter completed ones
+        filteredEvaluations = allDanhGias.filter((dg: any) => dg.daHoanThanh);
       } else if (currentUser.role === Role.truong_phong) {
         const departmentUserIds = users
           .filter((u) => u.phongBanId === currentUser.phongBanId && !u.deletedAt && u.trangThaiKH)
           .map((u) => u.id);
-        
-        filteredEvaluations = allDanhGias.filter(
-          (dg) =>
-            dg.daHoanThanh &&
-            (departmentUserIds.includes(dg.nguoiDanhGiaId) || departmentUserIds.includes(dg.nguoiDuocDanhGiaId))
+
+        filteredEvaluations = allDanhGias.filter((dg: any) =>
+          dg.daHoanThanh &&
+          (departmentUserIds.includes(dg.nguoiDanhGiaId) || departmentUserIds.includes(dg.nguoiDuocDanhGiaId))
         );
       } else if (currentUser.role === Role.nhan_vien) {
         // nhan_vien can view evaluations where they are either the evaluator or the evaluated person
-        filteredEvaluations = allDanhGias.filter(
-          (dg) => 
-            dg.daHoanThanh && 
-            (dg.nguoiDanhGiaId === currentUser.id || dg.nguoiDuocDanhGiaId === currentUser.id)
+        filteredEvaluations = allDanhGias.filter((dg: any) =>
+          dg.daHoanThanh &&
+          (dg.nguoiDanhGiaId === currentUser.id || dg.nguoiDuocDanhGiaId === currentUser.id)
         );
       }
 
@@ -128,6 +135,7 @@ export default function XemDanhGiaPage() {
 
           return {
             ...dg,
+            answers: (dg as any).answers,
             nguoiDanhGia,
             nguoiDuocDanhGia,
             bieuMau,
@@ -182,11 +190,13 @@ export default function XemDanhGiaPage() {
       );
     }
 
+    console.log("Filtered Evaluations: ", filtered);
+
     setFilteredDanhGias(filtered);
   };
 
   const handleView = (danhGia: DanhGiaWithDetails) => {
-    router.push(`/lich-su-danh-gia/${danhGia.id}`);
+    setExpandedId((prev) => (prev === danhGia.id ? null : danhGia.id));
   };
 
   const handleResetFilters = () => {
@@ -194,6 +204,33 @@ export default function XemDanhGiaPage() {
     setSelectedLoaiDanhGia(null);
     setSelectedPhongBanId(null);
   };
+
+  const handleExportExcel = () => {
+    if (!currentUser) return;
+
+    const targetPhongBanId = currentUser.role === Role.admin && selectedPhongBanId ? selectedPhongBanId : currentUser.phongBanId;
+    if (!targetPhongBanId) return;
+
+    const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
+
+    const data = departmentUsers.map(user => {
+      const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
+      const avgScore = userEvaluations.length > 0
+        ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
+        : 0;
+      return {
+        'Tên': user.hoTen || '',
+        'Mã NV': user.maNhanVien,
+        'Điểm TB': parseFloat(avgScore.toFixed(2))
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Diem Trung Binh');
+    XLSX.writeFile(wb, `diem-trung-binh-${targetPhongBanId}.xlsx`);
+  };
+
 
   const getLoaiDanhGiaBadge = (loai?: string) => {
     switch (loai) {
@@ -225,6 +262,8 @@ export default function XemDanhGiaPage() {
       </Center>
     );
   }
+
+  console.log("danhGia.answers", danhGias)
 
   return (
     <Stack gap="lg">
@@ -289,6 +328,12 @@ export default function XemDanhGiaPage() {
           >
             Làm mới
           </Button>
+          <Button
+            variant="light"
+            onClick={handleExportExcel}
+          >
+            Xuất Excel
+          </Button>
         </Flex>
       </Paper>
 
@@ -328,65 +373,137 @@ export default function XemDanhGiaPage() {
               </Table.Thead>
               <Table.Tbody>
                 {filteredDanhGias.map((danhGia) => (
-                  <Table.Tr key={danhGia.id}>
-                    <Table.Td>
-                      <div>
-                        <Text fw={500}>{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
-                        <Text size="xs" c="dimmed">
-                          {danhGia.nguoiDanhGia?.maNhanVien || "N/A"}
+                  <>
+                    <Table.Tr key={danhGia.id}>
+                      <Table.Td>
+                        <div>
+                          <Text fw={500}>{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
+                          <Text size="xs" c="dimmed">
+                            {danhGia.nguoiDanhGia?.maNhanVien || "N/A"}
+                          </Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <div>
+                          <Text fw={500}>{danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}</Text>
+                          <Text size="xs" c="dimmed">
+                            {danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}
+                          </Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">
+                          {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}
                         </Text>
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <div>
-                        <Text fw={500}>{danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}</Text>
-                        <Text size="xs" c="dimmed">
-                          {danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}
+                      </Table.Td>
+                      <Table.Td>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="blue" variant="light">
+                          {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">
+                          {danhGia.submittedAt
+                            ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm")
+                            : "N/A"}
                         </Text>
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">
-                        {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color="blue" variant="light">
-                        {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">
-                        {danhGia.submittedAt
-                          ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm")
-                          : "N/A"}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Tooltip label="Xem chi tiết">
-                        <ActionIcon
-                          variant="light"
-                          color="blue"
-                          onClick={() => handleView(danhGia)}
-                        >
-                          <IconEye size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    </Table.Td>
-                  </Table.Tr>
+                      </Table.Td>
+                      <Table.Td>
+                        <Tooltip label="Xem chi tiết">
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={() => handleView(danhGia)}
+                          >
+                            <IconEye size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Table.Td>
+                    </Table.Tr>
+
+                    <Table.Tr key={`${danhGia.id}-detail`}>
+                      <Table.Td colSpan={9} style={{ padding: 0, borderTop: 0 }}>
+                        <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
+                          <Paper withBorder p="md" radius="md" m={8}>
+                            <Group justify="apart" align="center">
+                              <Text fw={700}>Chi tiết: {danhGia.id}</Text>
+                              <Button variant="subtle" size="xs" onClick={() => setExpandedId(null)}>
+                                Đóng
+                              </Button>
+                            </Group>
+
+                            <Divider my="sm" />
+
+                            <Stack justify="sm">
+                              <Group grow>
+                                <div>
+                                  <Text fw={600}>Người đánh giá</Text>
+                                  <Text size="sm">{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
+                                  <Text size="xs" c="dimmed">{danhGia.nguoiDanhGia?.maNhanVien || "N/A"}</Text>
+                                </div>
+
+                                <div>
+                                  <Text fw={600}>Người được đánh giá</Text>
+                                  <Text size="sm">{danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}</Text>
+                                  <Text size="xs" c="dimmed">{danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}</Text>
+                                </div>
+                              </Group>
+
+                              <Group>
+                                <Text size="sm">Phòng ban: {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}</Text>
+                                <Text size="sm">Loại: {danhGia.bieuMau?.loaiDanhGia || "N/A"}</Text>
+                                <Text size="sm">Biểu mẫu: {danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
+                                <Text size="sm">Kỳ: {danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
+                              </Group>
+
+                              <Group>
+                                <Badge color="blue" variant="light">Điểm TB: {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}</Badge>
+                                <Text size="sm">Ngày gửi: {danhGia.submittedAt ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm") : "N/A"}</Text>
+                              </Group>
+
+                              <Divider />
+
+                              <div>
+                                <Text fw={600} mb="xs">
+                                  Nhận xét chung: {danhGia.nhanXetChung || " N/A"}
+                                </Text>
+                                <Text fw={600}>Câu trả lời</Text>
+                                <Stack gap="xs" mt="xs">
+                                  {Array.isArray(danhGia.answers) && danhGia.answers.length > 0 ? (
+                                    (danhGia.answers as any[]).map((a) => (
+                                      <Paper key={a.cauHoiId || Math.random()} withBorder p="sm" radius="sm">
+                                        <Group justify="apart">
+                                          <Text size="sm">Câu: {cauHois.find(ch => ch.id === a.cauHoiId)?.noiDung || a.cauHoiId}</Text>
+                                          <Text size="sm">Điểm: {a.diem}</Text>
+                                        </Group>
+                                        <Text size="xs" c="dimmed">Nhận xét: {a.nhanXet || "-"}</Text>
+                                      </Paper>
+                                    ))
+                                  ) : (
+                                    <Text size="sm" c="dimmed">Không có câu trả lời</Text>
+                                  )}
+                                </Stack>
+                              </div>
+                            </Stack>
+                          </Paper>
+                        </Collapse>
+                      </Table.Td>
+                    </Table.Tr>
+                  </>
                 ))}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
         </Paper>
       )}
+
     </Stack>
   );
 }

@@ -177,6 +177,7 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "16px",
       }}
     >
       <Box
@@ -190,8 +191,19 @@ export default function LoginPage() {
           zIndex: 1,
         }}
       />
-      <Container size={420} style={{ position: "relative", zIndex: 2 }} my={40}>
-        <Paper withBorder shadow="xl" p={30} radius="md" bg="rgba(255, 255, 255, 0.95)">
+      <Container 
+        size={420} 
+        style={{ position: "relative", zIndex: 2 }} 
+        my={{ base: 20, sm: 40 }}
+        px={{ base: 16, sm: 20 }}
+      >
+        <Paper 
+          withBorder 
+          shadow="xl" 
+          p={{ base: 20, sm: 30 }} 
+          radius="md" 
+          bg="rgba(255, 255, 255, 0.95)"
+        >
           <Stack gap="md">
             <Center mb="md">
               <Image
@@ -200,10 +212,16 @@ export default function LoginPage() {
                 width={120}
                 height={120}
                 priority
+                style={{
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100px",
+                  maxHeight: "100px",
+                }}
               />
             </Center>
             
-            <Title ta="center" mb="xs">
+            <Title ta="center" mb="xs" order={2} style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)" }}>
               Đăng nhập
             </Title>
             <Text c="dimmed" size="sm" ta="center" mb="lg">
@@ -267,7 +285,7 @@ export default function LoginPage() {
               </Stack>
             </form>
 
-            <Text size="sm" c="dimmed" mt="md" ta="center">
+            <Text size="xs" c="dimmed" mt="md" ta="center" px={{ base: 8, sm: 0 }}>
               Lần đầu đăng nhập? Hệ thống sẽ yêu cầu bạn cập nhật thông tin
             </Text>
           </Stack>

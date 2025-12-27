@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   checkPermission: (allowedRoles: Role[]) => boolean;
+  canPerformEvaluation: boolean;
   isAdmin: boolean;
   isTruongPhong: boolean;
   isNhanVien: boolean;
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === Role.admin;
   const isTruongPhong = user?.role === Role.truong_phong;
   const isNhanVien = user?.role === Role.nhan_vien;
+  const canPerformEvaluation = user?.boPhan !== "Bộ phận lãnh đạo";
 
   return (
     <AuthContext.Provider
@@ -91,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         checkPermission,
+        canPerformEvaluation,
         isAdmin,
         isTruongPhong,
         isNhanVien,

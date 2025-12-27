@@ -10,14 +10,18 @@ import {
   ActionIcon,
   useMantineColorScheme,
   Box,
+  useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconLogout,
   IconSettings,
   IconUser,
   IconSun,
   IconMoon,
+  IconPower,
 } from "@tabler/icons-react";
+import Image from "next/image";
 import { useAuth } from "@/features/auth/AuthContext";
 import { notifications } from "@mantine/notifications";
 
@@ -25,6 +29,8 @@ export function Header() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   if (!user) return null;
 
@@ -54,52 +60,95 @@ export function Header() {
   return (
     <Box
       style={{
-        height: 60,
+        height: isMobile ? 56 : 60,
         borderBottom: `1px solid ${borderColor}`,
-        backgroundColor: "var(--mantine-color-body)",
+        backgroundColor: colorScheme === "dark" 
+          ? "var(--mantine-color-dark-7)" 
+          : "var(--mantine-color-gray-0)",
         position: "fixed",
         top: 0,
-        left: 280,
+        left: isMobile ? 0 : 280,
         right: 0,
         zIndex: 100,
       }}
     >
-      <Group h="100%" px="md" justify="space-between">
-        <Text size="lg" fw={500}>
-          Hệ thống Đánh giá Nội bộ
-        </Text>
+      <Group h="100%" px={isMobile ? "md" : "lg"} justify="space-between" gap="xs">
+        <Group gap="xs">
+          {isMobile && (
+            <>
+              <Image
+                src="/logo-vicenza.png"
+                alt="Vicenza Logo"
+                width={28}
+                height={28}
+                priority
+                style={{
+                  objectFit: "contain",
+                }}
+              />
+              <Text 
+                size="md" 
+                fw={700} 
+                style={{ 
+                  color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
+                }}
+              >
+                VICENZA IAS
+              </Text>
+            </>
+          )}
+          {!isMobile && (
+            <Text size="lg" fw={500}>
+              Hệ thống Đánh giá Nội bộ
+            </Text>
+          )}
+        </Group>
 
-        <Group gap="sm">
+        <Group gap={isMobile ? "xs" : "sm"}>
           <ActionIcon
             variant="subtle"
-            size="lg"
+            size={isMobile ? "md" : "lg"}
             onClick={() => toggleColorScheme()}
             title={colorScheme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
           >
-            {colorScheme === "dark" ? <IconSun size={20} /> : <IconMoon size={20} />}
+            {colorScheme === "dark" ? <IconSun size={isMobile ? 18 : 20} /> : <IconMoon size={isMobile ? 18 : 20} />}
           </ActionIcon>
 
-          <Menu shadow="md" width={200} position="bottom-end">
+          <Menu shadow="md" width={200} position={isMobile ? "bottom-end" : "bottom-end"}>
             <Menu.Target>
               <UnstyledButton>
-                <Group gap="sm">
-                  <Avatar color="blue" radius="xl">
+                <Group gap={isMobile ? "xs" : "sm"}>
+                  <Avatar color="blue" radius="xl" size={isMobile ? "sm" : undefined}>
                     {getInitials(user.hoTen)}
                   </Avatar>
-                  <div style={{ flex: 1 }}>
-                    <Text size="sm" fw={500}>
-                      {user.hoTen}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {user.email}
-                    </Text>
-                  </div>
+                  {!isMobile && (
+                    <div style={{ flex: 1 }}>
+                      <Text size="sm" fw={500}>
+                        {user.hoTen}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {user.email}
+                      </Text>
+                    </div>
+                  )}
+                  {isMobile && (
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text size="xs" fw={500} truncate>
+                        {user.hoTen}
+                      </Text>
+                      {user.email && (
+                        <Text size="10px" c="dimmed" truncate>
+                          {user.email}
+                        </Text>
+                      )}
+                    </div>
+                  )}
                 </Group>
               </UnstyledButton>
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>Tài khoản</Menu.Label>
+              <Menu.Label>Đăng xuất</Menu.Label>
               <Menu.Item
                 leftSection={<IconUser size={16} />}
                 onClick={() => router.push("/profile")}

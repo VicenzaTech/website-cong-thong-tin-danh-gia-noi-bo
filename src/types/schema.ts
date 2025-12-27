@@ -85,6 +85,7 @@ export interface ChiTietTieuChi {
 }
 
 export interface DanhGia {
+  answers: any;
   id: string;
   nguoiDanhGiaId: string;
   nguoiDuocDanhGiaId: string;

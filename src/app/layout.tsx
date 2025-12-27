@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ColorSchemeScript } from "@mantine/core";
 import { Providers } from "./providers";
@@ -23,17 +23,24 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
       <head>
         <ColorSchemeScript />
       </head>
-      <body className={inter.variable}>
+      <body className={inter.variable} style={{ width: "100%", maxWidth: "100%", overflowX: "hidden" }}>
         <Providers>
           <DashboardLayout>{children}</DashboardLayout>
         </Providers>

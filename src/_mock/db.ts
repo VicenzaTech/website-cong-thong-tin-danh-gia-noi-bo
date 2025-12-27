@@ -4272,6 +4272,26 @@ export const cauHois: CauHoi[] = [
     createdAt: new Date("2024-08-15"),
     updatedAt: new Date("2024-08-15"),
   },
+  {
+    id: "ch_mandatory_1",
+    bieuMauId: "bm2",
+    noiDung: "Vi phạm Nội quy lao động, kỷ luật",
+    thuTu: 0,
+    diemToiDa: 0,
+    batBuoc: true,
+    createdAt: new Date("2024-08-15"),
+    updatedAt: new Date("2024-08-15"),
+  },
+  {
+    id: "ch_mandatory_2",
+    bieuMauId: "bm2",
+    noiDung: "Vi phạm quy định về an toàn lao động – PCCN",
+    thuTu: 0,
+    diemToiDa: 0,
+    batBuoc: true,
+    createdAt: new Date("2024-08-15"),
+    updatedAt: new Date("2024-08-15"),
+  }
 ];
 
 export const danhGias: DanhGia[] = [];
