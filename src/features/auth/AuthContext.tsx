@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   checkPermission: (allowedRoles: Role[]) => boolean;
+  canPerformEvaluation: boolean;
   isAdmin: boolean;
   isTruongPhong: boolean;
   isNhanVien: boolean;
@@ -37,6 +38,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Auto-update user if missing boPhan
+  useEffect(() => {
+    if (user && !user.boPhan && user.maNhanVien) {
+      fetch(`/api/users?maNhanVien=${encodeURIComponent(user.maNhanVien)}&perPage=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.items && data.items.length > 0) {
+            const updatedUser = { ...user, ...data.items[0] };
+            setUser(updatedUser);
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+          }
+        })
+        .catch(error => {
+          console.error("Failed to fetch updated user info:", error);
+        });
+    }
+  }, [user]);
+
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
@@ -63,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === Role.admin;
   const isTruongPhong = user?.role === Role.truong_phong;
   const isNhanVien = user?.role === Role.nhan_vien;
+  const canPerformEvaluation = user?.boPhan !== "Bộ phận lãnh đạo";
 
   return (
     <AuthContext.Provider
@@ -73,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         updateUser,
         checkPermission,
+        canPerformEvaluation,
         isAdmin,
         isTruongPhong,
         isNhanVien,

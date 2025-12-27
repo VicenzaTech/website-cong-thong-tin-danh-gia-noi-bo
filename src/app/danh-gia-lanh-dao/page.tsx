@@ -25,7 +25,7 @@ import dayjs from "dayjs";
 
 export default function DanhGiaLanhDaoPage() {
   const router = useRouter();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
+  const { user: currentUser, isLoading: authLoading, canPerformEvaluation } = useAuth();
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [leaders, setLeaders] = useState<User[]>([]);
   const [bieuMau, setBieuMau] = useState<BieuMau | null>(null);
@@ -35,8 +35,10 @@ export default function DanhGiaLanhDaoPage() {
   useEffect(() => {
     if (!authLoading && !currentUser) {
       router.push("/login");
+    } else if (!authLoading && currentUser && !canPerformEvaluation) {
+      router.push("/xem-danh-gia");
     }
-  }, [currentUser, authLoading, router]);
+  }, [currentUser, authLoading, canPerformEvaluation, router]);
 
   useEffect(() => {
     if (currentUser) {

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       daDangKy: updatedUser.da_dang_ky === 1,
       trangThaiKH: updatedUser.trang_thai_kh === 1,
       daDoiMatKhau: updatedUser.da_doi_mat_khau === 1,
+      boPhan: updatedUser.bo_phan,
       createdAt: updatedUser.created_at,
       updatedAt: updatedUser.updated_at,
     };

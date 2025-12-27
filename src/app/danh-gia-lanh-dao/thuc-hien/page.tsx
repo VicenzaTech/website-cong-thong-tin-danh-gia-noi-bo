@@ -29,7 +29,6 @@ function ThucHienDanhGiaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
-
   const nguoiDuocDanhGiaId = searchParams.get("nguoiDuocDanhGiaId");
   const bieuMauId = searchParams.get("bieuMauId");
   const kyDanhGiaId = searchParams.get("kyDanhGiaId");
