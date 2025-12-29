@@ -28,12 +28,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  // {
-  //   label: "Tổng quan",
-  //   href: "/",
-  //   icon: <IconHome size={20} />,
-  //   allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
-  // },
+  {
+    label: "Tổng quan",
+    href: "/",
+    icon: <IconHome size={20} />,
+    allowedRoles: [Role.truong_phong],
+  },
   {
     label: "Đánh giá lãnh đạo",
     href: "/danh-gia-lanh-dao",
