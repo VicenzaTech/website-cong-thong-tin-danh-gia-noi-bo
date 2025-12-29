@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import {
   Stack,
@@ -226,22 +226,48 @@ export default function XemDanhGiaPage() {
 
     const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
 
-    const data = departmentUsers.map(user => {
-      const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
-      const avgScore = userEvaluations.length > 0
-        ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
-        : 0;
-      return {
-        'Tên': user.hoTen || '',
-        'Mã NV': user.maNhanVien,
-        'Điểm TB': parseFloat(avgScore.toFixed(2))
-      };
+    // Nhóm nhân viên theo bộ phận
+    const usersByBoPhan = departmentUsers.reduce((acc, user) => {
+      const boPhan = user.boPhan || 'Không xác định';
+      if (!acc[boPhan]) {
+        acc[boPhan] = [];
+      }
+      acc[boPhan].push(user);
+      return acc;
+    }, {} as Record<string, typeof departmentUsers>);
+
+    // Tạo workbook mới
+    const wb = XLSX.utils.book_new();
+
+    // Tạo một sheet cho mỗi bộ phận
+    Object.keys(usersByBoPhan).forEach(boPhan => {
+      const usersInBoPhan = usersByBoPhan[boPhan];
+      
+      const data = usersInBoPhan.map(user => {
+        const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
+        const avgScore = userEvaluations.length > 0
+          ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
+          : 0;
+        return {
+          'Tên': user.hoTen || '',
+          'Mã NV': user.maNhanVien,
+          'Điểm TB': parseFloat(avgScore.toFixed(2))
+        };
+      });
+
+      // Tạo sheet với tên bộ phận (giới hạn 31 ký tự cho tên sheet Excel)
+      const sheetName = boPhan.length > 31 ? boPhan.substring(0, 31) : boPhan;
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Diem Trung Binh');
-    XLSX.writeFile(wb, `diem-trung-binh-${targetPhongBanId}.xlsx`);
+    // Lấy tên phòng ban để đặt tên file
+    const phongBan = phongBanList.find(pb => pb.id === targetPhongBanId);
+    const fileName = phongBan 
+      ? `diem-trung-binh-${phongBan.tenPhongBan.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`
+      : `diem-trung-binh-${targetPhongBanId}.xlsx`;
+    
+    XLSX.writeFile(wb, fileName);
   };
 
 
@@ -386,8 +412,8 @@ export default function XemDanhGiaPage() {
               </Table.Thead>
               <Table.Tbody>
                 {paginatedDanhGias.map((danhGia) => (
-                  <>
-                    <Table.Tr key={danhGia.id}>
+                  <Fragment key={danhGia.id}>
+                    <Table.Tr>
                       <Table.Td>
                         <div>
                           <Text fw={500}>{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
@@ -441,7 +467,7 @@ export default function XemDanhGiaPage() {
                       </Table.Td>
                     </Table.Tr>
 
-                    <Table.Tr key={`${danhGia.id}-detail`}>
+                    <Table.Tr>
                       <Table.Td colSpan={9} style={{ padding: 0, borderTop: 0 }}>
                         <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
                           <Paper withBorder p="md" radius="md" m={8}>
@@ -509,7 +535,7 @@ export default function XemDanhGiaPage() {
                         </Collapse>
                       </Table.Td>
                     </Table.Tr>
-                  </>
+                  </Fragment>
                 ))}
               </Table.Tbody>
             </Table>
