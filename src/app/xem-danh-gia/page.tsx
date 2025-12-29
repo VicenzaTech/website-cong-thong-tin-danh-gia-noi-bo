@@ -25,6 +25,7 @@ import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
+import { tongHopDiemPhats } from "@/_mock/tongHopDiemPhat";
 import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan, CauHoi } from "@/types/schema";
 import { Role, LoaiDanhGia } from "@/types/schema";
 import "dayjs/locale/vi";
@@ -226,6 +227,14 @@ export default function XemDanhGiaPage() {
 
     const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
 
+    // Tạo map từ mãNhânViên -> tổng điểm phạt
+    const diemPhatMap = new Map<string, number>();
+    tongHopDiemPhats.forEach(item => {
+      if (item.mãNhânViên && item.tổng !== null && item.tổng !== undefined) {
+        diemPhatMap.set(item.mãNhânViên, item.tổng);
+      }
+    });
+
     // Nhóm nhân viên theo bộ phận
     const usersByBoPhan = departmentUsers.reduce((acc, user) => {
       const boPhan = user.boPhan || 'Không xác định';
@@ -245,9 +254,12 @@ export default function XemDanhGiaPage() {
       
       // Tạo dữ liệu với các cột theo yêu cầu
       const rows: any[][] = [
-        // Header row - viết hoa, căn giữa (sẽ được xử lý sau nếu cần thư viện styling)
+        // Header row - viết hoa, căn giữa
         ['STT', 'HỌ VÀ TÊN', 'MÃ NHÂN VIÊN', 'BỘ PHẬN', 'ĐIỂM ĐÁNH GIÁ', 'ĐIỂM TRỪ']
       ];
+
+      // Lưu thông tin về các dòng có điểm phạt để áp dụng style
+      const rowsWithPhat: number[] = [];
 
       // Thêm dữ liệu cho từng nhân viên
       usersInBoPhan.forEach((user, index) => {
@@ -256,13 +268,21 @@ export default function XemDanhGiaPage() {
           ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
           : 0;
         
+        // Lấy điểm phạt từ map
+        const diemPhat = user.maNhanVien ? (diemPhatMap.get(user.maNhanVien) || 0) : 0;
+        
+        // Lưu số hàng Excel của dòng có điểm phạt (index + 2: +1 cho header, +1 cho Excel 1-based)
+        if (diemPhat > 0) {
+          rowsWithPhat.push(index + 2);
+        }
+        
         rows.push([
           index + 1, // STT
           user.hoTen || '', // HỌ VÀ TÊN
           user.maNhanVien || '', // MÃ NHÂN VIÊN
           boPhan, // BỘ PHẬN (giống tên sheet)
           parseFloat(avgScore.toFixed(2)), // ĐIỂM ĐÁNH GIÁ (Điểm TB hiện tại)
-          '' // ĐIỂM TRỪ (để trống tạm thời)
+          diemPhat > 0 ? diemPhat : '' // ĐIỂM TRỪ
         ]);
       });
 
@@ -287,6 +307,11 @@ export default function XemDanhGiaPage() {
         fill: { fgColor: { rgb: '1E3A8A' } } // Màu nền dark blue
       };
 
+      // Style cho dòng có điểm phạt: màu đỏ mờ
+      const rowWithPhatStyle = {
+        fill: { fgColor: { rgb: 'FFEBEE' } } // Màu đỏ mờ (light red)
+      };
+
       // Áp dụng style cho hàng header (hàng đầu tiên, index 0)
       const headerRow = 0;
       const columnHeaders = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -294,6 +319,21 @@ export default function XemDanhGiaPage() {
         const cellAddress = `${col}${headerRow + 1}`;
         if (!ws[cellAddress]) ws[cellAddress] = { v: rows[headerRow][idx] };
         ws[cellAddress].s = headerStyle;
+      });
+
+      // Áp dụng style màu đỏ mờ cho các dòng có điểm phạt
+      // rowsWithPhat chứa số hàng Excel (1-based: 2, 3, 4...)
+      rowsWithPhat.forEach(rowNum => {
+        columnHeaders.forEach((col) => {
+          const cellAddress = `${col}${rowNum}`;
+          if (ws[cellAddress]) {
+            // Giữ style hiện tại nếu có, thêm màu nền
+            if (!ws[cellAddress].s) {
+              ws[cellAddress].s = {};
+            }
+            ws[cellAddress].s.fill = rowWithPhatStyle.fill;
+          }
+        });
       });
       
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
