@@ -21,7 +21,7 @@ import {
   Collapse,
   Pagination,
 } from "@mantine/core";
-import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
+import { IconEye, IconRefresh, IconFilter, IconSortAscending, IconSortDescending } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
@@ -61,6 +61,8 @@ export default function XemDanhGiaPage() {
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'az' | null>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -83,7 +85,7 @@ export default function XemDanhGiaPage() {
   useEffect(() => {
     applyFilters();
     setCurrentPage(1); // Reset to first page when filters change
-  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId]);
+  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, sortBy, sortOrder]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -196,6 +198,75 @@ export default function XemDanhGiaPage() {
       );
     }
 
+    // Áp dụng sắp xếp
+    if (sortBy && sortOrder) {
+      filtered.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortBy) {
+          case 'nguoiDanhGia':
+            aValue = a.nguoiDanhGia?.hoTen || '';
+            bValue = b.nguoiDanhGia?.hoTen || '';
+            break;
+          case 'nguoiDuocDanhGia':
+            aValue = a.nguoiDuocDanhGia?.hoTen || '';
+            bValue = b.nguoiDuocDanhGia?.hoTen || '';
+            break;
+          case 'phongBan':
+            aValue = a.phongBanNguoiDanhGia?.tenPhongBan || '';
+            bValue = b.phongBanNguoiDanhGia?.tenPhongBan || '';
+            break;
+          case 'loaiDanhGia':
+            aValue = a.bieuMau?.loaiDanhGia || '';
+            bValue = b.bieuMau?.loaiDanhGia || '';
+            break;
+          case 'bieuMau':
+            aValue = a.bieuMau?.tenBieuMau || '';
+            bValue = b.bieuMau?.tenBieuMau || '';
+            break;
+          case 'kyDanhGia':
+            aValue = a.kyDanhGia?.tenKy || '';
+            bValue = b.kyDanhGia?.tenKy || '';
+            break;
+          case 'diemTB':
+            aValue = a.diemTrungBinh || 0;
+            bValue = b.diemTrungBinh || 0;
+            break;
+          case 'ngayGui':
+            aValue = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+            bValue = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+
+        // Xử lý sắp xếp
+        if (sortOrder === 'az') {
+          // Sắp xếp A-Z (tăng dần theo alphabet cho text, tăng dần cho số)
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return aValue.localeCompare(bValue, 'vi', { sensitivity: 'base' });
+          }
+          // Với số, A-Z tương đương tăng dần
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else if (sortOrder === 'asc') {
+          // Tăng dần
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return aValue.localeCompare(bValue, 'vi', { sensitivity: 'base' });
+          }
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else if (sortOrder === 'desc') {
+          // Giảm dần
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return bValue.localeCompare(aValue, 'vi', { sensitivity: 'base' });
+          }
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+
+        return 0;
+      });
+    }
+
     console.log("Filtered Evaluations: ", filtered);
 
     setFilteredDanhGias(filtered);
@@ -217,6 +288,8 @@ export default function XemDanhGiaPage() {
     setSelectedKyId(null);
     setSelectedLoaiDanhGia(null);
     setSelectedPhongBanId(null);
+    setSortBy(null);
+    setSortOrder(null);
   };
 
   const handleExportExcel = () => {
@@ -427,6 +500,49 @@ export default function XemDanhGiaPage() {
               style={{ flex: 1, minWidth: 200 }}
             />
           )}
+
+          <Select
+            label="Sắp xếp theo"
+            placeholder="Chọn cột"
+            data={[
+              { value: 'nguoiDanhGia', label: 'Người đánh giá' },
+              { value: 'nguoiDuocDanhGia', label: 'Người được đánh giá' },
+              { value: 'phongBan', label: 'Phòng ban' },
+              { value: 'loaiDanhGia', label: 'Loại đánh giá' },
+              { value: 'bieuMau', label: 'Biểu mẫu' },
+              { value: 'kyDanhGia', label: 'Kỳ đánh giá' },
+              { value: 'diemTB', label: 'Điểm TB' },
+              { value: 'ngayGui', label: 'Ngày gửi' },
+            ]}
+            value={sortBy}
+            onChange={(value) => {
+              setSortBy(value);
+              if (!value) {
+                setSortOrder(null);
+              } else if (!sortOrder) {
+                // Nếu chưa có sortOrder, mặc định là A-Z cho text, tăng dần cho số
+                const isNumeric = value === 'diemTB' || value === 'ngayGui';
+                setSortOrder(isNumeric ? 'asc' : 'az');
+              }
+            }}
+            clearable
+            style={{ flex: 1, minWidth: 200 }}
+          />
+
+          <Select
+            label="Thứ tự"
+            placeholder="Chọn thứ tự"
+            data={[
+              { value: 'az', label: 'A-Z' },
+              { value: 'asc', label: 'Tăng dần' },
+              { value: 'desc', label: 'Giảm dần' },
+            ]}
+            value={sortOrder}
+            onChange={(value) => setSortOrder(value as 'asc' | 'desc' | 'az' | null)}
+            disabled={!sortBy}
+            clearable
+            style={{ flex: 1, minWidth: 150 }}
+          />
 
           <Button
             variant="light"
