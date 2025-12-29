@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, Fragment } from "react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useMemo, Fragment, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Stack,
@@ -243,6 +241,10 @@ function XemDanhGiaContent() {
             aValue = a.nguoiDuocDanhGia?.hoTen || '';
             bValue = b.nguoiDuocDanhGia?.hoTen || '';
             break;
+          case 'boPhan':
+            aValue = a.nguoiDuocDanhGia?.boPhan || '';
+            bValue = b.nguoiDuocDanhGia?.boPhan || '';
+            break;
           case 'phongBan':
             aValue = a.phongBanNguoiDanhGia?.tenPhongBan || '';
             bValue = b.phongBanNguoiDanhGia?.tenPhongBan || '';
@@ -438,14 +440,13 @@ function XemDanhGiaContent() {
           }
         });
       });
-      
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      const safeSheetName = sheetName.replace(/\//g, '-'); // Thay thế ký tự không hợp lệ
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
     });
 
     // Tạo tên file với format ISO 8601
     const iso8601Timestamp = dayjs().format('YYYYMMDDTHHmmss'); // Format: 20250115T143025
     const fileName = `cds_danhgianhansu_${iso8601Timestamp}.xlsx`;
-    
     XLSX.writeFile(wb, fileName);
   };
 
@@ -496,7 +497,7 @@ function XemDanhGiaContent() {
 
       <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
         <Flex gap={isMobile ? "sm" : "md"} align="flex-end" wrap="wrap">
-          <Select
+          {/* <Select
             label="Kỳ đánh giá"
             placeholder="Tất cả kỳ"
             data={kyDanhGias.map((ky) => ({ value: ky.id, label: ky.tenKy }))}
@@ -504,7 +505,7 @@ function XemDanhGiaContent() {
             onChange={(value) => setSelectedKyId(value)}
             clearable
             style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
-          />
+          /> */}
 
           <Select
             label="Loại đánh giá"
@@ -537,6 +538,7 @@ function XemDanhGiaContent() {
             data={[
               { value: 'nguoiDanhGia', label: 'Người đánh giá' },
               { value: 'nguoiDuocDanhGia', label: 'Người được đánh giá' },
+              { value: 'boPhan', label: 'Bộ phận' },
               { value: 'phongBan', label: 'Phòng ban' },
               { value: 'loaiDanhGia', label: 'Loại đánh giá' },
               { value: 'bieuMau', label: 'Biểu mẫu' },
