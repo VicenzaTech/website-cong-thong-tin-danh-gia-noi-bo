@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState, useMemo, Fragment } from "react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -19,18 +21,24 @@ import {
   Flex,
   Divider,
   Collapse,
+  Pagination,
+  useMantineTheme,
 } from "@mantine/core";
-import { IconEye, IconRefresh, IconFilter } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
+import { IconEye, IconRefresh, IconFilter, IconSortAscending, IconSortDescending } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
 import { users, phongBans } from "@/_mock/db";
+import { tongHopDiemPhats } from "@/_mock/tongHopDiemPhat";
 import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan, CauHoi } from "@/types/schema";
 import { Role, LoaiDanhGia } from "@/types/schema";
 import "dayjs/locale/vi";
 import dayjs from "dayjs";
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 dayjs.locale("vi");
+
+const ITEMS_PER_PAGE = 30;
 
 interface DanhGiaWithDetails extends DanhGia {
   answers: any[];
@@ -46,6 +54,10 @@ function XemDanhGiaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser, isLoading: authLoading } = useAuth();
+  const theme = useMantineTheme();
+  // Sử dụng breakpoint md (992px) để xác định tablet/desktop, giúp iPad Mini (768px) được xử lý như mobile
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
   const [danhGias, setDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [filteredDanhGias, setFilteredDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +71,9 @@ function XemDanhGiaContent() {
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
   const [selectedBoPhan, setSelectedBoPhan] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'az' | null>(null);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -87,20 +102,8 @@ function XemDanhGiaContent() {
 
   useEffect(() => {
     applyFilters();
-  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, selectedBoPhan]);
-
-  useEffect(() => {
-    if (currentUser) {
-      const targetPhongBanId = (currentUser.role === Role.admin && selectedPhongBanId) ? selectedPhongBanId : currentUser.phongBanId;
-      const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId);
-      const allBoPhan = [...new Set(departmentUsers.map(u => u.boPhan).filter(Boolean))];
-      setBoPhanList(allBoPhan);
-      // Reset selectedBoPhan if it's not in the new list
-      if (selectedBoPhan && !allBoPhan.includes(selectedBoPhan)) {
-        setSelectedBoPhan(null);
-      }
-    }
-  }, [selectedPhongBanId, currentUser]);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, sortBy, sortOrder]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -225,14 +228,87 @@ function XemDanhGiaContent() {
       );
     }
 
-    if (selectedBoPhan) {
-      filtered = filtered.filter((dg) => dg.nguoiDuocDanhGia?.boPhan === selectedBoPhan);
+    // Áp dụng sắp xếp
+    if (sortBy && sortOrder) {
+      filtered.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortBy) {
+          case 'nguoiDanhGia':
+            aValue = a.nguoiDanhGia?.hoTen || '';
+            bValue = b.nguoiDanhGia?.hoTen || '';
+            break;
+          case 'nguoiDuocDanhGia':
+            aValue = a.nguoiDuocDanhGia?.hoTen || '';
+            bValue = b.nguoiDuocDanhGia?.hoTen || '';
+            break;
+          case 'phongBan':
+            aValue = a.phongBanNguoiDanhGia?.tenPhongBan || '';
+            bValue = b.phongBanNguoiDanhGia?.tenPhongBan || '';
+            break;
+          case 'loaiDanhGia':
+            aValue = a.bieuMau?.loaiDanhGia || '';
+            bValue = b.bieuMau?.loaiDanhGia || '';
+            break;
+          case 'bieuMau':
+            aValue = a.bieuMau?.tenBieuMau || '';
+            bValue = b.bieuMau?.tenBieuMau || '';
+            break;
+          case 'kyDanhGia':
+            aValue = a.kyDanhGia?.tenKy || '';
+            bValue = b.kyDanhGia?.tenKy || '';
+            break;
+          case 'diemTB':
+            aValue = a.diemTrungBinh || 0;
+            bValue = b.diemTrungBinh || 0;
+            break;
+          case 'ngayGui':
+            aValue = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+            bValue = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+
+        // Xử lý sắp xếp
+        if (sortOrder === 'az') {
+          // Sắp xếp A-Z (tăng dần theo alphabet cho text, tăng dần cho số)
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return aValue.localeCompare(bValue, 'vi', { sensitivity: 'base' });
+          }
+          // Với số, A-Z tương đương tăng dần
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else if (sortOrder === 'asc') {
+          // Tăng dần
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return aValue.localeCompare(bValue, 'vi', { sensitivity: 'base' });
+          }
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else if (sortOrder === 'desc') {
+          // Giảm dần
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return bValue.localeCompare(aValue, 'vi', { sensitivity: 'base' });
+          }
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+
+        return 0;
+      });
     }
 
     console.log("Filtered Evaluations: ", filtered);
 
     setFilteredDanhGias(filtered);
   };
+
+  const paginatedDanhGias = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredDanhGias.slice(startIndex, endIndex);
+  }, [filteredDanhGias, currentPage]);
+
+  const totalPages = Math.ceil(filteredDanhGias.length / ITEMS_PER_PAGE);
 
   const handleView = (danhGia: DanhGiaWithDetails) => {
     setExpandedId((prev) => (prev === danhGia.id ? null : danhGia.id));
@@ -242,7 +318,8 @@ function XemDanhGiaContent() {
     setSelectedKyId(null);
     setSelectedLoaiDanhGia(null);
     setSelectedPhongBanId(null);
-    setSelectedBoPhan(null);
+    setSortBy(null);
+    setSortOrder(null);
   };
 
   const handleExportExcel = () => {
@@ -253,22 +330,123 @@ function XemDanhGiaContent() {
 
     const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
 
-    const data = departmentUsers.map(user => {
-      const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
-      const avgScore = userEvaluations.length > 0
-        ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
-        : 0;
-      return {
-        'Tên': user.hoTen || '',
-        'Mã NV': user.maNhanVien,
-        'Điểm TB': parseFloat(avgScore.toFixed(2))
-      };
+    // Tạo map từ mãNhânViên -> tổng điểm phạt
+    const diemPhatMap = new Map<string, number>();
+    tongHopDiemPhats.forEach(item => {
+      if (item.mãNhânViên && item.tổng !== null && item.tổng !== undefined) {
+        diemPhatMap.set(item.mãNhânViên, item.tổng);
+      }
     });
 
-    const ws = XLSX.utils.json_to_sheet(data);
+    // Nhóm nhân viên theo bộ phận
+    const usersByBoPhan = departmentUsers.reduce((acc, user) => {
+      const boPhan = user.boPhan || 'Không xác định';
+      if (!acc[boPhan]) {
+        acc[boPhan] = [];
+      }
+      acc[boPhan].push(user);
+      return acc;
+    }, {} as Record<string, typeof departmentUsers>);
+
+    // Tạo workbook mới
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Diem Trung Binh');
-    XLSX.writeFile(wb, `diem-trung-binh-${targetPhongBanId}.xlsx`);
+
+    // Tạo một sheet cho mỗi bộ phận
+    Object.keys(usersByBoPhan).forEach(boPhan => {
+      const usersInBoPhan = usersByBoPhan[boPhan];
+      
+      // Tạo dữ liệu với các cột theo yêu cầu
+      const rows: any[][] = [
+        // Header row - viết hoa, căn giữa
+        ['STT', 'HỌ VÀ TÊN', 'MÃ NHÂN VIÊN', 'BỘ PHẬN', 'ĐIỂM ĐÁNH GIÁ', 'ĐIỂM TRỪ']
+      ];
+
+      // Lưu thông tin về các dòng có điểm phạt để áp dụng style
+      const rowsWithPhat: number[] = [];
+
+      // Thêm dữ liệu cho từng nhân viên
+      usersInBoPhan.forEach((user, index) => {
+        const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
+        const avgScore = userEvaluations.length > 0
+          ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
+          : 0;
+        
+        // Lấy điểm phạt từ map
+        const diemPhat = user.maNhanVien ? (diemPhatMap.get(user.maNhanVien) || 0) : 0;
+        
+        // Lưu số hàng Excel của dòng có điểm phạt (index + 2: +1 cho header, +1 cho Excel 1-based)
+        if (diemPhat > 0) {
+          rowsWithPhat.push(index + 2);
+        }
+        
+        rows.push([
+          index + 1, // STT
+          user.hoTen || '', // HỌ VÀ TÊN
+          user.maNhanVien || '', // MÃ NHÂN VIÊN
+          boPhan, // BỘ PHẬN (giống tên sheet)
+          parseFloat(avgScore.toFixed(2)), // ĐIỂM ĐÁNH GIÁ (Điểm TB hiện tại)
+          diemPhat > 0 ? diemPhat : '' // ĐIỂM TRỪ
+        ]);
+      });
+
+      // Tạo sheet với tên bộ phận (giới hạn 31 ký tự cho tên sheet Excel)
+      const sheetName = boPhan.length > 31 ? boPhan.substring(0, 31) : boPhan;
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      
+      // Thiết lập độ rộng cột hợp lý
+      ws['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 25 }, // HỌ VÀ TÊN
+        { wch: 15 }, // MÃ NHÂN VIÊN
+        { wch: 20 }, // BỘ PHẬN
+        { wch: 15 }, // ĐIỂM ĐÁNH GIÁ
+        { wch: 12 }  // ĐIỂM TRỪ
+      ];
+
+      // Định dạng header: viết hoa, căn giữa, in đậm, nền dark blue, chữ trắng
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } }, // Chữ trắng, in đậm
+        alignment: { horizontal: 'center', vertical: 'center' },
+        fill: { fgColor: { rgb: '1E3A8A' } } // Màu nền dark blue
+      };
+
+      // Style cho dòng có điểm phạt: màu đỏ mờ
+      const rowWithPhatStyle = {
+        fill: { fgColor: { rgb: 'FFEBEE' } } // Màu đỏ mờ (light red)
+      };
+
+      // Áp dụng style cho hàng header (hàng đầu tiên, index 0)
+      const headerRow = 0;
+      const columnHeaders = ['A', 'B', 'C', 'D', 'E', 'F'];
+      columnHeaders.forEach((col, idx) => {
+        const cellAddress = `${col}${headerRow + 1}`;
+        if (!ws[cellAddress]) ws[cellAddress] = { v: rows[headerRow][idx] };
+        ws[cellAddress].s = headerStyle;
+      });
+
+      // Áp dụng style màu đỏ mờ cho các dòng có điểm phạt
+      // rowsWithPhat chứa số hàng Excel (1-based: 2, 3, 4...)
+      rowsWithPhat.forEach(rowNum => {
+        columnHeaders.forEach((col) => {
+          const cellAddress = `${col}${rowNum}`;
+          if (ws[cellAddress]) {
+            // Giữ style hiện tại nếu có, thêm màu nền
+            if (!ws[cellAddress].s) {
+              ws[cellAddress].s = {};
+            }
+            ws[cellAddress].s.fill = rowWithPhatStyle.fill;
+          }
+        });
+      });
+      
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    // Tạo tên file với format ISO 8601
+    const iso8601Timestamp = dayjs().format('YYYYMMDDTHHmmss'); // Format: 20250115T143025
+    const fileName = `cds_danhgianhansu_${iso8601Timestamp}.xlsx`;
+    
+    XLSX.writeFile(wb, fileName);
   };
 
 
@@ -306,9 +484,9 @@ function XemDanhGiaContent() {
   console.log("danhGia.answers", danhGias)
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between">
-        <Title order={2}>
+    <Stack gap={isMobile ? "md" : "lg"}>
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Title order={2} style={{ fontSize: isMobile ? '1.25rem' : undefined }}>
           {currentUser.role === Role.admin ? "Xem Tất Cả Đánh Giá" : "Xem Đánh Giá Phòng Ban"}
         </Title>
         <Text c="dimmed" size="sm">
@@ -316,17 +494,17 @@ function XemDanhGiaContent() {
         </Text>
       </Group>
 
-      <Paper withBorder shadow="sm" p="md" radius="md">
-        <Flex gap="md" align="flex-end" wrap="wrap">
-          {/* <Select
+      <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
+        <Flex gap={isMobile ? "sm" : "md"} align="flex-end" wrap="wrap">
+          <Select
             label="Kỳ đánh giá"
             placeholder="Tất cả kỳ"
             data={kyDanhGias.map((ky) => ({ value: ky.id, label: ky.tenKy }))}
             value={selectedKyId}
             onChange={(value) => setSelectedKyId(value)}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
-          /> */}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
+          />
 
           <Select
             label="Loại đánh giá"
@@ -338,7 +516,7 @@ function XemDanhGiaContent() {
             value={selectedLoaiDanhGia}
             onChange={(value) => setSelectedLoaiDanhGia(value)}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
           />
 
           {currentUser.role === Role.admin && (
@@ -349,24 +527,58 @@ function XemDanhGiaContent() {
               value={selectedPhongBanId}
               onChange={(value) => setSelectedPhongBanId(value)}
               clearable
-              style={{ flex: 1, minWidth: 200 }}
+              style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
             />
           )}
 
           <Select
-            label="Bộ phận"
-            placeholder="Tất cả bộ phận"
-            data={boPhanList.map((bp) => ({ value: bp, label: bp }))}
-            value={selectedBoPhan}
-            onChange={(value) => setSelectedBoPhan(value)}
+            label="Sắp xếp theo"
+            placeholder="Chọn cột"
+            data={[
+              { value: 'nguoiDanhGia', label: 'Người đánh giá' },
+              { value: 'nguoiDuocDanhGia', label: 'Người được đánh giá' },
+              { value: 'phongBan', label: 'Phòng ban' },
+              { value: 'loaiDanhGia', label: 'Loại đánh giá' },
+              { value: 'bieuMau', label: 'Biểu mẫu' },
+              { value: 'kyDanhGia', label: 'Kỳ đánh giá' },
+              { value: 'diemTB', label: 'Điểm TB' },
+              { value: 'ngayGui', label: 'Ngày gửi' },
+            ]}
+            value={sortBy}
+            onChange={(value) => {
+              setSortBy(value);
+              if (!value) {
+                setSortOrder(null);
+              } else if (!sortOrder) {
+                // Nếu chưa có sortOrder, mặc định là A-Z cho text, tăng dần cho số
+                const isNumeric = value === 'diemTB' || value === 'ngayGui';
+                setSortOrder(isNumeric ? 'asc' : 'az');
+              }
+            }}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
+          />
+
+          <Select
+            label="Thứ tự"
+            placeholder="Chọn thứ tự"
+            data={[
+              { value: 'az', label: 'A-Z' },
+              { value: 'asc', label: 'Tăng dần' },
+              { value: 'desc', label: 'Giảm dần' },
+            ]}
+            value={sortOrder}
+            onChange={(value) => setSortOrder(value as 'asc' | 'desc' | 'az' | null)}
+            disabled={!sortBy}
+            clearable
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 150 : 150 }}
           />
 
           <Button
             variant="light"
             leftSection={<IconRefresh size={16} />}
             onClick={handleResetFilters}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Đặt lại
           </Button>
@@ -375,12 +587,14 @@ function XemDanhGiaContent() {
             variant="light"
             leftSection={<IconRefresh size={16} />}
             onClick={loadData}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Làm mới
           </Button>
           <Button
             variant="light"
             onClick={handleExportExcel}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Xuất Excel
           </Button>
@@ -405,38 +619,59 @@ function XemDanhGiaContent() {
           </Center>
         </Paper>
       ) : (
-        <Paper withBorder shadow="sm" radius="md">
-          <Table.ScrollContainer minWidth={1200}>
+        <Paper withBorder shadow="sm" radius="md" style={{ overflow: 'hidden' }}>
+          <Table.ScrollContainer minWidth={isMobile ? 500 : isMobileOrTablet ? 800 : 1000}>
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Người đánh giá</Table.Th>
-                  <Table.Th>Người được đánh giá</Table.Th>
-                  <Table.Th>Bộ phận</Table.Th>
-                  <Table.Th>Phòng ban</Table.Th>
-                  <Table.Th>Loại đánh giá</Table.Th>
-                  <Table.Th>Biểu mẫu</Table.Th>
-                  <Table.Th>Kỳ đánh giá</Table.Th>
-                  <Table.Th>Điểm TB</Table.Th>
-                  <Table.Th>Ngày gửi</Table.Th>
-                  <Table.Th>Thao tác</Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Người đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Người được đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Phòng ban
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Loại đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Biểu mẫu
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Kỳ đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Điểm TB
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Ngày gửi
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Thao tác
+                  </Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {filteredDanhGias.map((danhGia) => (
-                  <>
-                    <Table.Tr key={danhGia.id}>
-                      <Table.Td>
+                {paginatedDanhGias.map((danhGia) => (
+                  <Fragment key={danhGia.id}>
+                    <Table.Tr>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <div>
-                          <Text fw={500}>{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
+                          <Text fw={500} size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                            {danhGia.nguoiDanhGia?.hoTen || "N/A"}
+                          </Text>
                           <Text size="xs" c="dimmed">
                             {danhGia.nguoiDanhGia?.maNhanVien || "N/A"}
                           </Text>
                         </div>
                       </Table.Td>
-                      <Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <div>
-                          <Text fw={500}>{danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}</Text>
+                          <Text fw={500} size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                            {danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}
+                          </Text>
                           <Text size="xs" c="dimmed">
                             {danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}
                           </Text>
@@ -452,33 +687,38 @@ function XemDanhGiaContent() {
                           {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined}}>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                          {danhGia.bieuMau?.tenBieuMau || "N/A"}
+                        </Text>
                       </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                          {danhGia.kyDanhGia?.tenKy || "N/A"}
+                        </Text>
                       </Table.Td>
-                      <Table.Td>
-                        <Badge color="blue" variant="light">
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Badge color="blue" variant="light" size={isMobile ? "xs" : "sm"}>
                           {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}
                         </Badge>
                       </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
                           {danhGia.submittedAt
-                            ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm")
+                            ? dayjs(danhGia.submittedAt).format(isMobile ? "DD/MM/YY HH:mm" : "DD/MM/YYYY HH:mm")
                             : "N/A"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <Tooltip label="Xem chi tiết">
                           <ActionIcon
                             variant="light"
                             color="blue"
                             onClick={() => handleView(danhGia)}
+                            size={isMobile ? "sm" : "md"}
                           >
-                            <IconEye size={16} />
+                            <IconEye size={isMobile ? 14 : 16} />
                           </ActionIcon>
                         </Tooltip>
                       </Table.Td>
@@ -487,9 +727,9 @@ function XemDanhGiaContent() {
                     <Table.Tr key={`${danhGia.id}-detail`}>
                       <Table.Td colSpan={10} style={{ padding: 0, borderTop: 0 }}>
                         <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
-                          <Paper withBorder p="md" radius="md" m={8}>
-                            <Group justify="apart" align="center">
-                              <Text fw={700}>Chi tiết: {danhGia.id}</Text>
+                          <Paper withBorder p={isMobile ? "sm" : "md"} radius="md" m={isMobile ? 4 : 8}>
+                            <Group justify="apart" align="center" wrap="wrap" gap="xs">
+                              <Text fw={700} style={{ wordBreak: 'break-word' }}>Chi tiết: {danhGia.id}</Text>
                               <Button variant="subtle" size="xs" onClick={() => setExpandedId(null)}>
                                 Đóng
                               </Button>
@@ -498,7 +738,7 @@ function XemDanhGiaContent() {
                             <Divider my="sm" />
 
                             <Stack justify="sm">
-                              <Group grow>
+                              <Group grow wrap="wrap">
                                 <div>
                                   <Text fw={600}>Người đánh giá</Text>
                                   <Text size="sm">{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
@@ -512,14 +752,14 @@ function XemDanhGiaContent() {
                                 </div>
                               </Group>
 
-                              <Group>
+                              <Group wrap="wrap" gap="xs">
                                 <Text size="sm">Phòng ban: {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}</Text>
                                 <Text size="sm">Loại: {danhGia.bieuMau?.loaiDanhGia || "N/A"}</Text>
                                 <Text size="sm">Biểu mẫu: {danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
                                 <Text size="sm">Kỳ: {danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
                               </Group>
 
-                              <Group>
+                              <Group wrap="wrap" gap="xs">
                                 <Badge color="blue" variant="light">Điểm TB: {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}</Badge>
                                 <Text size="sm">Ngày gửi: {danhGia.submittedAt ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm") : "N/A"}</Text>
                               </Group>
@@ -552,11 +792,22 @@ function XemDanhGiaContent() {
                         </Collapse>
                       </Table.Td>
                     </Table.Tr>
-                  </>
+                  </Fragment>
                 ))}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
+          
+          {totalPages > 1 && (
+            <Group justify="center" mt="md" mb="md">
+              <Pagination
+                total={totalPages}
+                value={currentPage}
+                onChange={setCurrentPage}
+                size="sm"
+              />
+            </Group>
+          )}
         </Paper>
       )}
 

@@ -30,7 +30,12 @@ export function Header() {
   const { user, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
+  // Sử dụng md breakpoint (992px) để đồng bộ với DashboardLayout - iPad Mini (768px) sẽ không show sidebar
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
   const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
+  // Sử dụng isMobileOrTablet cho việc hiển thị logo/text để xử lý tốt iPad Mini (768px)
+  // iPad Mini sẽ hiển thị logo thay vì text dài để tránh overflow
+  const shouldShowLogo = isMobileOrTablet;
 
   if (!user) return null;
 
@@ -67,14 +72,17 @@ export function Header() {
           : "var(--mantine-color-gray-0)",
         position: "fixed",
         top: 0,
-        left: isMobile ? 0 : 280,
+        left: isMobileOrTablet ? 0 : 280,
         right: 0,
         zIndex: 100,
+        width: isMobileOrTablet ? "100%" : "calc(100% - 280px)",
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
-      <Group h="100%" px={isMobile ? "md" : "lg"} justify="space-between" gap="xs">
-        <Group gap="xs">
-          {isMobile && (
+      <Group h="100%" px={isMobile ? "md" : "lg"} justify="space-between" gap="xs" wrap="nowrap">
+        <Group gap="xs" style={{ flex: 1, minWidth: 0 }} wrap="nowrap">
+          {shouldShowLogo && (
             <>
               <Image
                 src="/logo-vicenza.png"
@@ -84,49 +92,60 @@ export function Header() {
                 priority
                 style={{
                   objectFit: "contain",
+                  flexShrink: 0,
                 }}
               />
               <Text 
                 size="md" 
                 fw={700} 
                 style={{ 
-                  color: colorScheme === "dark" ? "#fecd21" : "#0a133b" 
+                  color: colorScheme === "dark" ? "#fecd21" : "#0a133b",
+                  whiteSpace: "nowrap",
                 }}
               >
                 VICENZA IAS
               </Text>
             </>
           )}
-          {!isMobile && (
-            <Text size="lg" fw={500}>
+          {!shouldShowLogo && (
+            <Text 
+              size="lg" 
+              fw={500}
+              style={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               Hệ thống Đánh giá Nội bộ
             </Text>
           )}
         </Group>
 
-        <Group gap={isMobile ? "xs" : "sm"}>
+        <Group gap={isMobile ? "xs" : "sm"} wrap="nowrap" style={{ flexShrink: 0 }}>
           <ActionIcon
             variant="subtle"
             size={isMobile ? "md" : "lg"}
             onClick={() => toggleColorScheme()}
             title={colorScheme === "dark" ? "Chế độ sáng" : "Chế độ tối"}
+            style={{ flexShrink: 0 }}
           >
             {colorScheme === "dark" ? <IconSun size={isMobile ? 18 : 20} /> : <IconMoon size={isMobile ? 18 : 20} />}
           </ActionIcon>
 
           <Menu shadow="md" width={200} position={isMobile ? "bottom-end" : "bottom-end"}>
             <Menu.Target>
-              <UnstyledButton>
-                <Group gap={isMobile ? "xs" : "sm"}>
-                  <Avatar color="blue" radius="xl" size={isMobile ? "sm" : undefined}>
+              <UnstyledButton style={{ flexShrink: 0 }}>
+                <Group gap={isMobile ? "xs" : "sm"} wrap="nowrap">
+                  <Avatar color="blue" radius="xl" size={isMobile ? "sm" : undefined} style={{ flexShrink: 0 }}>
                     {getInitials(user.hoTen)}
                   </Avatar>
                   {!isMobile && (
-                    <div style={{ flex: 1 }}>
-                      <Text size="sm" fw={500}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text size="sm" fw={500} truncate>
                         {user.hoTen}
                       </Text>
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" c="dimmed" truncate>
                         {user.email}
                       </Text>
                     </div>
