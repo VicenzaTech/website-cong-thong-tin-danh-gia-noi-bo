@@ -633,7 +633,7 @@ function XemDanhGiaContent() {
                     Người được đánh giá
                   </Table.Th>
                   <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
-                    Phòng ban
+                    Bộ phận
                   </Table.Th>
                   <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
                     Loại đánh giá
