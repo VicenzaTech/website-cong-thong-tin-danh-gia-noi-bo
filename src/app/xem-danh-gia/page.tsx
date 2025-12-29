@@ -29,7 +29,7 @@ import type { DanhGia, User, BieuMau, KyDanhGia, PhongBan, CauHoi } from "@/type
 import { Role, LoaiDanhGia } from "@/types/schema";
 import "dayjs/locale/vi";
 import dayjs from "dayjs";
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 dayjs.locale("vi");
 
@@ -243,29 +243,65 @@ export default function XemDanhGiaPage() {
     Object.keys(usersByBoPhan).forEach(boPhan => {
       const usersInBoPhan = usersByBoPhan[boPhan];
       
-      const data = usersInBoPhan.map(user => {
+      // Tạo dữ liệu với các cột theo yêu cầu
+      const rows: any[][] = [
+        // Header row - viết hoa, căn giữa (sẽ được xử lý sau nếu cần thư viện styling)
+        ['STT', 'HỌ VÀ TÊN', 'MÃ NHÂN VIÊN', 'BỘ PHẬN', 'ĐIỂM ĐÁNH GIÁ', 'ĐIỂM TRỪ']
+      ];
+
+      // Thêm dữ liệu cho từng nhân viên
+      usersInBoPhan.forEach((user, index) => {
         const userEvaluations = danhGias.filter(dg => dg.nguoiDuocDanhGiaId === user.id);
         const avgScore = userEvaluations.length > 0
           ? userEvaluations.reduce((sum, dg) => sum + (dg.diemTrungBinh || 0), 0) / userEvaluations.length
           : 0;
-        return {
-          'Tên': user.hoTen || '',
-          'Mã NV': user.maNhanVien,
-          'Điểm TB': parseFloat(avgScore.toFixed(2))
-        };
+        
+        rows.push([
+          index + 1, // STT
+          user.hoTen || '', // HỌ VÀ TÊN
+          user.maNhanVien || '', // MÃ NHÂN VIÊN
+          boPhan, // BỘ PHẬN (giống tên sheet)
+          parseFloat(avgScore.toFixed(2)), // ĐIỂM ĐÁNH GIÁ (Điểm TB hiện tại)
+          '' // ĐIỂM TRỪ (để trống tạm thời)
+        ]);
       });
 
       // Tạo sheet với tên bộ phận (giới hạn 31 ký tự cho tên sheet Excel)
       const sheetName = boPhan.length > 31 ? boPhan.substring(0, 31) : boPhan;
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      
+      // Thiết lập độ rộng cột hợp lý
+      ws['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 25 }, // HỌ VÀ TÊN
+        { wch: 15 }, // MÃ NHÂN VIÊN
+        { wch: 20 }, // BỘ PHẬN
+        { wch: 15 }, // ĐIỂM ĐÁNH GIÁ
+        { wch: 12 }  // ĐIỂM TRỪ
+      ];
+
+      // Định dạng header: viết hoa, căn giữa, in đậm, nền dark blue, chữ trắng
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } }, // Chữ trắng, in đậm
+        alignment: { horizontal: 'center', vertical: 'center' },
+        fill: { fgColor: { rgb: '1E3A8A' } } // Màu nền dark blue
+      };
+
+      // Áp dụng style cho hàng header (hàng đầu tiên, index 0)
+      const headerRow = 0;
+      const columnHeaders = ['A', 'B', 'C', 'D', 'E', 'F'];
+      columnHeaders.forEach((col, idx) => {
+        const cellAddress = `${col}${headerRow + 1}`;
+        if (!ws[cellAddress]) ws[cellAddress] = { v: rows[headerRow][idx] };
+        ws[cellAddress].s = headerStyle;
+      });
+      
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
 
-    // Lấy tên phòng ban để đặt tên file
-    const phongBan = phongBanList.find(pb => pb.id === targetPhongBanId);
-    const fileName = phongBan 
-      ? `diem-trung-binh-${phongBan.tenPhongBan.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`
-      : `diem-trung-binh-${targetPhongBanId}.xlsx`;
+    // Tạo tên file với format ISO 8601
+    const iso8601Timestamp = dayjs().format('YYYYMMDDTHHmmss'); // Format: 20250115T143025
+    const fileName = `cds_danhgianhansu_${iso8601Timestamp}.xlsx`;
     
     XLSX.writeFile(wb, fileName);
   };
