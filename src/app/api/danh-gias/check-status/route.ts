@@ -1,6 +1,38 @@
 import { NextResponse } from "next/server";
 import { readEvaluationsForDepartment } from "@/libs/evalStorage"; // Đường dẫn đúng tới hàm đọc file thực tế
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const nguoiDanhGiaId = searchParams.get('nguoiDanhGiaId');
+    const nguoiDuocDanhGiaId = searchParams.get('nguoiDuocDanhGiaId');
+    const bieuMauId = searchParams.get('bieuMauId');
+    const kyDanhGiaId = searchParams.get('kyDanhGiaId');
+    const phongBanId = searchParams.get('phongBanId');
+
+    if (!nguoiDanhGiaId || !nguoiDuocDanhGiaId || !bieuMauId || !kyDanhGiaId || !phongBanId) {
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
+    }
+
+    const evaluations = await readEvaluationsForDepartment(phongBanId);
+    const existing = evaluations.find(
+      (f) =>
+        f.danhGia.nguoiDanhGiaId === nguoiDanhGiaId &&
+        f.danhGia.nguoiDuocDanhGiaId === nguoiDuocDanhGiaId &&
+        f.danhGia.bieuMauId === bieuMauId &&
+        f.danhGia.kyDanhGiaId === kyDanhGiaId
+    );
+
+    const hasEvaluated = !!existing;
+    const daHoanThanh = hasEvaluated && !!existing.danhGia.daHoanThanh;
+
+    return NextResponse.json({ hasEvaluated, daHoanThanh });
+  } catch (err) {
+    console.error("Error in check-status GET:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

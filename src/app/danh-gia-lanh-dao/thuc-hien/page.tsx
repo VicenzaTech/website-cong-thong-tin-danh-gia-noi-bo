@@ -123,6 +123,24 @@ function ThucHienDanhGiaContent() {
         answers
       );
 
+      // Sync to server-side mock DB so server APIs see the new evaluation
+      try {
+        await fetch(`/api/danh-gias/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nguoiDanhGiaId: currentUser!.id,
+            nguoiDuocDanhGiaId: nguoiDuocDanhGiaId!,
+            bieuMauId: bieuMauId!,
+            kyDanhGiaId: kyDanhGiaId!,
+            nhanXetChung: values.nhanXetChung,
+            answers,
+          }),
+        });
+      } catch (e) {
+        // ignore sync errors in dev mock environment
+      }
+
       notifications.show({
         title: "Thành công",
         message: "Đánh giá của bạn đã được gửi thành công",

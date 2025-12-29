@@ -69,11 +69,6 @@ function EvaluationFormContent() {
         }
       });
 
-      if (!values.nhanXetChung || values.nhanXetChung.trim().length < 10) {
-        errors.nhanXetChung =
-          "Nhận xét chung là bắt buộc và phải có ít nhất 10 ký tự";
-      }
-
       return errors;
     },
   });
@@ -488,12 +483,11 @@ function EvaluationFormContent() {
             <Textarea
               placeholder="Nhập nhận xét tổng quan về đồng nghiệp..."
               rows={6}
-              required
               {...form.getInputProps("nhanXetChung")}
             />
 
             <Text size="xs" c="dimmed">
-              * Nhận xét chung là bắt buộc và phải có ít nhất 10 ký tự
+              Nhận xét chung là tùy chọn
             </Text>
           </Stack>
         </Paper>

@@ -66,13 +66,20 @@ export default function DanhGiaLanhDaoPage() {
           if (activeKys.length > 0) {
             const statusMap: Record<string, boolean> = {};
             for (const leader of leadersList) {
-              const existing = await mockService.danhGias.checkExisting(
-                currentUser.id,
-                leader.id,
-                bieuMaus[0].id,
-                activeKys[0].id
-              );
-              statusMap[leader.id] = !!existing && existing.daHoanThanh;
+              try {
+                const response = await fetch(`/api/danh-gias/check-status?nguoiDanhGiaId=${currentUser.id}&nguoiDuocDanhGiaId=${leader.id}&bieuMauId=${bieuMaus[0].id}&kyDanhGiaId=${activeKys[0].id}&phongBanId=${currentUser.phongBanId}`);
+                const data = await response.json();
+                statusMap[leader.id] = data.hasEvaluated && data.daHoanThanh;
+              } catch (e) {
+                // Fallback to mock service
+                const existing = await mockService.danhGias.checkExisting(
+                  currentUser.id,
+                  leader.id,
+                  bieuMaus[0].id,
+                  activeKys[0].id
+                );
+                statusMap[leader.id] = !!existing && existing.daHoanThanh;
+              }
             }
             setDanhGiaStatuses(statusMap);
           }

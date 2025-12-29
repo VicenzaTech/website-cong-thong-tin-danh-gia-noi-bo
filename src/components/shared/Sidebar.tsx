@@ -38,13 +38,13 @@ const menuItems: MenuItem[] = [
     label: "Đánh giá lãnh đạo",
     href: "/danh-gia-lanh-dao",
     icon: <IconUserStar size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+    allowedRoles: [ Role.truong_phong, Role.nhan_vien],
   },
   {
     label: "Đánh giá nhân viên",
     href: "/danh-gia-nhan-vien",
     icon: <IconUserCheck size={20} />,
-    allowedRoles: [Role.admin, Role.truong_phong, Role.nhan_vien],
+    allowedRoles: [ Role.truong_phong, Role.nhan_vien],
   },
   // {
   //   label: "Lịch sử đánh giá",
@@ -57,6 +57,12 @@ const menuItems: MenuItem[] = [
     href: "/xem-danh-gia",
     icon: <IconEye size={20} />,
     allowedRoles: [Role.admin, Role.truong_phong],
+  },
+  {
+    label: "Phòng ban",
+    href: "/admin/phong-ban",
+    icon: <IconUsers size={20} />,
+    allowedRoles: [Role.admin],
   },
 
   // {
@@ -103,6 +109,11 @@ export function Sidebar() {
   if (isMobile) return null;
 
   const filteredMenuItems = menuItems.filter((item) => {
+    // For admin, only show "Phòng ban"
+    if (user.role === Role.admin) {
+      return item.label === "Phòng ban";
+    }
+    
     // Check role permission
     if (!checkPermission(item.allowedRoles)) return false;
     

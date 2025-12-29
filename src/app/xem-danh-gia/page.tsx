@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Stack,
   Title,
@@ -42,19 +42,22 @@ interface DanhGiaWithDetails extends DanhGia {
   phongBanNguoiDuocDanhGia?: PhongBan;
 }
 
-export default function XemDanhGiaPage() {
+function XemDanhGiaContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const [danhGias, setDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [filteredDanhGias, setFilteredDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [phongBanList, setPhongBanList] = useState<PhongBan[]>([]);
+  const [boPhanList, setBoPhanList] = useState<string[]>([]);
   const [cauHois, setCauHois] = useState<CauHoi[]>([]);
 
   const [selectedKyId, setSelectedKyId] = useState<string | null>(null);
   const [selectedLoaiDanhGia, setSelectedLoaiDanhGia] = useState<string | null>(null);
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
+  const [selectedBoPhan, setSelectedBoPhan] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,17 +79,40 @@ export default function XemDanhGiaPage() {
   }, [currentUser]);
 
   useEffect(() => {
+    const phongBanId = searchParams.get('phongBanId');
+    if (phongBanId && currentUser?.role === Role.admin) {
+      setSelectedPhongBanId(phongBanId);
+    }
+  }, [searchParams, currentUser]);
+
+  useEffect(() => {
     applyFilters();
-  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId]);
+  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, selectedBoPhan]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const targetPhongBanId = (currentUser.role === Role.admin && selectedPhongBanId) ? selectedPhongBanId : currentUser.phongBanId;
+      const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId);
+      const allBoPhan = [...new Set(departmentUsers.map(u => u.boPhan).filter(Boolean))];
+      setBoPhanList(allBoPhan);
+      // Reset selectedBoPhan if it's not in the new list
+      if (selectedBoPhan && !allBoPhan.includes(selectedBoPhan)) {
+        setSelectedBoPhan(null);
+      }
+    }
+  }, [selectedPhongBanId, currentUser]);
 
   const loadData = async () => {
     if (!currentUser) return;
 
     setIsLoading(true);
     try {
+      const phongBanId = searchParams.get('phongBanId');
+      const targetPhongBanId = (currentUser.role === Role.admin && phongBanId) ? phongBanId : currentUser.phongBanId;
+
       // load evaluations from local data folder via API route
       const [allDanhGias, allKyDanhGias, allPhongBans, allCauHois] = await Promise.all([
-        fetch(`/api/evaluations/phongban=${currentUser.phongBanId}`).then((r) => r.json()),
+        fetch(`/api/evaluations/phongban=${targetPhongBanId}`).then((r) => r.json()),
         mockService.kyDanhGias.getAll(),
         mockService.phongBans.getAll(),
         mockService.cauHois.getAll(),
@@ -94,6 +120,10 @@ export default function XemDanhGiaPage() {
       console.log("ALL DG :", allDanhGias)
       setKyDanhGias(allKyDanhGias);
       setPhongBanList(allPhongBans);
+      // const targetPhongBanId = (currentUser.role === Role.admin && phongBanId) ? phongBanId : currentUser.phongBanId;
+      const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId);
+      const allBoPhan = [...new Set(departmentUsers.map(u => u.boPhan).filter(Boolean))];
+      setBoPhanList(allBoPhan);
       setCauHois(allCauHois);
       let filteredEvaluations: DanhGia[] = [];
 
@@ -147,9 +177,14 @@ export default function XemDanhGiaPage() {
       );
 
       danhGiasWithDetails.sort((a, b) => {
-        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-        return dateB - dateA;
+        const boPhanA = a.nguoiDuocDanhGia?.boPhan || "";
+        const boPhanB = b.nguoiDuocDanhGia?.boPhan || "";
+        if (boPhanA !== boPhanB) {
+          return boPhanA.localeCompare(boPhanB);
+        }
+        const scoreA = a.diemTrungBinh || 0;
+        const scoreB = b.diemTrungBinh || 0;
+        return scoreB - scoreA;
       });
 
       // Filter for truong_phong: only show NHAN_VIEN evaluations (not LANH_DAO)
@@ -190,6 +225,10 @@ export default function XemDanhGiaPage() {
       );
     }
 
+    if (selectedBoPhan) {
+      filtered = filtered.filter((dg) => dg.nguoiDuocDanhGia?.boPhan === selectedBoPhan);
+    }
+
     console.log("Filtered Evaluations: ", filtered);
 
     setFilteredDanhGias(filtered);
@@ -203,6 +242,7 @@ export default function XemDanhGiaPage() {
     setSelectedKyId(null);
     setSelectedLoaiDanhGia(null);
     setSelectedPhongBanId(null);
+    setSelectedBoPhan(null);
   };
 
   const handleExportExcel = () => {
@@ -278,7 +318,7 @@ export default function XemDanhGiaPage() {
 
       <Paper withBorder shadow="sm" p="md" radius="md">
         <Flex gap="md" align="flex-end" wrap="wrap">
-          <Select
+          {/* <Select
             label="Kỳ đánh giá"
             placeholder="Tất cả kỳ"
             data={kyDanhGias.map((ky) => ({ value: ky.id, label: ky.tenKy }))}
@@ -286,7 +326,7 @@ export default function XemDanhGiaPage() {
             onChange={(value) => setSelectedKyId(value)}
             clearable
             style={{ flex: 1, minWidth: 200 }}
-          />
+          /> */}
 
           <Select
             label="Loại đánh giá"
@@ -312,6 +352,16 @@ export default function XemDanhGiaPage() {
               style={{ flex: 1, minWidth: 200 }}
             />
           )}
+
+          <Select
+            label="Bộ phận"
+            placeholder="Tất cả bộ phận"
+            data={boPhanList.map((bp) => ({ value: bp, label: bp }))}
+            value={selectedBoPhan}
+            onChange={(value) => setSelectedBoPhan(value)}
+            clearable
+            style={{ flex: 1, minWidth: 200 }}
+          />
 
           <Button
             variant="light"
@@ -356,12 +406,13 @@ export default function XemDanhGiaPage() {
         </Paper>
       ) : (
         <Paper withBorder shadow="sm" radius="md">
-          <Table.ScrollContainer minWidth={1000}>
+          <Table.ScrollContainer minWidth={1200}>
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Người đánh giá</Table.Th>
                   <Table.Th>Người được đánh giá</Table.Th>
+                  <Table.Th>Bộ phận</Table.Th>
                   <Table.Th>Phòng ban</Table.Th>
                   <Table.Th>Loại đánh giá</Table.Th>
                   <Table.Th>Biểu mẫu</Table.Th>
@@ -390,6 +441,11 @@ export default function XemDanhGiaPage() {
                             {danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}
                           </Text>
                         </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">
+                          {danhGia.nguoiDuocDanhGia?.boPhan || "N/A"}
+                        </Text>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">
@@ -429,7 +485,7 @@ export default function XemDanhGiaPage() {
                     </Table.Tr>
 
                     <Table.Tr key={`${danhGia.id}-detail`}>
-                      <Table.Td colSpan={9} style={{ padding: 0, borderTop: 0 }}>
+                      <Table.Td colSpan={10} style={{ padding: 0, borderTop: 0 }}>
                         <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
                           <Paper withBorder p="md" radius="md" m={8}>
                             <Group justify="apart" align="center">
@@ -472,7 +528,7 @@ export default function XemDanhGiaPage() {
 
                               <div>
                                 <Text fw={600} mb="xs">
-                                  Nhận xét chung: {danhGia.nhanXetChung || " N/A"}
+                                  Nhận xét chung: {danhGia.nhanXetChung || "(Không có)"}
                                 </Text>
                                 <Text fw={600}>Câu trả lời</Text>
                                 <Stack gap="xs" mt="xs">
@@ -505,6 +561,14 @@ export default function XemDanhGiaPage() {
       )}
 
     </Stack>
+  );
+}
+
+export default function XemDanhGiaPage() {
+  return (
+    <Suspense fallback={<Center h={400}><Loader /></Center>}>
+      <XemDanhGiaContent />
+    </Suspense>
   );
 }
 
