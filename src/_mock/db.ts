@@ -14,6 +14,13 @@ import {
 
 export const phongBans: PhongBan[] = [
   {
+    id: "pb69",
+    tenPhongBan: "Vận hành",
+    moTa: "vận hành",
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+  },
+  {
     id: "pb1",
     tenPhongBan: "Phòng Tổ chức - Hành chính",
     moTa: "Phòng Tổ chức - Hành chính",
@@ -95,7 +102,7 @@ export const users: User[] = [
     email: "admin@company.com",
     matKhau: "123456",
     role: Role.admin,
-    phongBanId: "pb1",
+    phongBanId: "pb69",
     daDangKy: true,
     trangThaiKH: true,
     createdAt: new Date("2024-01-01"),
@@ -3730,13 +3737,13 @@ export const users: User[] = [
   },
   {
     id: "upb10_1",
-    maNhanVien: "NV0003",
+    maNhanVien: " ",
     hoTen: "Nguyễn Thanh Hải",
     email: "nv0003@company.com",
     matKhau: "123456",
     role: Role.truong_phong,
     phongBanId: "pb10",
-    boPhan: "Bộ phận hành chính",
+    boPhan: "Bộ phận lãnh đạo",
     daDangKy: true,
     trangThaiKH: true,
     createdAt: new Date("2024-01-01"),

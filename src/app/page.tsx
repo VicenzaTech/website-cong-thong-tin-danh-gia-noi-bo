@@ -40,6 +40,13 @@ interface DashboardStats {
 export default function Home() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user && user.role === Role.admin) {
+      router.push('/admin/phong-ban');
+    }
+  }, [user, authLoading, router]);
+
   const [stats, setStats] = useState<DashboardStats>({
     totalEvaluations: 0,
     completedEvaluations: 0,
