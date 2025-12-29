@@ -20,7 +20,9 @@ import {
   Divider,
   Collapse,
   Pagination,
+  useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconEye, IconRefresh, IconFilter, IconSortAscending, IconSortDescending } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { mockService } from "@/services/mockService";
@@ -49,6 +51,10 @@ interface DanhGiaWithDetails extends DanhGia {
 export default function XemDanhGiaPage() {
   const router = useRouter();
   const { user: currentUser, isLoading: authLoading } = useAuth();
+  const theme = useMantineTheme();
+  // Sử dụng breakpoint md (992px) để xác định tablet/desktop, giúp iPad Mini (768px) được xử lý như mobile
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
+  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
   const [danhGias, setDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [filteredDanhGias, setFilteredDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -454,9 +460,9 @@ export default function XemDanhGiaPage() {
   console.log("danhGia.answers", danhGias)
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between">
-        <Title order={2}>
+    <Stack gap={isMobile ? "md" : "lg"}>
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Title order={2} style={{ fontSize: isMobile ? '1.25rem' : undefined }}>
           {currentUser.role === Role.admin ? "Xem Tất Cả Đánh Giá" : "Xem Đánh Giá Phòng Ban"}
         </Title>
         <Text c="dimmed" size="sm">
@@ -464,8 +470,8 @@ export default function XemDanhGiaPage() {
         </Text>
       </Group>
 
-      <Paper withBorder shadow="sm" p="md" radius="md">
-        <Flex gap="md" align="flex-end" wrap="wrap">
+      <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
+        <Flex gap={isMobile ? "sm" : "md"} align="flex-end" wrap="wrap">
           <Select
             label="Kỳ đánh giá"
             placeholder="Tất cả kỳ"
@@ -473,7 +479,7 @@ export default function XemDanhGiaPage() {
             value={selectedKyId}
             onChange={(value) => setSelectedKyId(value)}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
           />
 
           <Select
@@ -486,7 +492,7 @@ export default function XemDanhGiaPage() {
             value={selectedLoaiDanhGia}
             onChange={(value) => setSelectedLoaiDanhGia(value)}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
           />
 
           {currentUser.role === Role.admin && (
@@ -497,7 +503,7 @@ export default function XemDanhGiaPage() {
               value={selectedPhongBanId}
               onChange={(value) => setSelectedPhongBanId(value)}
               clearable
-              style={{ flex: 1, minWidth: 200 }}
+              style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
             />
           )}
 
@@ -526,7 +532,7 @@ export default function XemDanhGiaPage() {
               }
             }}
             clearable
-            style={{ flex: 1, minWidth: 200 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
           />
 
           <Select
@@ -541,13 +547,14 @@ export default function XemDanhGiaPage() {
             onChange={(value) => setSortOrder(value as 'asc' | 'desc' | 'az' | null)}
             disabled={!sortBy}
             clearable
-            style={{ flex: 1, minWidth: 150 }}
+            style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 150 : 150 }}
           />
 
           <Button
             variant="light"
             leftSection={<IconRefresh size={16} />}
             onClick={handleResetFilters}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Đặt lại
           </Button>
@@ -556,12 +563,14 @@ export default function XemDanhGiaPage() {
             variant="light"
             leftSection={<IconRefresh size={16} />}
             onClick={loadData}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Làm mới
           </Button>
           <Button
             variant="light"
             onClick={handleExportExcel}
+            style={{ flex: isMobile ? '1 1 100%' : '0 1 auto', minWidth: isMobile ? '100%' : 'auto' }}
           >
             Xuất Excel
           </Button>
@@ -586,74 +595,101 @@ export default function XemDanhGiaPage() {
           </Center>
         </Paper>
       ) : (
-        <Paper withBorder shadow="sm" radius="md">
-          <Table.ScrollContainer minWidth={1000}>
+        <Paper withBorder shadow="sm" radius="md" style={{ overflow: 'hidden' }}>
+          <Table.ScrollContainer minWidth={isMobile ? 500 : isMobileOrTablet ? 800 : 1000}>
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>Người đánh giá</Table.Th>
-                  <Table.Th>Người được đánh giá</Table.Th>
-                  <Table.Th>Phòng ban</Table.Th>
-                  <Table.Th>Loại đánh giá</Table.Th>
-                  <Table.Th>Biểu mẫu</Table.Th>
-                  <Table.Th>Kỳ đánh giá</Table.Th>
-                  <Table.Th>Điểm TB</Table.Th>
-                  <Table.Th>Ngày gửi</Table.Th>
-                  <Table.Th>Thao tác</Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Người đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Người được đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Phòng ban
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Loại đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Biểu mẫu
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Kỳ đánh giá
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Điểm TB
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Ngày gửi
+                  </Table.Th>
+                  <Table.Th style={{ padding: isMobile ? '8px 4px' : undefined, fontSize: isMobile ? '0.75rem' : undefined }}>
+                    Thao tác
+                  </Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {paginatedDanhGias.map((danhGia) => (
                   <Fragment key={danhGia.id}>
                     <Table.Tr>
-                      <Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <div>
-                          <Text fw={500}>{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
+                          <Text fw={500} size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                            {danhGia.nguoiDanhGia?.hoTen || "N/A"}
+                          </Text>
                           <Text size="xs" c="dimmed">
                             {danhGia.nguoiDanhGia?.maNhanVien || "N/A"}
                           </Text>
                         </div>
                       </Table.Td>
-                      <Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <div>
-                          <Text fw={500}>{danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}</Text>
+                          <Text fw={500} size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                            {danhGia.nguoiDuocDanhGia?.hoTen || "N/A"}
+                          </Text>
                           <Text size="xs" c="dimmed">
                             {danhGia.nguoiDuocDanhGia?.maNhanVien || "N/A"}
                           </Text>
                         </div>
                       </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
                           {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined}}>{getLoaiDanhGiaBadge(danhGia.bieuMau?.loaiDanhGia)}</Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                          {danhGia.bieuMau?.tenBieuMau || "N/A"}
+                        </Text>
                       </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">{danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                          {danhGia.kyDanhGia?.tenKy || "N/A"}
+                        </Text>
                       </Table.Td>
-                      <Table.Td>
-                        <Badge color="blue" variant="light">
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Badge color="blue" variant="light" size={isMobile ? "xs" : "sm"}>
                           {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}
                         </Badge>
                       </Table.Td>
-                      <Table.Td>
-                        <Text size="sm">
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
+                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
                           {danhGia.submittedAt
-                            ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm")
+                            ? dayjs(danhGia.submittedAt).format(isMobile ? "DD/MM/YY HH:mm" : "DD/MM/YYYY HH:mm")
                             : "N/A"}
                         </Text>
                       </Table.Td>
-                      <Table.Td>
+                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
                         <Tooltip label="Xem chi tiết">
                           <ActionIcon
                             variant="light"
                             color="blue"
                             onClick={() => handleView(danhGia)}
+                            size={isMobile ? "sm" : "md"}
                           >
-                            <IconEye size={16} />
+                            <IconEye size={isMobile ? 14 : 16} />
                           </ActionIcon>
                         </Tooltip>
                       </Table.Td>
@@ -662,9 +698,9 @@ export default function XemDanhGiaPage() {
                     <Table.Tr>
                       <Table.Td colSpan={9} style={{ padding: 0, borderTop: 0 }}>
                         <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
-                          <Paper withBorder p="md" radius="md" m={8}>
-                            <Group justify="apart" align="center">
-                              <Text fw={700}>Chi tiết: {danhGia.id}</Text>
+                          <Paper withBorder p={isMobile ? "sm" : "md"} radius="md" m={isMobile ? 4 : 8}>
+                            <Group justify="apart" align="center" wrap="wrap" gap="xs">
+                              <Text fw={700} style={{ wordBreak: 'break-word' }}>Chi tiết: {danhGia.id}</Text>
                               <Button variant="subtle" size="xs" onClick={() => setExpandedId(null)}>
                                 Đóng
                               </Button>
@@ -673,7 +709,7 @@ export default function XemDanhGiaPage() {
                             <Divider my="sm" />
 
                             <Stack justify="sm">
-                              <Group grow>
+                              <Group grow wrap="wrap">
                                 <div>
                                   <Text fw={600}>Người đánh giá</Text>
                                   <Text size="sm">{danhGia.nguoiDanhGia?.hoTen || "N/A"}</Text>
@@ -687,14 +723,14 @@ export default function XemDanhGiaPage() {
                                 </div>
                               </Group>
 
-                              <Group>
+                              <Group wrap="wrap" gap="xs">
                                 <Text size="sm">Phòng ban: {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}</Text>
                                 <Text size="sm">Loại: {danhGia.bieuMau?.loaiDanhGia || "N/A"}</Text>
                                 <Text size="sm">Biểu mẫu: {danhGia.bieuMau?.tenBieuMau || "N/A"}</Text>
                                 <Text size="sm">Kỳ: {danhGia.kyDanhGia?.tenKy || "N/A"}</Text>
                               </Group>
 
-                              <Group>
+                              <Group wrap="wrap" gap="xs">
                                 <Badge color="blue" variant="light">Điểm TB: {danhGia.diemTrungBinh?.toFixed(2) || "0.00"}</Badge>
                                 <Text size="sm">Ngày gửi: {danhGia.submittedAt ? dayjs(danhGia.submittedAt).format("DD/MM/YYYY HH:mm") : "N/A"}</Text>
                               </Group>

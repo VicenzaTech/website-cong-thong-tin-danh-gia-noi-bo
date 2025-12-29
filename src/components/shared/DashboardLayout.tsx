@@ -22,6 +22,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const pathname = usePathname();
   const theme = useMantineTheme();
+  // Sử dụng md breakpoint (992px) thay vì sm (768px) để xử lý tablet tốt hơn (iPad Mini 768px sẽ không show sidebar)
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
   const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   useEffect(() => {
@@ -42,14 +44,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <BottomNavigationBar />
       <Box
         style={{
-          marginLeft: isMobile ? 0 : 280,
+          marginLeft: isMobileOrTablet ? 0 : 280,
           marginTop: isMobile ? 56 : 60,
           minHeight: isMobile ? "calc(100vh - 56px)" : "calc(100vh - 60px)",
           backgroundColor: "var(--mantine-color-body)",
           display: "flex",
           flexDirection: "column",
           paddingBottom: isMobile ? 65 : 0,
-          width: isMobile ? "100%" : "calc(100% - 280px)",
+          width: isMobileOrTablet ? "100%" : "calc(100% - 280px)",
           maxWidth: "100%",
           overflowX: "hidden",
         }}

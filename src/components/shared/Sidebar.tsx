@@ -96,11 +96,12 @@ export function Sidebar() {
   const { user, checkPermission, canPerformEvaluation } = useAuth();
   const { colorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
-  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
+  // Sử dụng md breakpoint (992px) để đồng bộ với DashboardLayout - iPad Mini (768px) sẽ không show sidebar
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
 
   if (!user) return null;
   
-  if (isMobile) return null;
+  if (isMobileOrTablet) return null;
 
   const filteredMenuItems = menuItems.filter((item) => {
     // Check role permission

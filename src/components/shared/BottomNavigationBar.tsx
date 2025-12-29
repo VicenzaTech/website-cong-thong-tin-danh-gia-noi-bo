@@ -21,11 +21,12 @@ export function BottomNavigationBar() {
   const { user, logout, checkPermission } = useAuth();
   const { colorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
-  const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
+  // Sử dụng md breakpoint (992px) để đồng bộ với DashboardLayout - hiển thị trên mobile và tablet (bao gồm iPad Mini)
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
 
   if (!user) return null;
   
-  if (!isMobile) return null;
+  if (!isMobileOrTablet) return null;
 
   const handleLogout = () => {
     logout();

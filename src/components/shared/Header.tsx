@@ -30,6 +30,8 @@ export function Header() {
   const { user, logout } = useAuth();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const theme = useMantineTheme();
+  // Sử dụng md breakpoint (992px) để đồng bộ với DashboardLayout - iPad Mini (768px) sẽ không show sidebar
+  const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
   const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
 
   if (!user) return null;
@@ -67,7 +69,7 @@ export function Header() {
           : "var(--mantine-color-gray-0)",
         position: "fixed",
         top: 0,
-        left: isMobile ? 0 : 280,
+        left: isMobileOrTablet ? 0 : 280,
         right: 0,
         zIndex: 100,
       }}
