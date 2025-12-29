@@ -112,6 +112,46 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_cau_hoi_bieu_mau_id ON cau_hoi(bieu_mau_id);
   CREATE INDEX IF NOT EXISTS idx_cau_hoi_thu_tu ON cau_hoi(thu_tu);
+
+  CREATE TABLE IF NOT EXISTS danh_gia (
+    id TEXT PRIMARY KEY,
+    nguoi_danh_gia_id TEXT NOT NULL,
+    nguoi_duoc_danh_gia_id TEXT NOT NULL,
+    bieu_mau_id TEXT NOT NULL,
+    ky_danh_gia_id TEXT NOT NULL,
+    nhan_xet_chung TEXT,
+    tong_diem REAL,
+    diem_trung_binh REAL,
+    da_hoan_thanh INTEGER DEFAULT 0,
+    submitted_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (nguoi_danh_gia_id) REFERENCES users(id),
+    FOREIGN KEY (nguoi_duoc_danh_gia_id) REFERENCES users(id),
+    FOREIGN KEY (bieu_mau_id) REFERENCES bieu_mau(id),
+    FOREIGN KEY (ky_danh_gia_id) REFERENCES ky_danh_gia(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_danh_gia_nguoi_danh_gia_id ON danh_gia(nguoi_danh_gia_id);
+  CREATE INDEX IF NOT EXISTS idx_danh_gia_nguoi_duoc_danh_gia_id ON danh_gia(nguoi_duoc_danh_gia_id);
+  CREATE INDEX IF NOT EXISTS idx_danh_gia_bieu_mau_id ON danh_gia(bieu_mau_id);
+  CREATE INDEX IF NOT EXISTS idx_danh_gia_ky_danh_gia_id ON danh_gia(ky_danh_gia_id);
+  CREATE INDEX IF NOT EXISTS idx_danh_gia_da_hoan_thanh ON danh_gia(da_hoan_thanh);
+
+  CREATE TABLE IF NOT EXISTS cau_tra_loi (
+    id TEXT PRIMARY KEY,
+    danh_gia_id TEXT NOT NULL,
+    cau_hoi_id TEXT NOT NULL,
+    diem REAL,
+    nhan_xet TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (danh_gia_id) REFERENCES danh_gia(id) ON DELETE CASCADE,
+    FOREIGN KEY (cau_hoi_id) REFERENCES cau_hoi(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cau_tra_loi_danh_gia_id ON cau_tra_loi(danh_gia_id);
+  CREATE INDEX IF NOT EXISTS idx_cau_tra_loi_cau_hoi_id ON cau_tra_loi(cau_hoi_id);
 `);
 
 console.log("Tables created successfully!");
@@ -127,6 +167,15 @@ if (userCount.count > 0) {
 
 async function importData() {
   console.log("Importing data from mock database...");
+
+  // Clear existing data
+  db.exec("DELETE FROM phong_bans;");
+  db.exec("DELETE FROM users;");
+  db.exec("DELETE FROM ky_danh_gia;");
+  db.exec("DELETE FROM bieu_mau;");
+  db.exec("DELETE FROM cau_hoi;");
+  db.exec("DELETE FROM danh_gia;");
+  db.exec("DELETE FROM cau_tra_loi;");
 
   const phongBanStmt = db.prepare(`
     INSERT INTO phong_bans (id, ten_phong_ban, mo_ta, truong_phong_id, created_at, updated_at)

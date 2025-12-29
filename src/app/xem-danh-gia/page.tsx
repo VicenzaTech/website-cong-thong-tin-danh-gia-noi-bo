@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Stack,
   Title,
@@ -48,8 +50,9 @@ interface DanhGiaWithDetails extends DanhGia {
   phongBanNguoiDuocDanhGia?: PhongBan;
 }
 
-export default function XemDanhGiaPage() {
+function XemDanhGiaContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const theme = useMantineTheme();
   // Sử dụng breakpoint md (992px) để xác định tablet/desktop, giúp iPad Mini (768px) được xử lý như mobile
@@ -60,11 +63,13 @@ export default function XemDanhGiaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
   const [phongBanList, setPhongBanList] = useState<PhongBan[]>([]);
+  const [boPhanList, setBoPhanList] = useState<string[]>([]);
   const [cauHois, setCauHois] = useState<CauHoi[]>([]);
 
   const [selectedKyId, setSelectedKyId] = useState<string | null>(null);
   const [selectedLoaiDanhGia, setSelectedLoaiDanhGia] = useState<string | null>(null);
   const [selectedPhongBanId, setSelectedPhongBanId] = useState<string | null>(null);
+  const [selectedBoPhan, setSelectedBoPhan] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | null>(null);
@@ -89,6 +94,13 @@ export default function XemDanhGiaPage() {
   }, [currentUser]);
 
   useEffect(() => {
+    const phongBanId = searchParams.get('phongBanId');
+    if (phongBanId && currentUser?.role === Role.admin) {
+      setSelectedPhongBanId(phongBanId);
+    }
+  }, [searchParams, currentUser]);
+
+  useEffect(() => {
     applyFilters();
     setCurrentPage(1); // Reset to first page when filters change
   }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, sortBy, sortOrder]);
@@ -98,9 +110,12 @@ export default function XemDanhGiaPage() {
 
     setIsLoading(true);
     try {
+      const phongBanId = searchParams.get('phongBanId');
+      const targetPhongBanId = (currentUser.role === Role.admin && phongBanId) ? phongBanId : currentUser.phongBanId;
+
       // load evaluations from local data folder via API route
       const [allDanhGias, allKyDanhGias, allPhongBans, allCauHois] = await Promise.all([
-        fetch(`/api/evaluations/phongban=${currentUser.phongBanId}`).then((r) => r.json()),
+        fetch(`/api/evaluations/phongban=${targetPhongBanId}`).then((r) => r.json()),
         mockService.kyDanhGias.getAll(),
         mockService.phongBans.getAll(),
         mockService.cauHois.getAll(),
@@ -108,6 +123,10 @@ export default function XemDanhGiaPage() {
       console.log("ALL DG :", allDanhGias)
       setKyDanhGias(allKyDanhGias);
       setPhongBanList(allPhongBans);
+      // const targetPhongBanId = (currentUser.role === Role.admin && phongBanId) ? phongBanId : currentUser.phongBanId;
+      const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId);
+      const allBoPhan = [...new Set(departmentUsers.map(u => u.boPhan).filter(Boolean))];
+      setBoPhanList(allBoPhan);
       setCauHois(allCauHois);
       let filteredEvaluations: DanhGia[] = [];
 
@@ -161,9 +180,14 @@ export default function XemDanhGiaPage() {
       );
 
       danhGiasWithDetails.sort((a, b) => {
-        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-        return dateB - dateA;
+        const boPhanA = a.nguoiDuocDanhGia?.boPhan || "";
+        const boPhanB = b.nguoiDuocDanhGia?.boPhan || "";
+        if (boPhanA !== boPhanB) {
+          return boPhanA.localeCompare(boPhanB);
+        }
+        const scoreA = a.diemTrungBinh || 0;
+        const scoreB = b.diemTrungBinh || 0;
+        return scoreB - scoreA;
       });
 
       // Filter for truong_phong: only show NHAN_VIEN evaluations (not LANH_DAO)
@@ -653,8 +677,13 @@ export default function XemDanhGiaPage() {
                           </Text>
                         </div>
                       </Table.Td>
-                      <Table.Td style={{ padding: isMobile ? '8px 4px' : undefined }}>
-                        <Text size={isMobile ? "xs" : "sm"} style={{ lineHeight: 1.3 }}>
+                      <Table.Td>
+                        <Text size="sm">
+                          {danhGia.nguoiDuocDanhGia?.boPhan || "N/A"}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">
                           {danhGia.phongBanNguoiDanhGia?.tenPhongBan || "N/A"}
                         </Text>
                       </Table.Td>
@@ -695,8 +724,8 @@ export default function XemDanhGiaPage() {
                       </Table.Td>
                     </Table.Tr>
 
-                    <Table.Tr>
-                      <Table.Td colSpan={9} style={{ padding: 0, borderTop: 0 }}>
+                    <Table.Tr key={`${danhGia.id}-detail`}>
+                      <Table.Td colSpan={10} style={{ padding: 0, borderTop: 0 }}>
                         <Collapse in={expandedId === danhGia.id} transitionDuration={200}>
                           <Paper withBorder p={isMobile ? "sm" : "md"} radius="md" m={isMobile ? 4 : 8}>
                             <Group justify="apart" align="center" wrap="wrap" gap="xs">
@@ -739,7 +768,7 @@ export default function XemDanhGiaPage() {
 
                               <div>
                                 <Text fw={600} mb="xs">
-                                  Nhận xét chung: {danhGia.nhanXetChung || " N/A"}
+                                  Nhận xét chung: {danhGia.nhanXetChung || "(Không có)"}
                                 </Text>
                                 <Text fw={600}>Câu trả lời</Text>
                                 <Stack gap="xs" mt="xs">
@@ -783,6 +812,14 @@ export default function XemDanhGiaPage() {
       )}
 
     </Stack>
+  );
+}
+
+export default function XemDanhGiaPage() {
+  return (
+    <Suspense fallback={<Center h={400}><Loader /></Center>}>
+      <XemDanhGiaContent />
+    </Suspense>
   );
 }
 

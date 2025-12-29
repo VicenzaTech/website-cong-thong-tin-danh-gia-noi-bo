@@ -1,0 +1,13 @@
+tunnel: website-noi-bo  # Tên tunnel bạn đã tạo
+credentials-file: ff2b813e-d361-47a0-b505-7598153fb19d.json  # Đường dẫn đến file credentials.json
+
+ingress:
+  - hostname: web.vicenzatech.online  # Tên miền để mapping (phải được cấu hình DNS trên Cloudflare)
+    service: http://localhost:3000  # Service local (ví dụ: http://localhost:3000)
+    originRequest:
+      noTLSVerify: true  # Bỏ qua kiểm tra TLS nếu cần (cho dev)
+  - service: http_status:404  # Fallback cho các request không match
+
+# Tùy chọn bổ sung (có thể bỏ nếu không cần)
+logfile: /var/log/cloudflared.log  # File log
+loglevel: info  # Mức log
