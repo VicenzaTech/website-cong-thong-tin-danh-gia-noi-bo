@@ -47,17 +47,17 @@ function ThucHienDanhGiaContent() {
       answers: {},
       nhanXetChung: "",
     },
-    validate: {
-      nhanXetChung: (value) => {
-        if (!value || value.trim().length === 0) {
-          return "Vui lòng nhập nhận xét chung";
-        }
-        if (value.trim().length < 10) {
-          return "Nhận xét phải có ít nhất 10 ký tự";
-        }
-        return null;
-      },
-    },
+    // validate: {
+    //   nhanXetChung: (value) => {
+    //     if (!value || value.trim().length === 0) {
+    //       return "Vui lòng nhập nhận xét chung";
+    //     }
+    //     if (value.trim().length < 10) {
+    //       return "Nhận xét phải có ít nhất 10 ký tự";
+    //     }
+    //     return null;
+    //   },
+    // },
   });
 
   useEffect(() => {
@@ -277,12 +277,11 @@ function ThucHienDanhGiaContent() {
             <Textarea
               placeholder="Nhập nhận xét tổng quan về người được đánh giá..."
               rows={6}
-              required
               {...form.getInputProps("nhanXetChung")}
             />
 
             <Text size="xs" c="dimmed">
-              * Nhận xét chung là bắt buộc và phải có ít nhất 10 ký tự
+              Nhận xét chung là không bắt buộc
             </Text>
           </Stack>
         </Paper>

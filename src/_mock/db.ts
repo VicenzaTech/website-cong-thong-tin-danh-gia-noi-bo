@@ -4077,10 +4077,10 @@ export const users: User[] = [
 export const kyDanhGias: KyDanhGia[] = [
   {
     id: "ky1",
-    tenKy: "Đánh giá Quý 4/2024",
-    moTa: "Kỳ đánh giá quý 4 năm 2024",
-    ngayBatDau: new Date("2024-10-01"),
-    ngayKetThuc: new Date("2024-12-31"),
+    tenKy: "Đánh giá năm 2025",
+    moTa: "Kỳ đánh giá năm 2024",
+    ngayBatDau: new Date("2025-01-01"),
+    ngayKetThuc: new Date("2025-12-31"),
     dangMo: true,
     createdAt: new Date("2024-09-15"),
     updatedAt: new Date("2024-09-15"),
