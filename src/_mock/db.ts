@@ -3755,7 +3755,7 @@ export const users: User[] = [
   },
   {
     id: "upb10_1",
-    maNhanVien: " ",
+    maNhanVien: "NV0003",
     hoTen: "Nguyễn Thanh Hải",
     email: "nv0003@company.com",
     matKhau: "123456",
