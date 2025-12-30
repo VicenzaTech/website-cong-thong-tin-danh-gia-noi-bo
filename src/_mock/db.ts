@@ -3676,7 +3676,7 @@ export const users: User[] = [
     email: "nv5481@company.com",
     matKhau: "123456",
     role: Role.nhan_vien,
-    phongBanId: "pb8",
+    phongBanId: "pb3",
     boPhan: "Bộ phận hành chính",
     daDangKy: true,
     trangThaiKH: true,
