@@ -20,7 +20,7 @@ import {
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth/AuthContext";
-import type { User } from "@/types/schema";
+import { Role, type User } from "@/types/schema";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -146,7 +146,17 @@ export default function LoginPage() {
         color: "green",
       });
 
-      router.push("/danh-gia-nhan-vien");
+      // Set default route based on role
+      let defaultRoute = "/danh-gia-nhan-vien"; // default fallback
+      if (user.role === Role.truong_phong) {
+        defaultRoute = "/xem-danh-gia";
+      } else if (user.role === Role.nhan_vien) {
+        defaultRoute = "/danh-gia-nhan-vien";
+      } else if (user.role === Role.admin) {
+        defaultRoute = "/admin/phong-ban";
+      }
+
+      router.push(defaultRoute);
     } catch (err) {
       console.error("Login error:", err);
       setError("Đã xảy ra lỗi. Vui lòng thử lại");
