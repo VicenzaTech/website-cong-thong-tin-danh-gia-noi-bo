@@ -92,16 +92,9 @@ function XemDanhGiaContent() {
   }, [currentUser]);
 
   useEffect(() => {
-    const phongBanId = searchParams.get('phongBanId');
-    if (phongBanId && currentUser?.role === Role.admin) {
-      setSelectedPhongBanId(phongBanId);
-    }
-  }, [searchParams, currentUser]);
-
-  useEffect(() => {
     applyFilters();
     setCurrentPage(1); // Reset to first page when filters change
-  }, [danhGias, selectedKyId, selectedLoaiDanhGia, selectedPhongBanId, sortBy, sortOrder]);
+  }, [danhGias, selectedKyId, selectedLoaiDanhGia, sortBy, sortOrder]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -215,17 +208,6 @@ function XemDanhGiaContent() {
       filtered = filtered.filter((dg) => dg.bieuMau?.loaiDanhGia === selectedLoaiDanhGia);
     }
 
-    if (selectedPhongBanId && currentUser?.role === Role.admin) {
-      const departmentUserIds = users
-        .filter((u) => u.phongBanId === selectedPhongBanId && !u.deletedAt && u.trangThaiKH)
-        .map((u) => u.id);
-      filtered = filtered.filter(
-        (dg) =>
-          departmentUserIds.includes(dg.nguoiDanhGiaId) ||
-          departmentUserIds.includes(dg.nguoiDuocDanhGiaId)
-      );
-    }
-
     // Áp dụng sắp xếp
     if (sortBy && sortOrder) {
       filtered.sort((a, b) => {
@@ -319,7 +301,6 @@ function XemDanhGiaContent() {
   const handleResetFilters = () => {
     setSelectedKyId(null);
     setSelectedLoaiDanhGia(null);
-    setSelectedPhongBanId(null);
     setSortBy(null);
     setSortOrder(null);
   };
@@ -327,10 +308,15 @@ function XemDanhGiaContent() {
   const handleExportExcel = () => {
     if (!currentUser) return;
 
-    const targetPhongBanId = currentUser.role === Role.admin && selectedPhongBanId ? selectedPhongBanId : currentUser.phongBanId;
-    if (!targetPhongBanId) return;
-
-    const departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
+    let departmentUsers;
+    if (currentUser.role === Role.admin) {
+      // Admin: include all active users across departments
+      departmentUsers = users.filter(u => !u.deletedAt && u.trangThaiKH);
+    } else {
+      const targetPhongBanId = currentUser.phongBanId;
+      if (!targetPhongBanId) return;
+      departmentUsers = users.filter(u => u.phongBanId === targetPhongBanId && !u.deletedAt && u.trangThaiKH);
+    }
 
     // Tạo map từ mãNhânViên -> tổng điểm phạt
     const diemPhatMap = new Map<string, number>();
@@ -484,6 +470,21 @@ function XemDanhGiaContent() {
 
   console.log("danhGia.answers", danhGias)
 
+  // Calculate completion statistics based on selected department
+  const statsPhongBanId = currentUser.role === Role.admin 
+    ? selectedPhongBanId 
+    : currentUser.phongBanId;
+
+  const targetUsers = statsPhongBanId
+    ? users.filter(u => u.phongBanId === statsPhongBanId && !u.deletedAt && u.trangThaiKH)
+    : [];
+
+  const usersWithEvaluations = new Set(danhGias.map(dg => dg.nguoiDanhGiaId));
+  const completedUsers = targetUsers.filter(u => usersWithEvaluations.has(u.id));
+  const notCompletedUsers = targetUsers.filter(u => !usersWithEvaluations.has(u.id));
+
+  const selectedPhongBan = statsPhongBanId ? phongBanList.find(pb => pb.id === statsPhongBanId) : null;
+
   return (
     <Stack gap={isMobile ? "md" : "lg"}>
       <Group justify="space-between" wrap="wrap" gap="sm">
@@ -494,6 +495,72 @@ function XemDanhGiaContent() {
           Tổng số: {filteredDanhGias.length} đánh giá
         </Text>
       </Group>
+
+      {/* Department Selection for Admin */}
+      {currentUser.role === Role.admin && (
+        <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
+          <Stack gap="sm">
+            <Text fw={600} size="sm">Chọn phòng ban để xem tình trạng:</Text>
+            <Group gap="xs">
+              {phongBanList.map((pb) => {
+                const count = users.filter(u => u.phongBanId === pb.id && !u.deletedAt && u.trangThaiKH).length;
+                return (
+                  <Badge 
+                    key={pb.id} 
+                    color={selectedPhongBanId === pb.id ? "blue" : "gray"} 
+                    variant={selectedPhongBanId === pb.id ? "filled" : "light"}
+                    style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    onClick={() => setSelectedPhongBanId(pb.id)}
+                  >
+                    {pb.tenPhongBan} ({count})
+                  </Badge>
+                );
+              })}
+            </Group>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* Completion Statistics */}
+      {statsPhongBanId && (
+        <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
+          <Stack gap="sm">
+            <Text fw={600} size="lg">
+              Tình trạng hoàn thành đánh giá - {selectedPhongBan?.tenPhongBan || ""}
+            </Text>
+          <Group gap="xl" wrap="wrap">
+            <div>
+              <Text size="sm" c="dimmed">Đã hoàn thành</Text>
+              <Text size="xl" fw={700} c="green">
+                {completedUsers.length}/{targetUsers.length}
+              </Text>
+            </div>
+            <div>
+              <Text size="sm" c="dimmed">Chưa hoàn thành</Text>
+              <Text size="xl" fw={700} c="red">
+                {notCompletedUsers.length}
+              </Text>
+            </div>
+          </Group>
+          
+          {notCompletedUsers.length > 0 && (
+            <>
+              <Divider />
+              <div>
+                <Text fw={600} mb="xs">Danh sách chưa hoàn thành:</Text>
+                <Group gap="xs" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                  {notCompletedUsers.map(user => (
+                    <Badge key={user.id} color="red" variant="light">
+                      {user.hoTen} ({user.maNhanVien})
+                    </Badge>
+                  ))}
+                </Group>
+              </div>
+            </>
+          )}
+        </Stack>
+      </Paper>
+      )}
 
       <Paper withBorder shadow="sm" p={isMobile ? "sm" : "md"} radius="md">
         <Flex gap={isMobile ? "sm" : "md"} align="flex-end" wrap="wrap">
@@ -520,17 +587,7 @@ function XemDanhGiaContent() {
             style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
           />
 
-          {currentUser.role === Role.admin && (
-            <Select
-              label="Phòng ban"
-              placeholder="Tất cả phòng ban"
-              data={phongBanList.map((pb) => ({ value: pb.id, label: pb.tenPhongBan }))}
-              value={selectedPhongBanId}
-              onChange={(value) => setSelectedPhongBanId(value)}
-              clearable
-              style={{ flex: 1, minWidth: isMobile ? '100%' : isMobileOrTablet ? 180 : 200 }}
-            />
-          )}
+
 
           <Select
             label="Sắp xếp theo"
@@ -608,11 +665,11 @@ function XemDanhGiaContent() {
           <Center>
             <Stack align="center" gap="md">
               <Text c="dimmed" size="lg">
-                {selectedKyId || selectedLoaiDanhGia || selectedPhongBanId
+                {selectedKyId || selectedLoaiDanhGia
                   ? "Không có đánh giá nào khớp với bộ lọc"
                   : "Chưa có đánh giá nào"}
               </Text>
-              {(selectedKyId || selectedLoaiDanhGia || selectedPhongBanId) && (
+              {(selectedKyId || selectedLoaiDanhGia) && (
                 <Button variant="light" onClick={handleResetFilters}>
                   Xóa bộ lọc
                 </Button>
