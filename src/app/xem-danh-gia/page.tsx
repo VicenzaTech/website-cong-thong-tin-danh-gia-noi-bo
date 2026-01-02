@@ -57,6 +57,7 @@ function XemDanhGiaContent() {
   const isMobileOrTablet = !useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
   const isMobile = !useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
   const [danhGias, setDanhGias] = useState<DanhGiaWithDetails[]>([]);
+  const [allDanhGias, setAllDanhGias] = useState<DanhGiaWithDetails[]>([]); // Unfiltered evaluations for completion checks
   const [filteredDanhGias, setFilteredDanhGias] = useState<DanhGiaWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [kyDanhGias, setKyDanhGias] = useState<KyDanhGia[]>([]);
@@ -104,13 +105,20 @@ function XemDanhGiaContent() {
       const phongBanId = searchParams.get('phongBanId');
       const targetPhongBanId = (currentUser.role === Role.admin && phongBanId) ? phongBanId : currentUser.phongBanId;
 
-      // load evaluations from local data folder via API route
-      const [allDanhGias, allKyDanhGias, allPhongBans, allCauHois] = await Promise.all([
-        fetch(`/api/evaluations/phongban=${targetPhongBanId}`).then((r) => r.json()),
+      // load evaluations from local data folder via API route - fetch both form types
+      const [allDanhGias1, allDanhGias2, allKyDanhGias, allPhongBans, allCauHois] = await Promise.all([
+        fetch(`/api/evaluations/phongban=${targetPhongBanId}&bieumau=1`).then((r) => r.json()),
+        fetch(`/api/evaluations/phongban=${targetPhongBanId}&bieumau=2`).then((r) => r.json()),
         mockService.kyDanhGias.getAll(),
         mockService.phongBans.getAll(),
         mockService.cauHois.getAll(),
       ]);
+      // Combine and deduplicate evaluations from both forms by ID
+      const allDanhGiasMap = new Map();
+      [...allDanhGias1, ...allDanhGias2].forEach((dg: any) => {
+        allDanhGiasMap.set(dg.id, dg);
+      });
+      const allDanhGias = Array.from(allDanhGiasMap.values());
       console.log("ALL DG :", allDanhGias)
       setKyDanhGias(allKyDanhGias);
       setPhongBanList(allPhongBans);
@@ -180,7 +188,8 @@ function XemDanhGiaContent() {
         const scoreB = b.diemTrungBinh || 0;
         return scoreB - scoreA;
       });
-
+      // Store all evaluations for completion checks (unfiltered)
+      setAllDanhGias(danhGiasWithDetails);
       // Filter for truong_phong: only show NHAN_VIEN evaluations (not LANH_DAO)
       let finalDanhGias = danhGiasWithDetails;
       if (currentUser.role === Role.truong_phong) {
@@ -468,20 +477,67 @@ function XemDanhGiaContent() {
     );
   }
 
-  console.log("danhGia.answers", danhGias)
-
   // Calculate completion statistics based on selected department
   const statsPhongBanId = currentUser.role === Role.admin 
     ? selectedPhongBanId 
     : currentUser.phongBanId;
 
+  // Exclude truong_phong from completion tracking (as evaluators)
   const targetUsers = statsPhongBanId
-    ? users.filter(u => u.phongBanId === statsPhongBanId && !u.deletedAt && u.trangThaiKH)
+    ? users.filter(u => 
+        u.phongBanId === statsPhongBanId && 
+        !u.deletedAt && 
+        u.trangThaiKH && 
+        u.role !== Role.truong_phong
+      )
     : [];
+  
+  // User is only completed if they've evaluated ALL members in their department
+  const completedUsers = targetUsers.filter(u => {
+    // Get all members in the same boPhan (department section) that need to be evaluated
+    const departmentMembers = users.filter(member => 
+      member.phongBanId === u.phongBanId && 
+      member.boPhan === u.boPhan && // Same boPhan (department section)
+      !member.deletedAt && 
+      member.trangThaiKH &&
+      member.id !== u.id && // Don't evaluate themselves
+      (member.role === Role.truong_phong || member.role === Role.nhan_vien) // Only count evaluable roles
+    );
+    
+    // Get all evaluations this user has done for their department (use allDanhGias for complete data)
+    const userEvaluations = allDanhGias.filter(dg => {
+      const evaluatedUser = users.find(usr => usr.id === dg.nguoiDuocDanhGiaId);
+      return dg.nguoiDanhGiaId === u.id && evaluatedUser?.phongBanId === u.phongBanId;
+    });
+    
+    // Check if user has evaluated ALL department members
+    const evaluatedMemberIds = new Set(userEvaluations.map(dg => dg.nguoiDuocDanhGiaId));
+    const hasEvaluatedAll = departmentMembers.every(member => evaluatedMemberIds.has(member.id));
+    return hasEvaluatedAll;
+  });
 
-  const usersWithEvaluations = new Set(danhGias.map(dg => dg.nguoiDanhGiaId));
-  const completedUsers = targetUsers.filter(u => usersWithEvaluations.has(u.id));
-  const notCompletedUsers = targetUsers.filter(u => !usersWithEvaluations.has(u.id));
+  const notCompletedUsers = targetUsers.filter(u => {
+    // Get all members in the same boPhan (department section) that need to be evaluated
+    const departmentMembers = users.filter(member => 
+      member.phongBanId === u.phongBanId && 
+      member.boPhan === u.boPhan && // Same boPhan (department section)
+      !member.deletedAt && 
+      member.trangThaiKH &&
+      member.id !== u.id && // Don't evaluate themselves
+      (member.role === Role.truong_phong || member.role === Role.nhan_vien) // Only count evaluable roles
+    );
+    
+    // Get all evaluations this user has done for their department (use allDanhGias for complete data)
+    const userEvaluations = allDanhGias.filter(dg => {
+      const evaluatedUser = users.find(usr => usr.id === dg.nguoiDuocDanhGiaId);
+      return dg.nguoiDanhGiaId === u.id && evaluatedUser?.phongBanId === u.phongBanId;
+    });
+    
+    // Check if user has evaluated ALL department members
+    const evaluatedMemberIds = new Set(userEvaluations.map(dg => dg.nguoiDuocDanhGiaId));
+    const hasEvaluatedAll = departmentMembers.every(member => evaluatedMemberIds.has(member.id));
+    return !hasEvaluatedAll;
+  });
 
   const selectedPhongBan = statsPhongBanId ? phongBanList.find(pb => pb.id === statsPhongBanId) : null;
 
