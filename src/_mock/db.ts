@@ -4193,7 +4193,7 @@ export const users: User[] = [
   },
 
   {
-    id: "upx1_5",
+    id: "upx1_5_2",
     maNhanVien: "NV5816",
     hoTen: "Vankateswarlu",
     email: "NV5816@company.com",
@@ -4852,7 +4852,7 @@ export const users: User[] = [
     boPhan: "Bộ phận lãnh đạo",
   },
   {
-    id: "upx1_5",
+    id: "upx1_5_1",
     maNhanVien: "NV5816",
     hoTen: "Vankateswarlu",
     email: "NV581623232@company.com",
