@@ -4194,9 +4194,9 @@ export const users: User[] = [
 
   {
     id: "upx1_5",
-    maNhanVien: "nan",
+    maNhanVien: "NV5816",
     hoTen: "Vankateswarlu",
-    email: "nan@company.com",
+    email: "NV5816@company.com",
     matKhau: "123456",
     role: Role.truong_phong,
     phongBanId: "pb11",
@@ -4851,7 +4851,20 @@ export const users: User[] = [
     updatedAt: new Date("2024-01-01"),
     boPhan: "Bộ phận lãnh đạo",
   },
-
+  {
+    id: "upx1_5",
+    maNhanVien: "NV5816",
+    hoTen: "Vankateswarlu",
+    email: "NV581623232@company.com",
+    matKhau: "123456",
+    role: Role.truong_phong,
+    phongBanId: "pb12",
+    daDangKy: true,
+    trangThaiKH: true,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+    boPhan: "Bộ phận lãnh đạo",
+  },
   {
     id: "upx2_2",
     maNhanVien: "NV0042",
