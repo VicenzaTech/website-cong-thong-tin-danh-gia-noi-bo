@@ -41,7 +41,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    ma_nhan_vien TEXT UNIQUE NOT NULL,
+    ma_nhan_vien TEXT NOT NULL,
     ho_ten TEXT,
     email TEXT UNIQUE,
     mat_khau TEXT,
