@@ -5497,9 +5497,9 @@ export const users: User[] = [
 
   {
     id: "upx2_44",
-    maNhanVien: "NV1480",
-    hoTen: "Doãn Quốc Mẹo",
-    email: "NV1480@company.com",
+    maNhanVien: "NV0976",
+    hoTen: "Hoàng Văn Vũ",
+    email: "NV0976@company.com",
     matKhau: "123456",
     role: Role.nhan_vien,
     phongBanId: "pb12",
