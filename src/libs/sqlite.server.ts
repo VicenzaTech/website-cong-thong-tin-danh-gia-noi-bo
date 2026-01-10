@@ -170,6 +170,47 @@ export const authService = {
     );
   },
 
+  // return created user after insert
+  createUserAndGet: (user: {
+    id: string;
+    maNhanVien: string;
+    hoTen?: string;
+    email?: string;
+    matKhau?: string;
+    role: string;
+    phongBanId: string;
+    daDangKy: boolean;
+    trangThaiKH: boolean;
+  }) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      INSERT INTO users (
+        id, ma_nhan_vien, ho_ten, email, mat_khau,
+        role, phong_ban_id, da_dang_ky, trang_thai_kh,
+        da_doi_mat_khau, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(
+      user.id,
+      user.maNhanVien,
+      user.hoTen || null,
+      user.email || null,
+      user.matKhau || null,
+      user.role,
+      user.phongBanId,
+      user.daDangKy ? 1 : 0,
+      user.trangThaiKH ? 1 : 0,
+      0,
+      now,
+      now
+    );
+
+    const getStmt = db.prepare(`SELECT * FROM users WHERE id = ?`);
+    return getStmt.get(user.id) as SqliteUser | undefined;
+  },
+
   updateUser: (id: string, data: {
     hoTen?: string;
     email?: string;

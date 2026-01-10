@@ -20,7 +20,6 @@ import {
 } from "@mantine/core";
 import { IconSearch, IconPlus, IconEdit, IconTrash, IconUserOff } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { mockService } from "@/services/mockService";
 import { phongBans } from "@/_mock/db";
 import { Role, type User } from "@/types/schema";
 import { UserFormModal } from "@/features/users/UserFormModal";
@@ -53,8 +52,25 @@ export default function NguoiDungPage() {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const data = await mockService.users.getAll();
-      setUsers(data);
+      const res = await fetch(`/api/users?perPage=200`);
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const body = await res.json();
+      const items = body.items || [];
+      setUsers(
+        items.map((it: any) => ({
+          id: it.id,
+          maNhanVien: it.maNhanVien,
+          hoTen: it.hoTen,
+          email: it.email,
+          phongBanId: it.phongBanId,
+          role: it.role,
+          trangThaiKH: it.trangThaiKH ?? true,
+          daDangKy: it.daDangKy ?? false,
+          boPhan: it.boPhan || "",
+          createdAt: it.createdAt,
+          updatedAt: it.updatedAt,
+        }))
+      );
     } catch (error) {
       console.error("Failed to load users:", error);
     } finally {

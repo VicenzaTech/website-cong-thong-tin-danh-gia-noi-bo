@@ -51,6 +51,15 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
     },
   });
 
+  const defaultBoPhanList: string[] = [
+    "Bộ phận lãnh đạo",
+    "Bộ phận nghiệp vụ",
+    "Tổ xe con",
+  ];
+  const [boPhanOptions, setBoPhanOptions] = useState<{ value: string; label: string }[]>(
+    defaultBoPhanList.map((v) => ({ value: v, label: v }))
+  );
+
   useEffect(() => {
     if (opened) {
       if (user) {
@@ -63,11 +72,50 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           trangThaiKH: user.trangThaiKH,
           boPhan: user.boPhan || "",
         });
+        // ensure current boPhan is present in options
+        if (user.boPhan) {
+          setBoPhanOptions((prev) => {
+            if (prev.some((p) => p.value === user.boPhan)) return prev;
+            return [{ value: user.boPhan, label: user.boPhan }, ...prev];
+          });
+        }
       } else {
         form.reset();
       }
     }
   }, [opened, user]);
+
+  // load boPhan options when phongBanId changes
+  useEffect(() => {
+    const pbId = form.values.phongBanId;
+    if (!pbId) {
+      setBoPhanOptions(defaultBoPhanList.map((v) => ({ value: v, label: v })));
+      return;
+    }
+
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/users?phongBanId=${encodeURIComponent(pbId)}&perPage=200`);
+        if (!res.ok) throw new Error("Failed to fetch departments");
+        const body = await res.json();
+        const items = body.items || [];
+        const distinct = Array.from(
+          new Set(items.map((it: any) => it.boPhan).filter(Boolean))
+        ) as string[];
+        const options = distinct.length
+          ? distinct.map((v: string) => ({ value: v, label: v }))
+          : defaultBoPhanList.map((v) => ({ value: v, label: v }));
+        if (mounted) setBoPhanOptions(options);
+      } catch (err) {
+        if (mounted) setBoPhanOptions(defaultBoPhanList.map((v) => ({ value: v, label: v })));
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [form.values.phongBanId]);
 
   const handleSubmit = async (values: typeof form.values) => {
     setIsLoading(true);
@@ -95,17 +143,25 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
           return;
         }
 
-        await mockService.users.create({
-          maNhanVien: values.maNhanVien,
-          hoTen: values.hoTen,
-          email: values.email,
-          phongBanId: values.phongBanId,
-          role: values.role,
-          trangThaiKH: values.trangThaiKH,
-          daDangKy: false,
-          matKhau: "$2a$10$DefaultPasswordHash",
-          boPhan: values.boPhan,
+        // persist to server-side sqlite via API
+        const res = await fetch(`/api/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            maNhanVien: values.maNhanVien,
+            hoTen: values.hoTen,
+            email: values.email,
+            phongBanId: values.phongBanId,
+            role: values.role,
+            trangThaiKH: values.trangThaiKH,
+            boPhan: values.boPhan,
+          }),
         });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error || "Failed to create user");
+        }
 
         notifications.show({
           title: "Thành công",
@@ -189,15 +245,12 @@ export function UserFormModal({ opened, onClose, user, onSuccess }: UserFormModa
             {...form.getInputProps("role")}
           />
 
-          <Select 
+          <Select
             label="Bộ phận"
             placeholder="Chọn bộ phận"
-            data={[
-              { value: "Bộ phận lãnh đạo", label: "Bộ phận lãnh đạo" },
-              { value: "Bộ phận nghiệp vụ", label: "Bộ phận nghiệp vụ" },
-              { value: "Tổ xe con", label: "Tổ xe con" },
-            ]}
+            data={boPhanOptions}
             required
+            searchable
             {...form.getInputProps("boPhan")}
           />
 

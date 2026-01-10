@@ -159,23 +159,13 @@ console.log("Tables created successfully!");
 const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get() as {
   count: number;
 };
-if (userCount.count > 0) {
-  console.log("Database already has data. Skipping import.");
-  db.close();
-  process.exit(0);
-}
+// Don't exit if users exist; we will merge mock data into existing DB without deleting
+// existing records. Insert operations below will skip duplicates.
 
 async function importData() {
   console.log("Importing data from mock database...");
 
-  // Clear existing data
-  db.exec("DELETE FROM phong_bans;");
-  db.exec("DELETE FROM users;");
-  db.exec("DELETE FROM ky_danh_gia;");
-  db.exec("DELETE FROM bieu_mau;");
-  db.exec("DELETE FROM cau_hoi;");
-  db.exec("DELETE FROM danh_gia;");
-  db.exec("DELETE FROM cau_tra_loi;");
+  // Do not delete existing data. We'll insert mock records only when missing.
 
   const phongBanStmt = db.prepare(`
     INSERT INTO phong_bans (id, ten_phong_ban, mo_ta, truong_phong_id, created_at, updated_at)
@@ -183,14 +173,17 @@ async function importData() {
   `);
 
   for (const pb of phongBans) {
-    phongBanStmt.run(
-      pb.id,
-      pb.tenPhongBan,
-      pb.moTa || null,
-      pb.truongPhongId || null,
-      pb.createdAt.toISOString(),
-      pb.updatedAt.toISOString()
-    );
+    const exists = db.prepare("SELECT 1 FROM phong_bans WHERE id = ? LIMIT 1").get(pb.id);
+    if (!exists) {
+      phongBanStmt.run(
+        pb.id,
+        pb.tenPhongBan,
+        pb.moTa || null,
+        pb.truongPhongId || null,
+        pb.createdAt.toISOString(),
+        pb.updatedAt.toISOString()
+      );
+    }
   }
 
   console.log(`Imported ${phongBans.length} phong ban`);
@@ -215,6 +208,11 @@ async function importData() {
   }
 
   if (adminUser) {
+    // check if admin already exists by id or ma_nhan_vien
+    const existingAdmin = db
+      .prepare(`SELECT 1 FROM users WHERE id = ? OR ma_nhan_vien = ? LIMIT 1`)
+      .get(adminUser.id, adminUser.maNhanVien);
+    if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash(adminUser.matKhau || "vicenza", 10);
     userStmt.run(
       adminUser.id,
@@ -233,9 +231,21 @@ async function importData() {
       adminUser.updatedAt.toISOString()
     );
     console.log("Imported admin user");
+    } else {
+      console.log("Admin user already exists, skipping admin import");
+    }
   }
 
+  let skipped = 0;
   for (const user of otherUsers) {
+    // skip if id or ma_nhan_vien already exists
+    const exists = db
+      .prepare(`SELECT 1 FROM users WHERE id = ? OR ma_nhan_vien = ? LIMIT 1`)
+      .get(user.id, user.maNhanVien);
+    if (exists) {
+      skipped++;
+      continue;
+    }
     let hashedPassword: string | null = null;
     if (user.matKhau) {
       hashedPassword = await bcrypt.hash(user.matKhau, 10);
@@ -259,7 +269,7 @@ async function importData() {
     );
   }
 
-  console.log(`Imported ${otherUsers.length} other users`);
+  console.log(`Imported ${otherUsers.length - skipped} other users; skipped ${skipped} existing users`);
 
   const kyDanhGiaStmt = db.prepare(`
     INSERT INTO ky_danh_gia (
@@ -269,16 +279,19 @@ async function importData() {
   `);
 
   for (const ky of kyDanhGias) {
-    kyDanhGiaStmt.run(
-      ky.id,
-      ky.tenKy,
-      ky.moTa || null,
-      ky.ngayBatDau.toISOString(),
-      ky.ngayKetThuc.toISOString(),
-      ky.dangMo ? 1 : 0,
-      ky.createdAt.toISOString(),
-      ky.updatedAt.toISOString()
-    );
+    const exists = db.prepare("SELECT 1 FROM ky_danh_gia WHERE id = ? LIMIT 1").get(ky.id);
+    if (!exists) {
+      kyDanhGiaStmt.run(
+        ky.id,
+        ky.tenKy,
+        ky.moTa || null,
+        ky.ngayBatDau.toISOString(),
+        ky.ngayKetThuc.toISOString(),
+        ky.dangMo ? 1 : 0,
+        ky.createdAt.toISOString(),
+        ky.updatedAt.toISOString()
+      );
+    }
   }
 
   console.log(`Imported ${kyDanhGias.length} ky danh gia`);
@@ -292,19 +305,22 @@ async function importData() {
   `);
 
   for (const bm of bieuMaus) {
-    bieuMauStmt.run(
-      bm.id,
-      bm.tenBieuMau,
-      bm.loaiDanhGia,
-      bm.phamViApDung,
-      bm.phongBanId || null,
-      bm.trangThai,
-      bm.moTa || null,
-      bm.nguoiTaoId || null,
-      bm.ngayPhatHanh ? bm.ngayPhatHanh.toISOString() : null,
-      bm.createdAt.toISOString(),
-      bm.updatedAt.toISOString()
-    );
+    const exists = db.prepare("SELECT 1 FROM bieu_mau WHERE id = ? LIMIT 1").get(bm.id);
+    if (!exists) {
+      bieuMauStmt.run(
+        bm.id,
+        bm.tenBieuMau,
+        bm.loaiDanhGia,
+        bm.phamViApDung,
+        bm.phongBanId || null,
+        bm.trangThai,
+        bm.moTa || null,
+        bm.nguoiTaoId || null,
+        bm.ngayPhatHanh ? bm.ngayPhatHanh.toISOString() : null,
+        bm.createdAt.toISOString(),
+        bm.updatedAt.toISOString()
+      );
+    }
   }
 
   console.log(`Imported ${bieuMaus.length} bieu mau`);
@@ -317,16 +333,19 @@ async function importData() {
   `);
 
   for (const ch of cauHois) {
-    cauHoiStmt.run(
-      ch.id,
-      ch.bieuMauId,
-      ch.noiDung,
-      ch.thuTu,
-      ch.diemToiDa,
-      ch.batBuoc ? 1 : 0,
-      ch.createdAt.toISOString(),
-      ch.updatedAt.toISOString()
-    );
+    const exists = db.prepare("SELECT 1 FROM cau_hoi WHERE id = ? LIMIT 1").get(ch.id);
+    if (!exists) {
+      cauHoiStmt.run(
+        ch.id,
+        ch.bieuMauId,
+        ch.noiDung,
+        ch.thuTu,
+        ch.diemToiDa,
+        ch.batBuoc ? 1 : 0,
+        ch.createdAt.toISOString(),
+        ch.updatedAt.toISOString()
+      );
+    }
   }
 
   console.log(`Imported ${cauHois.length} cau hoi`);
