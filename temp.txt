@@ -1,1 +1,7 @@
 phần lấy data vote thật cho ra trang chủ cho phía lãnh đạo
+
+
+curl -X PUT http://localhost:3000/api/users/upb7_9 \
+  -H "Content-Type: application/json" \
+  -d '{"boPhan": "Tổ phục vụ xuất hàng;Bộ phận kho vật tư, nguyên nhiên liệu và thành phẩm"}'
+requets này có làm xóa đb hay reset db không
