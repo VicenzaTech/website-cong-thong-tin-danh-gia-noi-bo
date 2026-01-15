@@ -35,12 +35,38 @@ export async function GET(request: Request) {
   let result = allUsers.filter((u) => !u.deletedAt && u.trangThaiKH);
 
   // Nếu có currentUserId, lấy thông tin user đó và lọc những người cùng phòng ban và bộ phận (nếu có)
+  // Hỗ trợ multi-department: user có thể thuộc nhiều bộ phận (phân cách bởi dấu `;`)
   if (currentUserId) {
     const currentUser = allUsers.find((u) => u.id === currentUserId);
     if (currentUser) {
-      let filterConditions = (u: any) => u.phongBanId === currentUser.phongBanId && u.id !== currentUserId;
-      if (currentUser.boPhan && currentUser.boPhan.trim() !== "") {
-        filterConditions = (u: any) => u.phongBanId === currentUser.phongBanId && u.boPhan === currentUser.boPhan && u.id !== currentUserId;
+      // Parse multi-department: split by `;` and trim
+      const currentUserBoPhanList = currentUser.boPhan
+        ? currentUser.boPhan.split(";").map((bp: string) => bp.trim()).filter((bp: string) => bp !== "")
+        : [];
+
+      let filterConditions: (u: any) => boolean;
+
+      if (currentUserBoPhanList.length > 0) {
+        // Multi-department logic: user can see all colleagues in any of their departments
+        filterConditions = (u: any) => {
+          if (u.phongBanId !== currentUser.phongBanId) return false;
+          if (u.id === currentUserId) return false;
+
+          // Parse the candidate user's boPhan
+          const candidateBoPhanList = u.boPhan
+            ? u.boPhan.split(";").map((bp: string) => bp.trim()).filter((bp: string) => bp !== "")
+            : [];
+
+          // Check if there's any overlap between the two department lists
+          const hasOverlap = currentUserBoPhanList.some((bp: string) =>
+            candidateBoPhanList.includes(bp)
+          );
+
+          return hasOverlap;
+        };
+      } else {
+        // No boPhan means they can see all in same phongBan
+        filterConditions = (u: any) => u.phongBanId === currentUser.phongBanId && u.id !== currentUserId;
       }
       result = result.filter(filterConditions);
     } else {
@@ -129,6 +155,7 @@ export async function POST(request: Request) {
       matKhau: defaultPassword,
       role: role || "nhan_vien",
       phongBanId,
+      boPhan: boPhan || null,
       daDangKy: false,
       trangThaiKH: !!trangThaiKH,
     } as any);

@@ -953,7 +953,7 @@ export const users: User[] = [
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   },
-    {
+  {
     id: "upb3_11",
     maNhanVien: "NV5481",
     hoTen: "Vũ Năng Sĩ",
@@ -2669,7 +2669,7 @@ export const users: User[] = [
     matKhau: "123456",
     role: Role.nhan_vien,
     phongBanId: "pb7",
-    boPhan: "Bộ phận kho vật tư, nguyên nhiên liệu và thành phẩm",
+    boPhan: "Tổ phục vụ xuất hàng;Bộ phận kho vật tư, nguyên nhiên liệu và thành phẩm",
     daDangKy: true,
     trangThaiKH: true,
     createdAt: new Date("2024-01-01"),

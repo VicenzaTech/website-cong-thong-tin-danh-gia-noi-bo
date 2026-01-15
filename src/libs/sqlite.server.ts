@@ -17,9 +17,9 @@ function getDatabase(): Database.Database {
 
   db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
-  
+
   initializeTables();
-  
+
   return db;
 }
 
@@ -37,6 +37,7 @@ function initializeTables() {
       da_doi_mat_khau INTEGER DEFAULT 0,
       role TEXT NOT NULL DEFAULT 'nhan_vien',
       phong_ban_id TEXT NOT NULL,
+      bo_phan TEXT,
       da_dang_ky INTEGER DEFAULT 0,
       trang_thai_kh INTEGER DEFAULT 1,
       last_login_at TEXT,
@@ -63,11 +64,23 @@ function initializeTables() {
 
     CREATE INDEX IF NOT EXISTS idx_phong_bans_deleted_at ON phong_bans(deleted_at);
   `);
+
+  // Migration: add bo_phan column if not exists
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(users)").all() as any[];
+    const hasBoPhan = tableInfo.some((col: any) => col.name === "bo_phan");
+    if (!hasBoPhan) {
+      db.exec(`ALTER TABLE users ADD COLUMN bo_phan TEXT`);
+      console.log("Added bo_phan column to users table");
+    }
+  } catch (e) {
+    console.error("Migration error:", e);
+  }
 }
 
 export const sqliteDb = {
   get: getDatabase,
-  
+
   close: () => {
     if (db) {
       db.close();
@@ -141,6 +154,7 @@ export const authService = {
     matKhau?: string;
     role: string;
     phongBanId: string;
+    boPhan?: string;
     daDangKy: boolean;
     trangThaiKH: boolean;
   }): void => {
@@ -148,11 +162,11 @@ export const authService = {
     const stmt = db.prepare(`
       INSERT INTO users (
         id, ma_nhan_vien, ho_ten, email, mat_khau, 
-        role, phong_ban_id, da_dang_ky, trang_thai_kh,
+        role, phong_ban_id, bo_phan, da_dang_ky, trang_thai_kh,
         da_doi_mat_khau, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    
+
     const now = new Date().toISOString();
     stmt.run(
       user.id,
@@ -162,6 +176,7 @@ export const authService = {
       user.matKhau || null,
       user.role,
       user.phongBanId,
+      user.boPhan || null,
       user.daDangKy ? 1 : 0,
       user.trangThaiKH ? 1 : 0,
       0,
@@ -179,6 +194,7 @@ export const authService = {
     matKhau?: string;
     role: string;
     phongBanId: string;
+    boPhan?: string;
     daDangKy: boolean;
     trangThaiKH: boolean;
   }) => {
@@ -186,9 +202,9 @@ export const authService = {
     const stmt = db.prepare(`
       INSERT INTO users (
         id, ma_nhan_vien, ho_ten, email, mat_khau,
-        role, phong_ban_id, da_dang_ky, trang_thai_kh,
+        role, phong_ban_id, bo_phan, da_dang_ky, trang_thai_kh,
         da_doi_mat_khau, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const now = new Date().toISOString();
@@ -200,6 +216,7 @@ export const authService = {
       user.matKhau || null,
       user.role,
       user.phongBanId,
+      user.boPhan || null,
       user.daDangKy ? 1 : 0,
       user.trangThaiKH ? 1 : 0,
       0,
@@ -219,6 +236,10 @@ export const authService = {
     daDoiMatKhau?: boolean;
     daDangKy?: boolean;
     lastLoginAt?: Date;
+    phongBanId?: string;
+    boPhan?: string;
+    role?: string;
+    trangThaiKH?: boolean;
   }): void => {
     const db = getDatabase();
     const updates: string[] = [];
@@ -252,6 +273,22 @@ export const authService = {
       updates.push("last_login_at = ?");
       values.push(data.lastLoginAt.toISOString());
     }
+    if (data.phongBanId !== undefined) {
+      updates.push("phong_ban_id = ?");
+      values.push(data.phongBanId);
+    }
+    if (data.boPhan !== undefined) {
+      updates.push("bo_phan = ?");
+      values.push(data.boPhan);
+    }
+    if (data.role !== undefined) {
+      updates.push("role = ?");
+      values.push(data.role);
+    }
+    if (data.trangThaiKH !== undefined) {
+      updates.push("trang_thai_kh = ?");
+      values.push(data.trangThaiKH ? 1 : 0);
+    }
 
     if (updates.length === 0) return;
 
@@ -270,7 +307,7 @@ export const authService = {
   verifyPassword: async (maNhanVien: string, password: string): Promise<SqliteUser | null> => {
     const user = authService.getUserByMaNhanVien(maNhanVien);
     if (!user || !user.mat_khau) return null;
-    
+
     const isValid = await bcrypt.compare(password, user.mat_khau);
     if (!isValid) return null;
     return user;
@@ -331,7 +368,7 @@ export const authService = {
 
   initializeFromMockData: async (mockUsers: any[], mockPhongBans: any[]): Promise<void> => {
     const db = getDatabase();
-    
+
     const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
     if (userCount.count > 0) {
       return;
@@ -358,9 +395,9 @@ export const authService = {
     const userStmt = db.prepare(`
       INSERT INTO users (
         id, ma_nhan_vien, ho_ten, email, mat_khau, mat_khau_cu,
-        da_doi_mat_khau, role, phong_ban_id, da_dang_ky, trang_thai_kh,
+        da_doi_mat_khau, role, phong_ban_id, bo_phan, da_dang_ky, trang_thai_kh,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const user of mockUsers) {
@@ -368,7 +405,7 @@ export const authService = {
       if (user.matKhau) {
         hashedPassword = await bcrypt.hash(user.matKhau, 10);
       }
-      
+
       userStmt.run(
         user.id,
         user.maNhanVien,
@@ -379,6 +416,7 @@ export const authService = {
         user.daDoiMatKhau ? 1 : 0,
         user.role,
         user.phongBanId,
+        user.boPhan || null,
         user.daDangKy ? 1 : 0,
         user.trangThaiKH ? 1 : 0,
         user.createdAt.toISOString(),
