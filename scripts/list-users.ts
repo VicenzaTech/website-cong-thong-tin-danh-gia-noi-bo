@@ -5,7 +5,7 @@ function printRecent() {
   const path = require('path').join(process.cwd(), 'data', 'app.db');
   console.log('DB file:', path);
   try {
-    const countRow = db.prepare('SELECT COUNT(*) as c FROM users').get();
+    const countRow = db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number } | undefined;
     console.log('Users count:', countRow?.c ?? 'N/A');
 
     const rows = db.prepare('SELECT id, ma_nhan_vien, ho_ten, email, phong_ban_id, bo_phan, created_at FROM users ORDER BY created_at DESC LIMIT 20').all();

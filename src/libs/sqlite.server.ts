@@ -87,6 +87,14 @@ export const sqliteDb = {
       db = null;
     }
   },
+
+  reset: () => {
+    const database = getDatabase();
+    // Drop all data from tables
+    database.exec(`DELETE FROM users`);
+    database.exec(`DELETE FROM phong_bans`);
+    console.log("Database reset: all data deleted from users and phong_bans tables");
+  },
 };
 
 export interface SqliteUser {
