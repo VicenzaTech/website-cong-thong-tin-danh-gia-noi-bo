@@ -603,7 +603,7 @@ function XemDanhGiaContent() {
                             <div>
                                 <Text size="sm" c="dimmed">Đã hoàn thành</Text>
                                 <Text size="xl" fw={700} c="green">
-                                    {completedUsers.length}
+                                    {completedUsers.length}/{targetUsers.length}
                                 </Text>
                             </div>
                             <div>
